@@ -1,0 +1,118 @@
+{
+  "source": "apps/web/src/programming/workspace.tsx",
+  "components": [
+    {
+      "name": "ProgrammingGuide",
+      "category": "Layout",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "summary": "Explains the existing content-to-screen workflow.",
+      "usage": "Use above the programming overview. Static guidance explains playlists, shared/individual schedules and the separate publish action without inferring task completion.",
+      "accessibility": "Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.",
+      "props": [],
+      "states": [
+        "Localized Portuguese/English",
+        "Light/dark and narrow/wide screens"
+      ],
+      "examples": [
+        {
+          "id": "programmingguide-composition",
+          "label": "Programming composition",
+          "description": "Feature-owned composition without live authenticated requests.",
+          "code": "<ProgrammingGuide />",
+          "live": false
+        }
+      ]
+    },
+    {
+      "name": "ProgramNavigation",
+      "category": "Navigation",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "summary": "URL-owned sections for group and screen programming.",
+      "usage": "Use within the authorized programming details page. Native router links separate schedule, preview, group membership, publication and permitted settings/destination; API permissions remain authoritative.",
+      "accessibility": "Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.",
+      "props": [
+        {
+          "name": "companyId",
+          "type": "string",
+          "meaning": "Authorized company identifier.",
+          "required": true
+        },
+        {
+          "name": "source",
+          "type": "ProgramSource",
+          "meaning": "Group or screen identity.",
+          "required": true
+        },
+        {
+          "name": "section",
+          "type": "ProgrammingSection",
+          "meaning": "Current validated URL section; omitted means Program.",
+          "required": false
+        },
+        {
+          "name": "editable",
+          "type": "boolean",
+          "meaning": "Current programming edit capability.",
+          "required": true
+        },
+        {
+          "name": "assignable",
+          "type": "boolean",
+          "meaning": "Current screen assignment capability.",
+          "required": false
+        }
+      ],
+      "states": [
+        "Default schedule",
+        "Preview",
+        "Group screens",
+        "Publication",
+        "Permitted settings or destination"
+      ],
+      "examples": [
+        {
+          "id": "programnavigation-composition",
+          "label": "Programming composition",
+          "description": "Feature-owned composition without live authenticated requests.",
+          "code": "<ProgramNavigation companyId={companyId} source={source} section={section} editable={editable} assignable={assignable} />",
+          "live": false
+        }
+      ]
+    },
+    {
+      "name": "ProgrammingPanel",
+      "category": "Layout",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "summary": "Retains visited programming drafts across section navigation.",
+      "usage": "Use for sections of the same resource. Initial content mounts on demand; visited children remain mounted under native hidden. Key the resource and write forms by authoritative identity/version; this preserves temporary state, not persistence across reloads.",
+      "accessibility": "Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.",
+      "props": [
+        {
+          "name": "active",
+          "type": "boolean",
+          "meaning": "Whether the validated URL selects this section.",
+          "required": true
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "meaning": "Owning workflow and local form state.",
+          "required": true
+        }
+      ],
+      "states": ["Unvisited", "Active", "Visited and hidden"],
+      "examples": [
+        {
+          "id": "programmingpanel-composition",
+          "label": "Programming composition",
+          "description": "Feature-owned composition without live authenticated requests.",
+          "code": "<ProgrammingPanel active={section === \"preview\"}>{preview}</ProgrammingPanel>",
+          "live": false
+        }
+      ]
+    }
+  ]
+}

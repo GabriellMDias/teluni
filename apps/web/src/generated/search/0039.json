@@ -1,5 +1,77 @@
 [
   {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nSelf-hosting adds patching, resources, recovery and mail-delivery responsibilities despite no procurement budget.\nServer sessions introduce persistence, CSRF, concurrency and logout synchronization work.\nCurrent foundation principal/configuration contracts do not yet carry all needed session/assurance semantics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical identity and access policies](../project/identity-and-access.md)\n[Provider evidence and qualification gaps](../project/identity-provider-evaluation.md)\n[Existing JWT access-token decision](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\n[Authentication policy](../security/authentication.md)\n[Application boundaries](../architecture/application-boundaries.md)\n[OAuth security best current practice](https://www.rfc-editor.org/rfc/rfc9700.html)\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "anchor": "adr-0025-adopt-application-owned-scoped-access-profiles",
+    "text": "ADR-0025: Adopt Application-Owned Scoped Access Profiles\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nApplication ownership keeps mutable company permissions and resources independent of provider migration and stale identity claims. Explicit capabilities/scopes accommodate both small-business presets and teams working across branches without making every operator an administrator. Attributable publication/support checks preserve the approved product behavior and tenant boundaries.\nThe owner approved policy and required allow/deny cases, not a database model or proven permission evaluator. Custom profiles, optional approvals and bounded asynchronous revocation add real implementation work and must not be claimed merely from a matrix.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Fixed roles only:** simpler, but cannot satisfy the selected customizable capability/scoping policy without revisiting the product requirements.\n**Provider roles/groups as complete authorization:** insufficient for current memberships, mutable resource relationships, publication fan-out and tenant-safe support; would couple application permission meaning to identity infrastructure.\n**General-purpose policy engine:** no measured need or evaluation justifies another dependency or distributed component at this stage. Review if actual policy complexity warrants it later.\n**Platform superuser and silent price partial success:** obscure authority and violate selected customer-content boundaries and complete price-impact validation.\n"
+  },
+  {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
     "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
@@ -1384,113 +1456,5 @@
     "heading": "Maintenance and deferred mechanisms",
     "anchor": "maintenance-and-deferred-mechanisms",
     "text": "Maintenance and deferred mechanisms\nRoutine maintenance should be limited to permitted corrections and supersession metadata. Current architecture must remain discoverable without reading the entire chronological ADR history. Keep descriptive titles, explicit technologies/concepts, and useful related references.\nFrontmatter, automatic numbering, generated indexing, status/supersession validation, approval workflows, and required reviewers remain tooling or organizational decisions. Introduce them only when justified. ADRs should preserve meaningful reasoning without becoming bureaucratic records for every change.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "anchor": "adr-0018-isolate-internal-documentation-from-product-distribution",
-    "text": "ADR-0018: Isolate Internal Documentation from Product Distribution\n**Status:** accepted\n**Date:** 2026-10-23\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner requires a complete engineering knowledge system for developers and AI agents while separating it from product UI and public documentation. The existing portal uses the React/Vite application, deterministic generated references, a lazy UI import, local search, and synthetic previews. Lazy loading still emits its entire internal catalog and downloads into production artifacts. Removing navigation or adding a browser route guard would leave those files downloadable.\nADR-0008 already selects Vite and code splitting. Development-only identity behavior already uses build-time exclusion. ADR-0017 retains the portal and its sources in projects and makes composition and brand assets project-owned; it does not require shipping engineering assets in product builds. This decision complements that source-retention contract by defining distribution and publication explicitly. These mechanisms can support the requested separation without selecting another framework, authentication provider, or deployment topology.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nRetain the full internal source catalog, generators, local `/docs` routes, search, previews, and AI-readable references. Treat the portal as a development tool. Exclude its routes, imports, UI styles, generated pages, search assets and reference downloads from every default production web build, in Orion and derived projects. Fail the product build if an accidental included import bypasses that boundary.\nAllow explicit internal builds only with an operator acknowledgement that a trusted external host enforces access to the entire artifact. This build selection grants no permission and supplies no authentication. A real internal deployment requires authorization and verified host controls over assets and downloads as well as routes; API controls remain unchanged.\nProduct documentation belongs to the product's UI, audience, ownership and release process. Public API documentation uses a separately approved source inventory, including referenced schemas and examples. Neither public surface inherits or filters the internal catalog automatically. The foundation does not introduce a public publisher in this change.\nKeep portal layout/navigation/styles inside its optional import boundary. Applications retain control of their shell, home, modules, brand and documentation presentation. Preserve the existing toolchain, repository/manifest contract, local URLs, and generated-source ownership.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nCompile-time selection removes actual emitted bytes and reuses Vite rather than introducing an application boundary solely for packaging. Independent publication sources prevent an internal addition from becoming a public disclosure. Retaining complete generation keeps engineering discovery and agent context intact. External hosting enforcement accommodates an explicitly authorized internal deployment without inventing a provider or pretending static client checks protect downloads.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Hide links or require a browser login",
-    "anchor": "hide-links-or-require-a-browser-login",
-    "text": "Hide links or require a browser login\nThis changes navigation but leaves static references and search content downloadable. It does not establish the required distribution or trust boundary.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Remove the portal and internal sources during derivation",
-    "anchor": "remove-the-portal-and-internal-sources-during-derivation",
-    "text": "Remove the portal and internal sources during derivation\nThis reduces product bytes but also removes developer and agent capabilities, generated-reference validation, and a reusable engineering workflow.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Introduce a separate documentation application immediately",
-    "anchor": "introduce-a-separate-documentation-application-immediately",
-    "text": "Introduce a separate documentation application immediately\nA separate application may be justified by future independent hosting requirements. It is unnecessary for current build exclusion and would add workspace, routing, and validation responsibilities before a concrete deployment exists.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nDefault products contain no internal portal or generated documentation assets.\nLocal engineering workflows and canonical AI-readable knowledge remain available.\nProduct and public documentation can evolve independently of engineering navigation and branding.\nArtifact and browser tests cover exclusion, explicit inclusion, accidental imports, and existing local behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nInternal deployment operators must explicitly select and protect a distinct artifact; the build cannot verify their real host's access controls.\nProducts that previously used `/docs` as end-user help must migrate those links and content.\nPublic documentation requires an approved source inventory and a product-owned publication implementation when needed.\n"
-  },
-  {
-    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
-    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nProduction `/docs` availability intentionally changes; source, local routes, generators, SDKs, database and manifest schemas remain compatible. Rebuild and remove stale deployed assets rather than only changing links. Existing intentional internal deployments must select the protected internal build. The [migration policy](../../architecture/living-documentation.md#existing-project-migration) describes adoption. No derived repository, release, remote push, provider, or deployment is changed by this implementation.\n"
   }
 ]

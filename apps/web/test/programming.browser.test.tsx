@@ -33,6 +33,7 @@ const base = `/companies/${companyId}/programming`;
 const locale = browserLocale();
 const t = programmingMessages[locale];
 const organizations = organizationMessages[locale];
+const addRecord = locale === "pt-BR" ? "Adicionar" : "Add";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -260,9 +261,7 @@ test("lists playlists for viewers without the create form", async () => {
     .element(screen.getByRole("link", { name: "Manhã" }))
     .toHaveAttribute("href", `${base}/playlists/${playlistId}`);
   await expect
-    .element(
-      screen.getByText(t.playlistSummary(1, "0:10", 0), { exact: false }),
-    )
+    .element(screen.getByRole("gridcell", { name: "0:10", exact: true }))
     .toBeVisible();
   await expect
     .element(screen.getByRole("heading", { name: t.createPlaylistTitle }))
@@ -282,6 +281,10 @@ test("creates a playlist and opens it", async () => {
     return undefined;
   });
   const { screen, router } = await open(base);
+  await screen
+    .getByRole("region", { name: t.workspace.playlistRecords })
+    .getByRole("button", { name: addRecord, exact: true })
+    .click();
   await screen.getByLabelText(t.fieldName).fill("Manhã");
   await screen.getByLabelText(t.fieldScope).selectOptions("Centro");
   await screen.getByRole("button", { name: t.create }).click();
@@ -363,7 +366,10 @@ test("deletes a playlist only after confirmation and explains use", async () => 
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/playlists/${playlistId}`);
+  const { screen } = await open(
+    `${base}/playlists/${playlistId}?section=settings`,
+  );
+  await screen.getByText(t.workspace.deleteArea, { exact: true }).click();
   const remove = screen.getByRole("button", { name: t.deletePlaylist });
   await expect.element(remove).toBeDisabled();
   await screen
@@ -545,6 +551,7 @@ test("chooses a layout after confirming lost schedules and schedules each area",
     return answer!(input, init);
   });
   const { screen } = await open(`${base}/groups/${groupId}`);
+  await screen.getByText(t.workspace.layoutOptions, { exact: true }).click();
   const choice = screen.getByLabelText(t.layoutLabel, { exact: true });
   await expect
     .element(screen.getByRole("option", { name: "Bairro" }))
@@ -638,7 +645,7 @@ test("assigns a screen to a group only after confirming the neutral screen", asy
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/screens/${deviceId}`);
+  const { screen } = await open(`${base}/screens/${deviceId}?section=settings`);
   await expect
     .element(screen.getByText(t.branchZone("America/Sao_Paulo")))
     .toBeVisible();
@@ -718,6 +725,9 @@ test("keeps a screen in a group the caller cannot fully see until another choice
   await expect
     .element(screen.getByRole("heading", { name: t.schedulesTitle }))
     .not.toBeInTheDocument();
+  await screen
+    .getByRole("link", { name: t.workspace.destinationTab, exact: true })
+    .click();
   const choice = screen.getByLabelText(t.groupLabel);
   await expect.element(choice).toHaveValue("hidden");
   await screen.getByRole("checkbox", { name: t.confirmUnpublished }).click();
@@ -786,6 +796,9 @@ test("offers every page of playlists and marks the ones outside the caller's acc
   await expect
     .element(screen.getByRole("option", { name: t.hiddenPlaylist }))
     .toBeInTheDocument();
+  await screen
+    .getByRole("link", { name: t.workspace.previewTab, exact: true })
+    .click();
   await expect
     .element(screen.getByRole("cell", { name: t.hiddenPlaylist }))
     .toBeVisible();
@@ -858,7 +871,9 @@ test("publishes exactly the reviewed draft of a group", async () => {
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/groups/${groupId}`);
+  const { screen } = await open(
+    `${base}/groups/${groupId}?section=publication`,
+  );
   await expect.element(screen.getByText(t.publication.never)).toBeVisible();
   await screen.getByRole("button", { name: t.publication.review }).click();
   await expect
@@ -919,7 +934,9 @@ test("shows what blocks a publication and a draft changed after review", async (
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/groups/${groupId}`);
+  const { screen } = await open(
+    `${base}/groups/${groupId}?section=publication`,
+  );
   await screen.getByRole("button", { name: t.publication.review }).click();
   await expect
     .element(screen.getByText(t.publication.problems.TRANSITION_UNSUPPORTED))
@@ -984,7 +1001,9 @@ test("restores a retained generation only after confirmation", async () => {
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/groups/${groupId}`);
+  const { screen } = await open(
+    `${base}/groups/${groupId}?section=publication`,
+  );
   // A generation the price processor published says so.
   await expect
     .element(
@@ -1043,7 +1062,7 @@ test("assigns a screen to a published group without the neutral-screen confirmat
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/screens/${deviceId}`);
+  const { screen } = await open(`${base}/screens/${deviceId}?section=settings`);
   await expect
     .element(screen.getByRole("checkbox", { name: t.confirmUnpublished }))
     .toBeVisible();
@@ -1077,11 +1096,236 @@ test("hides publishing from members without publications.publish", async () => {
       return { body: { items: [], nextCursor: null } };
     return undefined;
   });
-  const { screen } = await open(`${base}/groups/${groupId}`);
+  const { screen } = await open(
+    `${base}/groups/${groupId}?section=publication`,
+  );
   await expect
     .element(screen.getByRole("heading", { name: t.publication.title }))
     .toBeVisible();
   await expect
     .element(screen.getByRole("button", { name: t.publication.review }))
     .not.toBeInTheDocument();
+});
+
+test("keeps an unsaved schedule across URL sections and offers weekday presets", async () => {
+  respond(editor, (url) => {
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/program")) return { body: emptyProgram };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [playlist()], nextCursor: null } };
+    return undefined;
+  });
+  const { screen, router } = await open(`${base}/groups/${groupId}`);
+  await screen.getByLabelText(t.defaultPlaylist).selectOptions("Manhã");
+  await expect.element(screen.getByText(t.workspace.noRules)).toBeVisible();
+  await screen.getByRole("button", { name: t.addRule }).click();
+  await screen
+    .getByLabelText(t.rulePlaylist, { exact: true })
+    .selectOptions("Manhã");
+  await screen
+    .getByRole("button", { name: t.workspace.workdays, exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.weekdays[1], { exact: true }))
+    .toBeChecked();
+  await expect
+    .element(screen.getByLabelText(t.weekdays[6], { exact: true }))
+    .not.toBeChecked();
+  await screen
+    .getByRole("link", { name: t.workspace.previewTab, exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({ section: "preview" });
+  await expect
+    .element(screen.getByRole("heading", { name: t.timelineTitle }))
+    .toBeVisible();
+  await screen
+    .getByRole("link", { name: t.workspace.scheduleTab, exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.defaultPlaylist))
+    .toHaveValue(playlistId);
+  await expect
+    .element(screen.getByLabelText(t.rulePlaylist, { exact: true }))
+    .toHaveValue(playlistId);
+  await expect
+    .element(screen.getByLabelText(t.weekdays[6], { exact: true }))
+    .not.toBeChecked();
+  expect(sentCount("PUT", "/outputs/screen")).toBe(0);
+});
+
+test("keeps playlist item edits while changing sections and pages through selectable media", async () => {
+  respond(editor, (url) => {
+    if (url.pathname.endsWith(`/playlists/${playlistId}`))
+      return { body: playlist() };
+    if (url.pathname.endsWith("/media"))
+      return {
+        body: {
+          items: [
+            {
+              id: videoId,
+              name: url.searchParams.has("cursor")
+                ? "Older video"
+                : "Newest video",
+              kind: "VIDEO",
+              status: "READY",
+              branch: null,
+            },
+          ],
+          nextCursor: url.searchParams.has("cursor") ? null : "next-page",
+        },
+      };
+    return undefined;
+  });
+  const { screen, router } = await open(`${base}/playlists/${playlistId}`);
+  await screen.getByLabelText(t.itemSeconds("Promoção")).fill("25");
+  await screen.getByRole("button", { name: t.nextPage, exact: true }).click();
+  await expect
+    .element(screen.getByRole("button", { name: t.add("Older video") }))
+    .toBeVisible();
+  await screen
+    .getByRole("link", { name: t.workspace.settingsTab, exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({ section: "settings" });
+  await screen
+    .getByRole("link", { name: t.workspace.contentTab, exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.itemSeconds("Promoção")))
+    .toHaveValue(25);
+  await expect
+    .element(screen.getByRole("button", { name: t.add("Older video") }))
+    .toBeVisible();
+  expect(sentCount("PUT", "/items")).toBe(0);
+});
+
+test("blocks an unknown schedule write until a successful authoritative reload, including an unchanged version", async () => {
+  let failRead = false;
+  respond(editor, (url, request) => {
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/program"))
+      return failRead
+        ? { status: 503, body: { error: { code: "INTERNAL_ERROR" } } }
+        : { body: emptyProgram };
+    if (url.pathname.endsWith("/rule-checks"))
+      return { body: { issues: [], conflicts: [] } };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [playlist()], nextCursor: null } };
+    if (url.pathname.endsWith("/outputs/screen") && request.method === "PUT")
+      return { status: 500, body: { error: { code: "INTERNAL_ERROR" } } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/groups/${groupId}`);
+  await screen.getByLabelText(t.defaultPlaylist).selectOptions("Manhã");
+  const save = screen.getByRole("button", {
+    name: t.saveSchedules,
+    exact: true,
+  });
+  await save.click();
+  await expect.element(save).toBeDisabled();
+  await expect.element(screen.getByLabelText(t.defaultPlaylist)).toBeDisabled();
+  expect(sentCount("PUT", "/outputs/screen")).toBe(1);
+  failRead = true;
+  await screen
+    .getByRole("alert")
+    .getByRole("button", { name: t.reload, exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.defaultPlaylist))
+    .toHaveValue(playlistId);
+  await expect.element(save).toBeDisabled();
+  await expect.element(screen.getByRole("alert").nth(1)).toBeVisible();
+  failRead = false;
+  await screen
+    .getByRole("button", { name: t.reload, exact: true })
+    .first()
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.defaultPlaylist))
+    .toHaveValue("");
+  await expect.element(save).toBeEnabled();
+  expect(sentCount("PUT", "/outputs/screen")).toBe(1);
+});
+
+test("uses URL-owned DataSet selection, guards a new draft and applies server name filters", async () => {
+  respond(editor, (url) => {
+    if (url.pathname.endsWith("/programming/playlists"))
+      return {
+        body: {
+          items: [
+            playlist(),
+            playlist({ id: otherPlaylistId, name: "Tarde", durationMs: 25000 }),
+          ],
+          nextCursor: null,
+        },
+      };
+    return undefined;
+  });
+  const { screen, router } = await open(base);
+  const records = screen.getByRole("region", {
+    name: t.workspace.playlistRecords,
+  });
+  await records.getByRole("gridcell", { name: "0:25", exact: true }).dblClick();
+  await expect
+    .element(screen.getByRole("heading", { name: "Tarde", exact: true }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    mode: "form",
+    record: otherPlaylistId,
+  });
+  await records
+    .getByRole("button", {
+      name: locale === "pt-BR" ? "Modo grade" : "Grid mode",
+      exact: true,
+    })
+    .click();
+  await records.getByRole("button", { name: addRecord, exact: true }).click();
+  await screen.getByLabelText(t.fieldName).fill("Unsaved playlist");
+  await expect
+    .element(
+      records.getByRole("button", {
+        name: locale === "pt-BR" ? "Modo grade" : "Grid mode",
+        exact: true,
+      }),
+    )
+    .toBeDisabled();
+  await expect
+    .element(records.getByRole("button", { name: addRecord, exact: true }))
+    .toBeDisabled();
+  await screen
+    .getByRole("button", { name: t.workspace.backToGrid, exact: true })
+    .click();
+  await records
+    .getByRole("button", {
+      name: locale === "pt-BR" ? "Filtrar" : "Filter",
+      exact: true,
+    })
+    .click();
+  await screen.getByLabelText(t.filterText).fill("Tarde");
+  await screen.getByRole("button", { name: t.search, exact: true }).click();
+  await expect
+    .poll(() => router.state.location.search)
+    .toEqual({ text: "Tarde" });
+  expect(sentCount("POST", "/programming/playlists")).toBe(0);
+});
+
+test("does not open dataset creation from a forged viewer URL", async () => {
+  respond(["programming.view"], (url) =>
+    url.pathname.endsWith("/programming/playlists")
+      ? { body: { items: [playlist()], nextCursor: null } }
+      : undefined,
+  );
+  const { screen } = await open(`${base}?mode=form&record=new`);
+  await expect
+    .element(screen.getByRole("heading", { name: "Manhã", exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("form", { name: t.createPlaylistTitle }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(
+      screen
+        .getByRole("region", { name: t.workspace.playlistRecords })
+        .getByRole("button", { name: addRecord, exact: true }),
+    )
+    .toBeDisabled();
 });

@@ -111,6 +111,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
   // A layout: a video column and a menu area showing the catalog.
   await page.goto(`${companyUrl}/programming?view=layouts`);
   await expect(page.getByText("Nenhum layout ainda.")).toBeVisible();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitrine");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -152,12 +153,17 @@ test("creates a product catalog with a branch price and a promotion and reads th
   // A group program chooses the layout; each area has its own schedules,
   // and it publishes with protocol 2, catalog snapshot included.
   await page.goto(`${companyUrl}/programming?view=groups`);
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Lojas");
   await page.getByLabel("Centro", { exact: true }).check();
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
     page.getByRole("heading", { level: 1, name: "Lojas" }),
   ).toBeVisible();
+  await page
+    .locator("summary")
+    .filter({ hasText: "Composição da tela" })
+    .click();
   await page.getByLabel("Layout", { exact: true }).selectOption("Vitrine");
   await page.getByRole("button", { name: "Usar este layout" }).click();
   await expect(page.getByRole("status")).toContainText("Layout escolhido.");
@@ -169,11 +175,13 @@ test("creates a product catalog with a branch price and a promotion and reads th
       exact: false,
     }),
   ).toBeVisible();
+  await page.getByRole("link", { name: "Prévia", exact: true }).click();
   await page.getByLabel("Área na prévia").selectOption("Cardápio (catálogo)");
   await expect(
     page.getByRole("cell", { name: "Visão do catálogo" }).first(),
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("link", { name: "Publicação", exact: true }).click();
   await page.getByRole("button", { name: "Revisar para publicar" }).click();
   await page.getByRole("button", { name: "Publicar agora" }).click();
   await expect(

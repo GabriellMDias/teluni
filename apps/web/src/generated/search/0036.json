@@ -4,6 +4,42 @@
     "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a backend HTTP framework before the initial API application and its transport layer can be implemented consistently.\nThe selected framework must support projects with substantially different sizes and operational requirements, ranging from small applications to large, long-lived systems with significant traffic, domain complexity, integration surfaces, and horizontal scaling requirements.\nOrion already defines its own architectural principles, application boundaries, dependency rules, validation model, and preference for explicit composition.\nThe backend framework should therefore provide strong HTTP infrastructure without becoming the architecture of the business system itself.\nIn particular, the framework should support an architecture in which:\nHTTP framework\n    ↓\ntransport adapters\n    ↓\napplication operations\n    ↓\ndomain behavior\n\nDomain and application code should remain independent from the HTTP framework wherever practical.\nThe framework should also align with Orion's broader priorities:\nstrong runtime performance;\nlow framework overhead;\npredictable production behavior;\nexplicit request lifecycle;\nruntime validation and serialization capabilities;\nstructured logging;\nTypeScript support;\nextensibility without requiring a framework-specific application model;\nmaintainability in large codebases;\nhorizontal scalability;\neffective observability integration;\ncompatibility with machine-readable API contracts;\nminimal unnecessary abstraction;\nclear execution paths for both human contributors and AI agents.\nThe selection must not assume that a large system requires microservices or a heavyweight application framework.\nOrion intends to support modular monoliths and other incrementally scalable architectures while preserving the option to extract independently deployable components when concrete requirements justify doing so.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **Fastify as its primary backend HTTP framework for Node.js applications**.\nFastify will be treated as a **transport and infrastructure adapter**, not as the architectural foundation of domain or application logic.\nThe intended dependency direction is:\nFastify\n    ↓\nHTTP adapters\n    ↓\napplication layer\n    ↓\ndomain\n\nDomain code must not depend on Fastify.\nApplication code should not depend on Fastify APIs or types except where an explicitly justified transport-specific boundary requires otherwise.\nFastify-specific concepts should remain primarily within the API application's composition root, transport adapters, plugins, hooks, and HTTP infrastructure.\nTransport-specific objects such as:\nFastifyRequest\nFastifyReply\nFastifyInstance\n\nmust not become domain entities, application contracts, or persistence models.\nHTTP adapters are responsible for translating between framework-specific transport concerns and framework-independent application inputs and outputs.\nFastify's plugin and encapsulation model may be used to organize HTTP and infrastructure concerns, but Fastify plugin boundaries will not define Orion's business-domain boundaries.\nBusiness and architectural boundaries remain governed by Orion's packages, dependency rules, domain ownership, and application architecture.\nFastify's schema-based request validation and response serialization capabilities will be used where compatible with the API contract strategy selected separately by Orion.\nThe canonical schema representation, runtime schema library, API description strategy, and SDK generation approach are intentionally not selected by this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Logging",
+    "anchor": "logging",
+    "text": "Logging\nOrion backend applications using Fastify will use **Pino as the default structured logging implementation for the HTTP runtime**, taking advantage of Fastify's native logging integration.\nThis decision establishes the technical logger used by the Fastify runtime but does not define Orion's complete observability policy.\nThe following remain governed by the existing reliability and security policies and by the future observability implementation decision:\ntelemetry semantics;\nrequired log fields;\ncorrelation identifiers;\ntrace and span correlation;\nsensitive-data redaction;\nlog levels;\nerror-reporting integration;\ntelemetry export;\nretention;\nobservability backend or vendor.\nApplication and domain code should not become unnecessarily coupled to Pino APIs merely because Pino is used by the HTTP runtime.\nLogging abstractions should be introduced only where they represent a genuine application responsibility rather than as wrappers created solely to hide the selected library.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Framework versioning",
+    "anchor": "framework-versioning",
+    "text": "Framework versioning\nThe exact Fastify and Pino versions will be pinned mechanically by repository dependency management rather than by this ADR.\nOrion should use supported, production-appropriate releases compatible with the selected Node.js LTS baseline.\nRoutine compatible framework upgrades do not require a new ADR when they preserve the architectural responsibilities established here.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
     "text": "Rationale\nFastify provides the strongest overall fit for Orion because it combines high HTTP performance with a relatively narrow architectural responsibility.\nIt provides routing, lifecycle hooks, plugins, request validation, response serialization, structured logging integration, and other HTTP infrastructure without requiring Orion to adopt a framework-defined application architecture.\nThis distinction is important.\nOrion already defines how responsibilities, dependencies, domains, contracts, and composition should be structured. Selecting a framework that also imposes a comprehensive application architecture would create overlapping architectural systems that would need to remain synchronized.\nFastify allows Orion to retain the relationship:\nOrion\n    → defines application architecture\n\nFastify\n    → implements the HTTP boundary\n\nrather than requiring the application architecture to be expressed primarily through framework concepts.\nFastify is also designed for low framework overhead and high throughput. This supports Orion's requirement to remain suitable for applications that may eventually serve substantial workloads.\nFramework benchmark performance is not treated as a guarantee of complete application performance. Database design, external integrations, serialization, caching, application logic, infrastructure, and deployment topology commonly dominate real system performance.\nHowever, when two frameworks can satisfy the architectural requirements, lower baseline HTTP overhead is still preferable.\nFastify's request validation and response serialization model is particularly compatible with Orion's preference for explicit, machine-readable contracts.\nA future contract strategy can potentially provide schemas that drive:\ncontract definition\n    ↓\nruntime validation\n    ↓\nresponse serialization\n    ↓\nAPI description\n    ↓\ngenerated clients\n\nwithout requiring the HTTP framework itself to become the canonical contract source.\nFastify's response-schema capabilities are also valuable for security and correctness because transport responses can be constrained explicitly rather than serializing arbitrary internal objects.\nIts plugin and encapsulation model provides sufficient structure for large backend applications while remaining narrower than a complete application-framework model.\nThis allows the HTTP layer to be organized by concerns and composition without making Fastify plugins equivalent to business domains.\nPino is selected as the default HTTP-runtime logger because Fastify integrates with it directly and because it provides structured logging with low overhead.\nUsing the framework's native logging path reduces unnecessary integration complexity.\nThe selection does not mean application architecture should expose Pino throughout the codebase. Logging semantics and cross-cutting observability behavior remain separate architectural concerns.\nThe decision accepts that Fastify provides less built-in application structure than frameworks such as NestJS.\nOrion must therefore supply the conventions that NestJS would otherwise provide through modules, dependency injection, controllers, providers, guards, pipes, and interceptors.\nThis is an intentional tradeoff.\nThose conventions are already part of Orion's responsibility as an engineering foundation, and keeping them independent from the HTTP framework reduces framework lock-in and keeps domain and application code easier to understand, test, and reuse outside HTTP contexts.\n"
@@ -925,59 +961,5 @@
     "heading": "UI libraries and design systems",
     "anchor": "ui-libraries-and-design-systems",
     "text": "UI libraries and design systems\nThis ADR does not select a component library or design system.\nUI component systems, styling approaches, accessibility primitives, charting libraries, data grids, form libraries, and similar product-facing dependencies should be selected when their concrete requirements are understood.\nShared UI code should be introduced only when it represents a genuine reusable responsibility.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nReact provides the strongest overall fit for Orion when runtime performance is considered together with ecosystem maturity, TypeScript support, tooling availability, library compatibility, organizational scalability, testing support, and long-term maintainability.\nOther UI frameworks can provide lower rendering overhead in specific benchmarks.\nOrion does not treat framework rendering benchmarks as the sole measure of application performance.\nIn large business applications, user-perceived performance is also heavily influenced by network behavior, data fetching, bundle composition, large data visualizations, DOM size, rendering architecture, server latency, and application-specific computation.\nReact provides sufficient runtime performance while offering a particularly broad ecosystem for the kinds of capabilities large Orion applications may require.\nThese may include:\ncomplex data grids;\nvirtualization;\ncharts;\nrich editors;\naccessibility libraries;\ndrag-and-drop interfaces;\nforms;\ntesting tools;\nmonitoring integrations;\ncomponent systems;\nmobile ecosystem interoperability.\nReact also has a large body of conventions, documentation, examples, and production experience.\nThis improves discoverability for both human contributors and AI agents and reduces the likelihood that Orion must build custom integrations for common application requirements.\nReact Compiler further improves the fit by providing a compile-time optimization path for components and hooks.\nThis allows Orion to begin with clear code rather than making widespread manual memoization part of its normal development style.\nVite is selected because it provides a fast and comparatively narrow development and build layer without imposing an application architecture.\nThis matches the same principle used when selecting Fastify:\nOrion\n    → owns application architecture\n\ntooling\n    → implements focused infrastructure responsibilities\n\nVite therefore provides web tooling without becoming a second full-stack architecture.\nTanStack Router is selected because Orion places strong value on TypeScript correctness and explicit state ownership.\nRouting is not merely a mapping between strings and components in large applications.\nURLs frequently encode meaningful application state such as filtering, sorting, pagination, selected views, and identifiers.\nType-safe paths, parameters, search state, and navigation reduce errors and make large route trees easier to refactor safely.\nTanStack Query is selected because server state has different ownership and lifecycle semantics from local UI state.\nRemote data must account for caching, synchronization, invalidation, mutations, stale data, asynchronous errors, and background updates.\nTreating those concerns as ordinary React component state encourages repeated application-specific implementations.\nA dedicated server-state system provides a clearer responsibility boundary.\nThe separation:\nTanStack Query\n    → server state\n\nTanStack Router\n    → URL/navigation state\n\nReact\n    → local UI state\n\nreduces the need for a universal global state container.\nThis provides a smaller initial foundation while leaving specialized client-state libraries available when a real requirement appears.\nThe client-first SPA model is selected because Orion's expected reference applications are application-oriented and already have an explicit authoritative Fastify backend.\nIntroducing a full-stack React framework by default would add another server-side execution environment and create opportunities for backend responsibilities to become duplicated across the API and web applications.\nServer rendering remains available when a product's actual delivery requirements justify the additional architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "SolidJS",
-    "anchor": "solidjs",
-    "text": "SolidJS\nSolidJS provides fine-grained reactive updates and can achieve very low runtime UI overhead.\nIt is a strong choice when minimizing reactive and rendering overhead is a dominant requirement.\nIt was not selected because Orion must optimize for more than framework runtime performance.\nReact provides a substantially broader ecosystem, more third-party integrations, more established enterprise usage patterns, stronger availability of specialized UI libraries, and greater familiarity across developers and AI tooling.\nThe expected performance advantage of SolidJS does not currently outweigh those ecosystem and long-term maintenance considerations for Orion's general-purpose foundation.\nSolidJS may still be appropriate for a specialized future application whose measured requirements strongly favor its rendering model.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Svelte",
-    "anchor": "svelte",
-    "text": "Svelte\nSvelte provides a compiler-oriented approach to frontend development with strong runtime characteristics and concise application code.\nIt can produce highly performant web applications and offers an attractive development model.\nIt was not selected because React currently provides a broader ecosystem for the range of complex application requirements Orion is expected to support.\nAdopting Svelte as the default would trade some framework simplicity and runtime characteristics for a smaller ecosystem and fewer standardized integrations in several enterprise-oriented areas.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Next.js or Another Full-Stack React Framework",
-    "anchor": "nextjs-or-another-full-stack-react-framework",
-    "text": "Next.js or Another Full-Stack React Framework\nA full-stack React framework can provide server-side rendering, static generation, server components, integrated routing, and server execution capabilities.\nThese features are valuable for many products.\nA full-stack framework was not selected as Orion's default because Orion already defines Fastify as its authoritative backend application boundary.\nIntroducing another server-side application layer by default would increase architectural complexity and could encourage business logic, database access, authentication authority, or application operations to become divided between two server environments.\nProducts that require server rendering may evaluate an appropriate framework when those requirements exist.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "React Router",
-    "anchor": "react-router",
-    "text": "React Router\nReact Router provides mature and widely used routing for React applications.\nIt is a strong general-purpose router and would be technically capable of supporting Orion applications.\nTanStack Router was selected because Orion gives additional weight to end-to-end TypeScript inference for paths, navigation, path parameters, search parameters, and route context.\nTyped URL state is particularly valuable for large business applications with complex filtering and navigation requirements.\n"
   }
 ]

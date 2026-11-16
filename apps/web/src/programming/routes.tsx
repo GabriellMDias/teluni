@@ -7,6 +7,7 @@ import {
   ScreenProgrammingPage,
   type ProgrammingFilter,
 } from "./pages.js";
+import type { ProgrammingDetailFilter } from "./workspace.js";
 import { LayoutPage } from "./layouts.js";
 import "./programming.css";
 
@@ -14,6 +15,17 @@ const overviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/programming",
   validateSearch: (search: Record<string, unknown>): ProgrammingFilter => ({
+    ...(search.mode === "grid" || search.mode === "form"
+      ? { mode: search.mode }
+      : {}),
+    ...(typeof search.record === "string" &&
+    (search.record === "new" ||
+      (search.view === "layouts" && search.record === "import") ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        search.record,
+      ))
+      ? { record: search.record }
+      : {}),
     ...(search.view === "groups" || search.view === "layouts"
       ? { view: search.view }
       : {}),
@@ -37,9 +49,21 @@ const overviewRoute = createRoute({
   },
 });
 
+const detailSearch = (
+  search: Record<string, unknown>,
+): ProgrammingDetailFilter =>
+  search.section === "preview" ||
+  search.section === "screens" ||
+  search.section === "publication" ||
+  search.section === "settings"
+    ? { section: search.section }
+    : {};
+
 const playlistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/programming/playlists/$playlistId",
+  validateSearch: (search: Record<string, unknown>): ProgrammingDetailFilter =>
+    search.section === "settings" ? { section: "settings" } : {},
   component: function PlaylistRoute() {
     const { companyId, playlistId } = playlistRoute.useParams();
     return (
@@ -47,6 +71,7 @@ const playlistRoute = createRoute({
         key={`${companyId}/${playlistId}`}
         companyId={companyId}
         playlistId={playlistId}
+        section={playlistRoute.useSearch().section}
       />
     );
   },
@@ -70,6 +95,7 @@ const layoutRoute = createRoute({
 const groupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/programming/groups/$groupId",
+  validateSearch: detailSearch,
   component: function GroupRoute() {
     const { companyId, groupId } = groupRoute.useParams();
     return (
@@ -77,6 +103,7 @@ const groupRoute = createRoute({
         key={`${companyId}/${groupId}`}
         companyId={companyId}
         groupId={groupId}
+        section={groupRoute.useSearch().section}
       />
     );
   },
@@ -85,6 +112,8 @@ const groupRoute = createRoute({
 const screenRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/programming/screens/$deviceId",
+  validateSearch: (search: Record<string, unknown>): ProgrammingDetailFilter =>
+    search.section === "screens" ? {} : detailSearch(search),
   component: function ScreenProgrammingRoute() {
     const { companyId, deviceId } = screenRoute.useParams();
     return (
@@ -92,6 +121,7 @@ const screenRoute = createRoute({
         key={`${companyId}/${deviceId}`}
         companyId={companyId}
         deviceId={deviceId}
+        section={screenRoute.useSearch().section}
       />
     );
   },

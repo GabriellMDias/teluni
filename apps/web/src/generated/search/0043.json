@@ -1,5 +1,212 @@
 [
   {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-11",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company identifier.\nYes\n—\n`company`\n`CompanyWithAccess`\nCurrent company and capability snapshot; the API enforces owning scope.\nYes\n—\n`filter`\n`MediaFilter`\nValidated router-owned view, folder, filters, layout and cursors.\nYes\n—\n`branches`\n`BranchChoice[]`\nVisible branch labels for scope selection.\nYes\n—\n`renderUpload`\n`function`\nExisting upload workflow with destination, initial files and busy-state callback.\nYes\n—\n`renderPreview`\n`function`\nExisting authorized rendition renderer for one asset.\nYes\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-11",
+    "text": "States\nRoot or nested folder\nGlobal name search\nGrid/list\nMultiple selection and cut/copy clipboard\nUpload/rename/destination/preview dialogs\nRead denial or stale write\nUnknown outcome with same-command reconciliation\nArchived and trash views\nAccessibility: Native breadcrumbs and links preserve navigation. Grid tiles have named selection checkboxes and Enter/double-click activation; list view uses DataGrid keyboard semantics. Ctrl/Command+A/C/X/V and F2 skip editable inputs and modal tasks. Menus and native dialogs manage keyboard/focus; visible status and failures accompany semantic colors. Responsive layouts and semantic tokens support narrow screens and both themes.\nUsage: Use as the company library inside its existing session/company gate. Composes shared Menu, Checkbox and DataGrid. Folder/filter/layout/page state belongs to the router, remote resources to Query, and temporary selection, clipboard and dialogs to React. Server permissions, scope, lifecycle, depth and reference checks remain authoritative. Upload and full media rendering are supplied by the owning workflow. Keep this authenticated composition out of static live catalog examples.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-11",
+    "text": "Examples\n**Authenticated library composition** (`media-browser-composition`): Feature composition is documented without making live requests in the catalog.\n<MediaBrowser companyId={companyId} company={company} filter={search} branches={branches} renderUpload={renderUpload} renderPreview={renderPreview} />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "MediaDialog",
+    "anchor": "mediadialog",
+    "text": "MediaDialog\nNative modal shell for bounded media management tasks.\nCategory: Feedback. Scope: feature-specific. Owner: Media.\nSource: [apps/web/src/media/dialogs.tsx](../../../apps/web/src/media/dialogs.tsx) (export `MediaDialog`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-12",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`title`\n`string`\nDialog heading and accessible name.\nYes\n—\n`children`\n`ReactNode`\nTask content.\nYes\n—\n`onClose`\n`function`\nDismisses caller-owned state.\nYes\n—\n`busy`\n`boolean`\nPrevents dismissal during an operation.\nSee type\nfalse\n`wide`\n`boolean`\nLarger preview width.\nSee type\nfalse\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-12",
+    "text": "States\nOpen\nBusy\nPreview width\nAccessibility: Uses dialog.showModal, a labelled heading, autofocus target, native focus containment and Escape, with opener restoration when still connected. Close controls are unavailable while busy.\nUsage: Supply a localized title and close callback. Set busy during writes/uploads to prevent dismissal; wide is reserved for previews. The caller owns form state and write recovery.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-12",
+    "text": "Examples\n**Rename task** (`media-dialog-task`): Feature modal with caller-owned fields.\n<MediaDialog title=\"Rename\" onClose={close}><form>…</form></MediaDialog>\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "MediaFolderPicker",
+    "anchor": "mediafolderpicker",
+    "text": "MediaFolderPicker\nOn-demand destination browsing for atomic move/copy commands.\nCategory: Forms. Scope: feature-specific. Owner: Media.\nSource: [apps/web/src/media/dialogs.tsx](../../../apps/web/src/media/dialogs.tsx) (export `MediaFolderPicker`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-13",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company.\nYes\n—\n`initialId`\n`string | null`\nStarting folder or root.\nYes\n—\n`action`\n`MOVE | COPY`\nControls scope guidance.\nYes\n—\n`sourceFolderIds`\n`readonly string[]`\nSelected folders to exclude as destinations.\nYes\n—\n`sourceScopes`\n`readonly (string | null)[]`\nOwning scopes for move compatibility.\nYes\n—\n`onChoose`\n`function`\nSubmits the chosen destination identity.\nYes\n—\n`pending`\n`boolean`\nWrite in progress.\nYes\n—\n`error`\n`unknown`\nAuthoritative command failure.\nYes\n—\n`onReload`\n`function`\nReconciles unknown outcomes or refreshes stale selection.\nYes\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-13",
+    "text": "States\nRoot\nNested folder\nPagination\nScope/descendant refusal\nRead failure\nUnknown write outcome\nAccessibility: Named native breadcrumb and folder buttons, visible scope hints, loading/error feedback and a disabled confirmation for incompatible or unresolved destinations.\nUsage: Use within MediaDialog, with source identities/scopes and the action. Loads paginated visible folders rather than the entire tree. Scope and descendant hints improve choice; server validation remains authoritative.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-13",
+    "text": "Examples\n**Move destination** (`media-folder-picker-task`): Documented composition requires authenticated data.\n<MediaFolderPicker companyId={companyId} initialId={null} action=\"MOVE\" sourceFolderIds={ids} sourceScopes={scopes} pending={pending} error={error} onReload={reload} onChoose={move} />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ProgrammingGuide",
+    "anchor": "programmingguide",
+    "text": "ProgrammingGuide\nExplains the existing content-to-screen workflow.\nCategory: Layout. Scope: feature-specific. Owner: Programming.\nSource: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgrammingGuide`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-14",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-14",
+    "text": "States\nLocalized Portuguese/English\nLight/dark and narrow/wide screens\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use above the programming overview. Static guidance explains playlists, shared/individual schedules and the separate publish action without inferring task completion.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-14",
+    "text": "Examples\n**Programming composition** (`programmingguide-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingGuide />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ProgramNavigation",
+    "anchor": "programnavigation",
+    "text": "ProgramNavigation\nURL-owned sections for group and screen programming.\nCategory: Navigation. Scope: feature-specific. Owner: Programming.\nSource: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgramNavigation`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-15",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company identifier.\nYes\n—\n`source`\n`ProgramSource`\nGroup or screen identity.\nYes\n—\n`section`\n`ProgrammingSection`\nCurrent validated URL section; omitted means Program.\nNo\n—\n`editable`\n`boolean`\nCurrent programming edit capability.\nYes\n—\n`assignable`\n`boolean`\nCurrent screen assignment capability.\nNo\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-15",
+    "text": "States\nDefault schedule\nPreview\nGroup screens\nPublication\nPermitted settings or destination\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use within the authorized programming details page. Native router links separate schedule, preview, group membership, publication and permitted settings/destination; API permissions remain authoritative.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-15",
+    "text": "Examples\n**Programming composition** (`programnavigation-composition`): Feature-owned composition without live authenticated requests.\n<ProgramNavigation companyId={companyId} source={source} section={section} editable={editable} assignable={assignable} />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ProgrammingPanel",
+    "anchor": "programmingpanel",
+    "text": "ProgrammingPanel\nRetains visited programming drafts across section navigation.\nCategory: Layout. Scope: feature-specific. Owner: Programming.\nSource: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgrammingPanel`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-16",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`active`\n`boolean`\nWhether the validated URL selects this section.\nYes\n—\n`children`\n`ReactNode`\nOwning workflow and local form state.\nYes\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-16",
+    "text": "States\nUnvisited\nActive\nVisited and hidden\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use for sections of the same resource. Initial content mounts on demand; visited children remain mounted under native hidden. Key the resource and write forms by authoritative identity/version; this preserves temporary state, not persistence across reloads.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-16",
+    "text": "Examples\n**Programming composition** (`programmingpanel-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingPanel active={section === \"preview\"}>{preview}</ProgrammingPanel>\n\n"
+  },
+  {
     "id": "repository/docs/generated/configuration/api",
     "title": "API Configuration Reference",
     "group": "Generated references",
@@ -493,86 +700,5 @@
     "heading": "memberships",
     "anchor": "memberships",
     "text": "memberships\nA principal's membership in one company; access comes only from its unexpired grants.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; company administrators may suspend, reactivate or terminally remove membership with an observed version. Responsibility and the last active administrator are protected. Historical attribution is retained; no runtime deletion.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated membership UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the membership; immutable (tenant key).\n—\n—\n`principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nMember principal; a principal may hold memberships in several companies that never see each other.\n—\n—\n`status`\n`\"MembershipStatus\"`\nno\n`'ACTIVE'::\"MembershipStatus\"`\nINTERNAL\nOnly ACTIVE memberships grant access.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token for membership changes.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-26",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`memberships_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA membership belongs to an existing company.\n`memberships_pkey`\n`PRIMARY KEY (id)`\nUnique membership identity.\n`memberships_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe member is an existing principal.\n`memberships_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`memberships_company_id_id_key`\n`CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)`\nTenant key that tenant references target.\n`memberships_company_principal_current_key`\n`CREATE UNIQUE INDEX memberships_company_principal_current_key ON public.memberships USING btree (company_id, principal_id) WHERE (status <> 'REMOVED'::\"MembershipStatus\")`\nAt most one current (not REMOVED) membership per principal and company; a removed membership stays as history and the person can return through a new membership.\n`memberships_principal_status_idx`\n`CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)`\nSupports listing a principal's companies.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "company_responsibilities",
-    "anchor": "company_responsibilities",
-    "text": "company_responsibilities\nThe company's designated responsible administrator, who approves additional administrators (P10).\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created with the company; moves to another active administrator only when that successor accepts a pending responsibility transfer.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany whose responsibility this row records; one row per company.\n—\n—\n`membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership of the responsible administrator in the same company.\n—\n—\n`assigned_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the assignment.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-27",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`company_responsibilities_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nResponsibility belongs to an existing company.\n`company_responsibilities_company_id_membership_id_fkey`\n`FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe responsible membership belongs to the same company.\n`company_responsibilities_pkey`\n`PRIMARY KEY (company_id)`\nExactly one responsible administrator per company.\n`company_responsibilities_membership_key`\n`CREATE UNIQUE INDEX company_responsibilities_membership_key ON public.company_responsibilities USING btree (company_id, membership_id)`\nSupports the composite reference to the responsible membership.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "access_profiles",
-    "anchor": "access_profiles",
-    "text": "access_profiles\nCompany-customized access profile: a named set of delegable business capabilities that grants can carry instead of a standard role.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; edited with expected versions, so every holder's access follows the current capabilities; archived rather than deleted, and only when no effective grant holds it.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable profile UUID; public resource ID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nOwning company; immutable (tenant key).\n—\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nProfile name, unique among the company's active profiles regardless of case.\n—\n—\n`capabilities`\n`text[]`\nno\n—\nINTERNAL\nDelegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); company administration is never delegable through a profile.\n—\n—\n`status`\n`\"AccessProfileStatus\"`\nno\n`'ACTIVE'::\"AccessProfileStatus\"`\nINTERNAL\nACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token incremented once per successful change.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change; not audit history.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-28",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`access_profiles_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA profile belongs to an existing company.\n`access_profiles_delegable_capabilities`\n`CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text, 'publications.publish'::text, 'catalogs.view'::text, 'catalogs.edit'::text, 'catalogs.manage'::text, 'prices.edit'::text])))`\nA profile names at least one capability, all of them delegable.\n`access_profiles_name_nonblank`\n`CHECK ((btrim((name)::text) <> ''::text))`\nProfile name cannot be blank.\n`access_profiles_pkey`\n`PRIMARY KEY (id)`\nUnique profile identity.\n`access_profiles_version_positive`\n`CHECK ((version >= 1))`\nRejects invalid concurrency versions.\n`access_profiles_company_active_name_unique`\n`CREATE UNIQUE INDEX access_profiles_company_active_name_unique ON public.access_profiles USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"AccessProfileStatus\")`\nActive profile names are unique within a company, ignoring case.\n`access_profiles_company_id_id_key`\n`CREATE UNIQUE INDEX access_profiles_company_id_id_key ON public.access_profiles USING btree (company_id, id)`\nTenant key that grants target.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "membership_grants",
-    "anchor": "membership_grants",
-    "text": "membership_grants\nA standard role or a company-customized access profile granted to a membership over the whole company or explicit branches; grants combine additively.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated grant UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the grant; immutable (tenant key).\n—\n—\n`membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that holds the grant.\n—\n—\n`role`\n`\"AccessRole\"`\nyes\n—\nINTERNAL\nStandard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.\nThe grant carries an access profile instead.\n—\n`scope`\n`\"GrantScope\"`\nno\n—\nINTERNAL\nCOMPANY covers every branch, including future ones; BRANCHES covers only the listed branches.\n—\n—\n`starts_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nInstant the grant becomes effective.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant a temporary grant stops being effective; no automatic renewal.\nThe grant does not expire.\nUTC instant, millisecond precision\n`granted_by_membership_id`\n`uuid`\nyes\n—\nINTERNAL\nMembership that granted it, for attribution.\nGranted by company creation.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`revoked_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant a company administrator revoked the grant; revocation is terminal.\nThe grant has not been revoked.\nUTC instant, millisecond precision\n`profile_id`\n`uuid`\nyes\n—\nINTERNAL\nCompany-customized access profile whose current capabilities the grant confers.\nThe grant carries a standard role instead.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-29",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`membership_grants_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA grant belongs to an existing company.\n`membership_grants_company_id_granted_by_membership_id_fkey`\n`FOREIGN KEY (company_id, granted_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe grantor, when present, is a membership of the same company.\n`membership_grants_company_id_membership_id_fkey`\n`FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe holder is a membership of the same company.\n`membership_grants_company_id_profile_id_fkey`\n`FOREIGN KEY (company_id, profile_id) REFERENCES access_profiles(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe profile belongs to the same company; mixed-company profiles are unrepresentable.\n`membership_grants_company_role_scope`\n`CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))`\nCompany administration is always company-wide.\n`membership_grants_expiry_after_start`\n`CHECK (((expires_at IS NULL) OR (expires_at > starts_at)))`\nA temporary grant expires after it starts.\n`membership_grants_pkey`\n`PRIMARY KEY (id)`\nUnique grant identity.\n`membership_grants_role_or_profile`\n`CHECK ((num_nonnulls(role, profile_id) = 1))`\nA grant carries exactly one standard role or one access profile.\n`membership_grants_company_id_id_key`\n`CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)`\nTenant key that branch scopes target.\n`membership_grants_membership_idx`\n`CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)`\nSupports resolving a membership's grants.\n`membership_grants_profile_idx`\n`CREATE INDEX membership_grants_profile_idx ON public.membership_grants USING btree (company_id, profile_id)`\nSupports finding the grants that hold a profile.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "membership_grant_branches",
-    "anchor": "membership_grant_branches",
-    "text": "membership_grant_branches\nExplicit branches covered by a BRANCHES-scoped grant; new branches never join silently.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Written with the grant; retained while the grant exists.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany shared by the grant and the branch.\n—\n—\n`grant_id`\n`uuid`\nno\n—\nINTERNAL\nGrant whose scope includes the branch.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch covered by the grant.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-30",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`membership_grant_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company scopes are unrepresentable.\n`membership_grant_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe scope belongs to an existing company.\n`membership_grant_branches_company_id_grant_id_fkey`\n`FOREIGN KEY (company_id, grant_id) REFERENCES membership_grants(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe grant belongs to the same company.\n`membership_grant_branches_pkey`\n`PRIMARY KEY (grant_id, branch_id)`\nA branch appears at most once in a grant's scope.\n`membership_grant_branches_branch_idx`\n`CREATE INDEX membership_grant_branches_branch_idx ON public.membership_grant_branches USING btree (company_id, branch_id)`\nSupports finding the grants that cover a branch.\n"
   }
 ]

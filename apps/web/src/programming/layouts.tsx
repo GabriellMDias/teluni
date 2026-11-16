@@ -1,4 +1,11 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure, type ApiIssue } from "../api-client.js";
@@ -29,6 +36,13 @@ import {
   type PageInput,
   type ViewInput,
 } from "./api.js";
+import { Button, DataSet, TextField } from "../components.js";
+import type { DataSetColumn } from "../dataset.js";
+import {
+  ProgrammingNameFilter,
+  useProgrammingDataSet,
+  type ProgrammingSearch,
+} from "./workspace.js";
 import {
   BackLink,
   can,
@@ -61,7 +75,7 @@ const grid = 10;
 const minSize = 40;
 const maxImportBytes = 512 * 1024;
 
-export type LayoutsFilter = Readonly<{ cursor?: string; text?: string }>;
+export type LayoutsFilter = ProgrammingSearch;
 
 /** Issue text, prefixed with the area or page its path names. */
 function issueText(
@@ -169,9 +183,13 @@ function ScopeSelect({
 function CreateLayoutForm({
   companyId,
   branches,
+  onCancel,
+  onDirtyChange,
 }: {
   companyId: string;
   branches: Branch[];
+  onCancel: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useProgrammingMessages();
   const navigate = useNavigate();
@@ -205,6 +223,17 @@ function CreateLayoutForm({
         params: { companyId, layoutId: created.id },
       }),
   });
+  useEffect(
+    () =>
+      onDirtyChange(
+        name !== "" ||
+          scope !== "company" ||
+          orientation !== "landscape" ||
+          create.isPending ||
+          mustReload(create.error),
+      ),
+    [name, scope, orientation, create.isPending, create.error, onDirtyChange],
+  );
   return (
     <form
       className="form-stack"
@@ -215,8 +244,8 @@ function CreateLayoutForm({
       }}
     >
       <h2 id="create-layout-title">{t.layouts.createTitle}</h2>
-      <label htmlFor="layout-name">{t.fieldName}</label>
-      <input
+      <TextField
+        label={t.fieldName}
         id="layout-name"
         required
         maxLength={120}
@@ -238,14 +267,23 @@ function CreateLayoutForm({
         <option value="landscape">{t.layouts.orientations.landscape}</option>
         <option value="portrait">{t.layouts.orientations.portrait}</option>
       </select>
-      {create.error && <LayoutFailure error={create.error} operation="write" />}
-      <button
+      {create.error && (
+        <LayoutFailure
+          error={create.error}
+          operation="write"
+          onReload={onCancel}
+        />
+      )}
+      <Button
         type="submit"
-        className="button-primary"
-        disabled={create.isPending || !name.trim()}
+        variant="primary"
+        disabled={create.isPending || mustReload(create.error) || !name.trim()}
       >
         {create.isPending ? t.creating : t.create}
-      </button>
+      </Button>
+      <Button disabled={create.isPending} onClick={onCancel}>
+        {t.workspace.backToGrid}
+      </Button>
     </form>
   );
 }
@@ -266,9 +304,13 @@ async function readDocument(file: File): Promise<ImportedDocument | null> {
 function ImportLayoutForm({
   companyId,
   branches,
+  onCancel,
+  onDirtyChange,
 }: {
   companyId: string;
   branches: Branch[];
+  onCancel: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useProgrammingMessages();
   const navigate = useNavigate();
@@ -291,6 +333,16 @@ function ImportLayoutForm({
     run.variables && Array.isArray(run.variables.areas)
       ? run.variables.areas
       : [];
+  useEffect(
+    () =>
+      onDirtyChange(
+        file !== null ||
+          scope !== "company" ||
+          run.isPending ||
+          mustReload(run.error),
+      ),
+    [file, scope, run.isPending, run.error, onDirtyChange],
+  );
   return (
     <form
       className="form-stack"
@@ -311,6 +363,7 @@ function ImportLayoutForm({
         id="layout-import-file"
         type="file"
         accept="application/json,.json"
+        disabled={run.isPending || mustReload(run.error)}
         onChange={(event) => {
           setFile(event.target.files?.[0] ?? null);
           setUnreadable(false);
@@ -329,15 +382,23 @@ function ImportLayoutForm({
         </p>
       )}
       {run.error && (
-        <LayoutFailure error={run.error} operation="write" areas={areas} />
+        <LayoutFailure
+          error={run.error}
+          operation="write"
+          areas={areas}
+          onReload={onCancel}
+        />
       )}
-      <button
+      <Button
         type="submit"
-        className="button-primary"
-        disabled={!file || run.isPending}
+        variant="primary"
+        disabled={!file || run.isPending || mustReload(run.error)}
       >
         {run.isPending ? t.layouts.importing : t.layouts.import}
-      </button>
+      </Button>
+      <Button disabled={run.isPending} onClick={onCancel}>
+        {t.workspace.backToGrid}
+      </Button>
     </form>
   );
 }
@@ -350,52 +411,95 @@ function summaryText(layout: LayoutSummary, t: Messages) {
   ].join(" · ");
 }
 
-function LayoutList({
+/** The layouts dataset keeps creation/import and the full canvas editor distinct. */
+export function LayoutsView({
   companyId,
   filter,
+  company,
+  branches,
 }: {
   companyId: string;
   filter: LayoutsFilter;
+  company: CompanyWithAccess;
+  branches: Branch[];
 }) {
-  const { t } = useProgrammingMessages();
+  const { locale, t } = useProgrammingMessages();
   const navigate = useNavigate();
-  const [text, setText] = useState(filter.text ?? "");
+  const editable = can(company, "programming.edit");
+  const listFilter = {
+    ...(filter.cursor ? { cursor: filter.cursor } : {}),
+    ...(filter.text ? { text: filter.text } : {}),
+  };
   const layouts = useQuery({
-    queryKey: [...layoutsKey(companyId), filter],
-    queryFn: () =>
-      listLayouts(companyId, {
-        ...(filter.cursor ? { cursor: filter.cursor } : {}),
-        ...(filter.text ? { text: filter.text } : {}),
-      }),
+    queryKey: [...layoutsKey(companyId), listFilter],
+    queryFn: () => listLayouts(companyId, listFilter),
   });
+  const rows = layouts.data?.items ?? [];
+  const state = useProgrammingDataSet({
+    companyId,
+    filter: { ...filter, view: "layouts" },
+    rows,
+    editable,
+  });
+  const columns = useMemo<readonly DataSetColumn<LayoutSummary>[]>(
+    () => [
+      {
+        key: "name",
+        header: t.fieldName,
+        width: 300,
+        value: (row) => row.name,
+        render: (row) => (
+          <Link
+            to="/companies/$companyId/programming/layouts/$layoutId"
+            params={{ companyId, layoutId: row.id }}
+          >
+            {row.name}
+          </Link>
+        ),
+      },
+      {
+        key: "scope",
+        header: t.fieldScope,
+        width: 230,
+        value: (row) => scopeName(row.branch, t),
+      },
+      {
+        key: "orientation",
+        header: t.layouts.orientationLabel,
+        width: 180,
+        value: (row) => t.layouts.orientations[row.orientation],
+      },
+      {
+        key: "composition",
+        header: t.workspace.layoutOptions,
+        width: 230,
+        value: (row) => t.layouts.summary(row.areaCount, row.pageCount),
+      },
+    ],
+    [companyId, t],
+  );
+  const cancel = () => {
+    void layouts.refetch();
+    state.go({ mode: "grid", record: undefined });
+  };
   return (
-    <section aria-labelledby="layouts-title">
+    <section
+      aria-labelledby="layouts-title"
+      className="dataset-region programming-records"
+    >
       <h2 id="layouts-title">{t.views.layouts}</h2>
-      <form
-        role="search"
-        className="programming-filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void navigate({
-            to: "/companies/$companyId/programming",
-            params: { companyId },
-            search: {
-              view: "layouts",
-              ...(text.trim() ? { text: text.trim() } : {}),
-            },
-          });
-        }}
-      >
-        <label htmlFor="layout-text">{t.filterText}</label>{" "}
-        <input
-          id="layout-text"
-          type="search"
-          maxLength={120}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />{" "}
-        <button type="submit">{t.search}</button>
-      </form>
+      <p className="hint">{t.workspace.layoutsLead}</p>
+      {editable && (
+        <div className="programming-import-action">
+          <Button
+            disabled={state.dirty}
+            onClick={() => state.go({ mode: "form", record: "import" })}
+          >
+            {t.layouts.importTitle}
+          </Button>
+        </div>
+      )}
+      {state.dirty && <p className="hint">{t.unsaved}</p>}
       {layouts.isPending ? (
         <p>{t.loading}</p>
       ) : layouts.isError ? (
@@ -404,78 +508,119 @@ function LayoutList({
           operation="read"
           onReload={() => void layouts.refetch()}
         />
-      ) : layouts.data.items.length === 0 ? (
-        <p className="empty-state">
-          {filter.cursor ? t.pageEmpty : t.layouts.listEmpty}
-        </p>
       ) : (
-        <ul className="programming-list">
-          {layouts.data.items.map((layout) => (
-            <li key={layout.id}>
+        <DataSet
+          label={t.workspace.layoutRecords}
+          locale={locale}
+          mode={state.mode}
+          rows={rows}
+          columns={columns}
+          rowId={(row) => row.id}
+          selectedId={state.record}
+          onSelect={
+            !state.dirty
+              ? (id) => state.go({ mode: filter.mode, record: id }, true)
+              : undefined
+          }
+          onModeChange={!state.dirty ? (mode) => state.go({ mode }) : undefined}
+          onAdd={
+            editable && !state.dirty
+              ? () => state.go({ mode: "form", record: "new" })
+              : undefined
+          }
+          onRefresh={!state.dirty ? () => void layouts.refetch() : undefined}
+          refreshing={layouts.isFetching}
+          exportName={t.views.layouts}
+          filters={
+            !state.dirty
+              ? {
+                  active: filter.text ? 1 : 0,
+                  render: (close) => (
+                    <ProgrammingNameFilter
+                      text={filter.text}
+                      onApply={(text) => {
+                        void navigate({
+                          to: "/companies/$companyId/programming",
+                          params: { companyId },
+                          search: {
+                            view: "layouts",
+                            ...(text ? { text } : {}),
+                          },
+                        });
+                        close();
+                      }}
+                    />
+                  ),
+                }
+              : undefined
+          }
+          empty={
+            <p className="empty-state">
+              {filter.cursor ? t.pageEmpty : t.layouts.listEmpty}
+            </p>
+          }
+        >
+          {state.record === "new" && editable ? (
+            <CreateLayoutForm
+              companyId={companyId}
+              branches={branches}
+              onCancel={cancel}
+              onDirtyChange={state.setDirty}
+            />
+          ) : state.record === "import" && editable ? (
+            <ImportLayoutForm
+              companyId={companyId}
+              branches={branches}
+              onCancel={cancel}
+              onDirtyChange={state.setDirty}
+            />
+          ) : state.selected ? (
+            <article className="programming-record-summary">
+              <h3>{state.selected.name}</h3>
+              <p>{summaryText(state.selected, t)}</p>
               <Link
+                className="button-link button-primary"
                 to="/companies/$companyId/programming/layouts/$layoutId"
-                params={{ companyId, layoutId: layout.id }}
+                params={{ companyId, layoutId: state.selected.id }}
               >
-                {layout.name}
+                {t.workspace.openLayout}
               </Link>
-              <span className="hint">{summaryText(layout, t)}</span>
-            </li>
-          ))}
-        </ul>
+            </article>
+          ) : (
+            <p>{t.layouts.listEmpty}</p>
+          )}
+        </DataSet>
       )}
-      <nav className="pagination" aria-label={t.views.layouts}>
-        {filter.cursor && (
-          <Link
-            to="/companies/$companyId/programming"
-            params={{ companyId }}
-            search={{
-              view: "layouts",
-              ...(filter.text ? { text: filter.text } : {}),
-            }}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {layouts.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId/programming"
-            params={{ companyId }}
-            search={{
-              view: "layouts",
-              ...filter,
-              cursor: layouts.data.nextCursor,
-            }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
+      {state.mode === "grid" && (
+        <nav className="pagination" aria-label={t.views.layouts}>
+          {filter.cursor && (
+            <Link
+              to="/companies/$companyId/programming"
+              params={{ companyId }}
+              search={{
+                view: "layouts",
+                ...(filter.text ? { text: filter.text } : {}),
+              }}
+            >
+              {t.firstPage}
+            </Link>
+          )}
+          {layouts.data?.nextCursor && (
+            <Link
+              to="/companies/$companyId/programming"
+              params={{ companyId }}
+              search={{
+                view: "layouts",
+                ...listFilter,
+                cursor: layouts.data.nextCursor,
+              }}
+            >
+              {t.nextPage}
+            </Link>
+          )}
+        </nav>
+      )}
     </section>
-  );
-}
-
-/** The layouts section of the programming overview. */
-export function LayoutsView({
-  companyId,
-  company,
-  branches,
-  filter,
-}: {
-  companyId: string;
-  company: CompanyWithAccess;
-  branches: Branch[];
-  filter: LayoutsFilter;
-}) {
-  return (
-    <>
-      {can(company, "programming.edit") && (
-        <>
-          <CreateLayoutForm companyId={companyId} branches={branches} />
-          <ImportLayoutForm companyId={companyId} branches={branches} />
-        </>
-      )}
-      <LayoutList companyId={companyId} filter={filter} />
-    </>
   );
 }
 

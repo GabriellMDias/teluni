@@ -33,6 +33,8 @@ The owner subsequently requested correction of PR #26's CI failure. The [CI qual
 
 2026-11-15: the owner requested the [media file manager](implementation-plan.md#media-file-manager), including folders, move and clipboard operations. It uses existing organization permissions, PostgreSQL and private media storage; no new provider account, credential or human decision is required. Existing production prerequisites remain in force.
 
+2026-11-15: the owner requested the [Programming workflow refinement](implementation-plan.md#programming-workflow-refinement). It uses the existing scheduling, assignment and publication APIs and permissions. No new provider, credential or human decision is required; pilot observation remains part of the existing acceptance actions.
+
 ## Safe configuration handoff
 
 2026-11-15: the owner requested a comprehensive local Home-page improvement. The [Home workspace refinement](implementation-plan.md#home-workspace-refinement) continues PJ-41 using existing API capabilities and the approved product identity. This work requires no new credentials, external account action or human blocker; existing pilot and production prerequisites retain their original triggers.
