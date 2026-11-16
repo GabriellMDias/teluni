@@ -1,0 +1,30 @@
+{
+  "name": "ProgrammingGuide",
+  "category": "Layout",
+  "scope": "feature-specific",
+  "owner": "Programming",
+  "summary": "Explains the existing content-to-screen workflow.",
+  "usage": "Use above the programming overview. Static guidance explains playlists, shared/individual schedules and the separate publish action without inferring task completion.",
+  "accessibility": "Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.",
+  "props": [],
+  "states": [
+    "Localized Portuguese/English",
+    "Light/dark and narrow/wide screens"
+  ],
+  "examples": [
+    {
+      "id": "programmingguide-composition",
+      "label": "Programming composition",
+      "description": "Feature-owned composition without live authenticated requests.",
+      "code": "<ProgrammingGuide />",
+      "live": false
+    }
+  ],
+  "id": "ProgrammingGuide",
+  "exportName": "ProgrammingGuide",
+  "source": "apps/web/src/programming/workspace.tsx",
+  "metadataSource": "apps/web/src/programming/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/programming/workspace.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/programming/components.docs.json"
+}

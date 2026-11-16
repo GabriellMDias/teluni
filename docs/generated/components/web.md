@@ -580,3 +580,107 @@ Usage: Use within MediaDialog, with source identities/scopes and the action. Loa
 ```tsx
 <MediaFolderPicker companyId={companyId} initialId={null} action="MOVE" sourceFolderIds={ids} sourceScopes={scopes} pending={pending} error={error} onReload={reload} onChoose={move} />
 ```
+
+
+## ProgrammingGuide
+
+Explains the existing content-to-screen workflow.
+
+Category: Layout. Scope: feature-specific. Owner: Programming.
+
+Source: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgrammingGuide`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+
+### States
+
+- Localized Portuguese/English
+- Light/dark and narrow/wide screens
+
+Accessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.
+
+Usage: Use above the programming overview. Static guidance explains playlists, shared/individual schedules and the separate publish action without inferring task completion.
+
+### Examples
+
+- **Programming composition** (`programmingguide-composition`): Feature-owned composition without live authenticated requests.
+
+```tsx
+<ProgrammingGuide />
+```
+
+
+## ProgramNavigation
+
+URL-owned sections for group and screen programming.
+
+Category: Navigation. Scope: feature-specific. Owner: Programming.
+
+Source: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgramNavigation`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `companyId` | `string` | Authorized company identifier. | Yes | — |
+| `source` | `ProgramSource` | Group or screen identity. | Yes | — |
+| `section` | `ProgrammingSection` | Current validated URL section; omitted means Program. | No | — |
+| `editable` | `boolean` | Current programming edit capability. | Yes | — |
+| `assignable` | `boolean` | Current screen assignment capability. | No | — |
+
+### States
+
+- Default schedule
+- Preview
+- Group screens
+- Publication
+- Permitted settings or destination
+
+Accessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.
+
+Usage: Use within the authorized programming details page. Native router links separate schedule, preview, group membership, publication and permitted settings/destination; API permissions remain authoritative.
+
+### Examples
+
+- **Programming composition** (`programnavigation-composition`): Feature-owned composition without live authenticated requests.
+
+```tsx
+<ProgramNavigation companyId={companyId} source={source} section={section} editable={editable} assignable={assignable} />
+```
+
+
+## ProgrammingPanel
+
+Retains visited programming drafts across section navigation.
+
+Category: Layout. Scope: feature-specific. Owner: Programming.
+
+Source: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgrammingPanel`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `active` | `boolean` | Whether the validated URL selects this section. | Yes | — |
+| `children` | `ReactNode` | Owning workflow and local form state. | Yes | — |
+
+### States
+
+- Unvisited
+- Active
+- Visited and hidden
+
+Accessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.
+
+Usage: Use for sections of the same resource. Initial content mounts on demand; visited children remain mounted under native hidden. Key the resource and write forms by authoritative identity/version; this preserves temporary state, not persistence across reloads.
+
+### Examples
+
+- **Programming composition** (`programmingpanel-composition`): Feature-owned composition without live authenticated requests.
+
+```tsx
+<ProgrammingPanel active={section === "preview"}>{preview}</ProgrammingPanel>
+```

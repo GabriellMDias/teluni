@@ -29,6 +29,7 @@ import {
   type PageInput,
   type ViewInput,
 } from "./api.js";
+import { ProgrammingCreate } from "./workspace.js";
 import {
   BackLink,
   can,
@@ -466,12 +467,20 @@ export function LayoutsView({
   branches: Branch[];
   filter: LayoutsFilter;
 }) {
+  const { t } = useProgrammingMessages();
   return (
     <>
+      <p className="programming-lead">{t.workspace.layoutsLead}</p>
       {can(company, "programming.edit") && (
         <>
-          <CreateLayoutForm companyId={companyId} branches={branches} />
-          <ImportLayoutForm companyId={companyId} branches={branches} />
+          <div className="programming-create-options">
+            <ProgrammingCreate title={t.layouts.createTitle}>
+              <CreateLayoutForm companyId={companyId} branches={branches} />
+            </ProgrammingCreate>
+            <ProgrammingCreate title={t.layouts.importTitle}>
+              <ImportLayoutForm companyId={companyId} branches={branches} />
+            </ProgrammingCreate>
+          </div>
         </>
       )}
       <LayoutList companyId={companyId} filter={filter} />

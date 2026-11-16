@@ -1,3 +1,11 @@
+import {
+  ProgrammingPanel,
+  ProgrammingGuide,
+  ProgrammingCreate,
+  ProgramNavigation,
+  type ProgrammingSection,
+} from "./workspace.js";
+import { UiIcon } from "../ui-icon.js";
 import { useState } from "react";
 import { ApiFailure } from "../api-client.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -181,6 +189,7 @@ function PlaylistList({
   return (
     <section aria-labelledby="playlists-title">
       <h2 id="playlists-title">{t.views.playlists}</h2>
+      <p className="hint">{t.workspace.playlistsLead}</p>
       <form
         role="search"
         className="programming-filters"
@@ -387,6 +396,7 @@ function GroupList({ companyId }: { companyId: string }) {
   return (
     <section aria-labelledby="groups-title">
       <h2 id="groups-title">{t.views.groups}</h2>
+      <p className="hint">{t.workspace.groupsLead}</p>
       {groups.isPending ? (
         <p>{t.loading}</p>
       ) : groups.isError ? (
@@ -440,8 +450,9 @@ export function ProgrammingPage({
       {(company) => (
         <>
           <h1 id="programming-title">{t.title}</h1>
-          <p>{t.lead}</p>
-          <nav className="company-navigation" aria-label={t.viewsLabel}>
+          <p className="programming-lead">{t.lead}</p>
+          <ProgrammingGuide />
+          <nav className="programming-tabs" aria-label={t.viewsLabel}>
             <Link
               to="/companies/$companyId/programming"
               params={{ companyId }}
@@ -453,18 +464,18 @@ export function ProgrammingPage({
             <Link
               to="/companies/$companyId/programming"
               params={{ companyId }}
-              search={{ view: "layouts" }}
-              aria-current={view === "layouts" ? "page" : undefined}
-            >
-              {t.views.layouts}
-            </Link>
-            <Link
-              to="/companies/$companyId/programming"
-              params={{ companyId }}
               search={{ view: "groups" }}
               aria-current={view === "groups" ? "page" : undefined}
             >
               {t.views.groups}
+            </Link>
+            <Link
+              to="/companies/$companyId/programming"
+              params={{ companyId }}
+              search={{ view: "layouts" }}
+              aria-current={view === "layouts" ? "page" : undefined}
+            >
+              {t.views.layouts}
             </Link>
           </nav>
           {view === "layouts" ? (
@@ -477,14 +488,21 @@ export function ProgrammingPage({
           ) : view === "playlists" ? (
             <>
               {can(company, "programming.edit") && (
-                <CreatePlaylistForm companyId={companyId} branches={choices} />
+                <ProgrammingCreate title={t.createPlaylistTitle}>
+                  <CreatePlaylistForm
+                    companyId={companyId}
+                    branches={choices}
+                  />
+                </ProgrammingCreate>
               )}
               <PlaylistList companyId={companyId} filter={filter} />
             </>
           ) : (
             <>
               {can(company, "programming.edit") && (
-                <CreateGroupForm companyId={companyId} branches={choices} />
+                <ProgrammingCreate title={t.createGroupTitle}>
+                  <CreateGroupForm companyId={companyId} branches={choices} />
+                </ProgrammingCreate>
               )}
               <GroupList companyId={companyId} />
             </>
@@ -627,9 +645,10 @@ function MediaPicker({
   const { t } = useProgrammingMessages();
   const [text, setText] = useState("");
   const [query, setQuery] = useState<string | undefined>(undefined);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
   const media = useQuery({
-    queryKey: ["programming", "picker", companyId, query],
-    queryFn: () => listSelectableMedia(companyId, query),
+    queryKey: ["programming", "picker", companyId, query, cursor],
+    queryFn: () => listSelectableMedia(companyId, query, cursor),
   });
   // The server checks scope again; this only hides what cannot be added.
   const fits = (item: { branch: { id: string } | null }) =>
@@ -645,6 +664,7 @@ function MediaPicker({
         onSubmit={(event) => {
           event.preventDefault();
           setQuery(text.trim() || undefined);
+          setCursor(undefined);
         }}
       >
         <label htmlFor="picker-text">{t.filterText}</label>{" "}
@@ -696,6 +716,21 @@ function MediaPicker({
           ))}
         </ul>
       )}
+      <nav className="pagination" aria-label={t.pickerTitle}>
+        {cursor && (
+          <button type="button" onClick={() => setCursor(undefined)}>
+            {t.firstPage}
+          </button>
+        )}
+        {media.data?.nextCursor && (
+          <button
+            type="button"
+            onClick={() => setCursor(media.data?.nextCursor ?? undefined)}
+          >
+            {t.nextPage}
+          </button>
+        )}
+      </nav>
     </section>
   );
 }
@@ -742,107 +777,146 @@ function ItemsEditor({
     onSuccess: (changed) => onChanged(changed, t.itemsSaved),
   });
   return (
-    <section aria-labelledby="items-title" className="form-stack">
-      <h2 id="items-title">{t.itemsTitle}</h2>
-      <p className="hint">{t.itemsLead}</p>
-      {items.length === 0 ? (
-        <p className="empty-state">{t.itemsEmpty}</p>
-      ) : (
-        <ol className="programming-items">
-          {items.map((item, index) => (
-            <li key={item.key}>
-              <span className="programming-item-name">
-                {t.itemPosition(index + 1, item.name)}
-                {item.mediaStatus === "ARCHIVED" && (
-                  <span className="hint"> · {t.archivedItem}</span>
-                )}
-                {item.mediaStatus !== "READY" &&
-                  item.mediaStatus !== "ARCHIVED" && (
-                    <span className="hint"> · {t.unavailableItem}</span>
-                  )}
-              </span>
-              {item.kind === "IMAGE" ? (
-                <input
-                  type="number"
-                  min={1}
-                  max={3600}
-                  required
-                  aria-label={t.itemSeconds(item.name)}
-                  value={item.seconds}
-                  onChange={(event) =>
-                    change(
-                      items.map((entry) =>
-                        entry.key === item.key
-                          ? { ...entry, seconds: event.target.value }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-              ) : (
-                <span className="hint">{t.videoFull}</span>
-              )}
-              <span className="programming-item-actions">
-                <button
-                  type="button"
-                  disabled={index === 0}
-                  aria-label={`${t.moveUp}: ${t.itemPosition(index + 1, item.name)}`}
-                  onClick={() => move(index, -1)}
-                >
-                  {t.moveUp}
-                </button>
-                <button
-                  type="button"
-                  disabled={index === items.length - 1}
-                  aria-label={`${t.moveDown}: ${t.itemPosition(index + 1, item.name)}`}
-                  onClick={() => move(index, 1)}
-                >
-                  {t.moveDown}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`${t.remove}: ${t.itemPosition(index + 1, item.name)}`}
-                  onClick={() =>
-                    change(items.filter((entry) => entry.key !== item.key))
-                  }
-                >
-                  {t.remove}
-                </button>
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-      {dirty && <p className="hint">{t.unsaved}</p>}
-      {save.error && (
-        <Failure
-          error={save.error}
-          operation="write"
-          onReload={() => {
-            save.reset();
-            void onChanged(playlist);
-          }}
-        />
-      )}
-      <button
-        type="button"
-        className="button-primary"
-        disabled={
-          !dirty ||
-          !valid ||
-          items.length > 500 ||
-          save.isPending ||
-          mustReload(save.error)
-        }
-        onClick={() => save.mutate()}
+    <section
+      aria-labelledby="items-title"
+      className="programming-playlist-editor"
+    >
+      <div className="form-stack programming-item-editor">
+        <h2 id="items-title">{t.itemsTitle}</h2>
+        <p className="hint">{t.itemsLead}</p>
+        {items.length === 0 ? (
+          <p className="empty-state">{t.itemsEmpty}</p>
+        ) : (
+          <fieldset
+            className="programming-item-fields"
+            disabled={save.isPending || mustReload(save.error)}
+          >
+            <legend className="visually-hidden">{t.itemsTitle}</legend>
+            <ol className="programming-items">
+              {items.map((item, index) => (
+                <li key={item.key}>
+                  <span className="programming-item-preview">
+                    {["READY", "ARCHIVED"].includes(item.mediaStatus) ? (
+                      <img
+                        src={contentUrl(
+                          companyId,
+                          { id: item.mediaAssetId },
+                          "thumbnail",
+                        )}
+                        alt=""
+                        loading="lazy"
+                      />
+                    ) : (
+                      <UiIcon
+                        name={item.kind === "VIDEO" ? "video" : "image"}
+                      />
+                    )}
+                  </span>
+                  <span className="programming-item-name">
+                    {t.itemPosition(index + 1, item.name)}
+                    {item.mediaStatus === "ARCHIVED" && (
+                      <span className="hint"> · {t.archivedItem}</span>
+                    )}
+                    {item.mediaStatus !== "READY" &&
+                      item.mediaStatus !== "ARCHIVED" && (
+                        <span className="hint"> · {t.unavailableItem}</span>
+                      )}
+                  </span>
+                  <div className="programming-item-duration">
+                    {item.kind === "IMAGE" ? (
+                      <label>
+                        <span>{t.workspace.imageSeconds}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={3600}
+                          required
+                          aria-label={t.itemSeconds(item.name)}
+                          value={item.seconds}
+                          onChange={(event) =>
+                            change(
+                              items.map((entry) =>
+                                entry.key === item.key
+                                  ? { ...entry, seconds: event.target.value }
+                                  : entry,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                    ) : (
+                      <span className="hint">{t.videoFull}</span>
+                    )}
+                  </div>
+                  <span className="programming-item-actions">
+                    <button
+                      type="button"
+                      disabled={index === 0}
+                      aria-label={`${t.moveUp}: ${t.itemPosition(index + 1, item.name)}`}
+                      onClick={() => move(index, -1)}
+                    >
+                      <UiIcon name="sortAscending" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === items.length - 1}
+                      aria-label={`${t.moveDown}: ${t.itemPosition(index + 1, item.name)}`}
+                      onClick={() => move(index, 1)}
+                    >
+                      <UiIcon name="sortDescending" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`${t.remove}: ${t.itemPosition(index + 1, item.name)}`}
+                      onClick={() =>
+                        change(items.filter((entry) => entry.key !== item.key))
+                      }
+                    >
+                      <UiIcon name="delete" />
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </fieldset>
+        )}
+        {dirty && <p className="hint">{t.unsaved}</p>}
+        {save.error && (
+          <Failure
+            error={save.error}
+            operation="write"
+            onReload={() => {
+              save.reset();
+              void onChanged(playlist);
+            }}
+          />
+        )}
+        <button
+          type="button"
+          className="button-primary"
+          disabled={
+            !dirty ||
+            !valid ||
+            items.length > 500 ||
+            save.isPending ||
+            mustReload(save.error)
+          }
+          onClick={() => save.mutate()}
+        >
+          {save.isPending ? t.saving : t.saveItems}
+        </button>
+      </div>
+      <fieldset
+        className="programming-library"
+        disabled={save.isPending || mustReload(save.error)}
       >
-        {save.isPending ? t.saving : t.saveItems}
-      </button>
-      <MediaPicker
-        companyId={companyId}
-        playlist={playlist}
-        onAdd={(item) => change([...items, item])}
-      />
+        <legend className="visually-hidden">{t.pickerTitle}</legend>
+        <MediaPicker
+          companyId={companyId}
+          playlist={playlist}
+          onAdd={(item) => change([...items, item])}
+        />
+      </fieldset>
     </section>
   );
 }
@@ -850,10 +924,12 @@ function ItemsEditor({
 function PlaylistDetail({
   companyId,
   playlistId,
+  section,
   company,
 }: {
   companyId: string;
   playlistId: string;
+  section?: ProgrammingSection;
   company: CompanyWithAccess;
 }) {
   const { t } = useProgrammingMessages();
@@ -899,39 +975,87 @@ function PlaylistDetail({
           ? `${t.transitions.FADE} ${item.fadeMs ?? 0} ms`
           : t.transitions.CUT}
       </p>
-      {notice && <p role="status">{notice}</p>}
+      <p className="programming-lead">{t.workspace.playlistLead}</p>
+      <nav
+        className="programming-tabs"
+        aria-label={t.workspace.playlistSections}
+      >
+        <Link
+          to="/companies/$companyId/programming/playlists/$playlistId"
+          params={{ companyId, playlistId }}
+          search={{}}
+          aria-current={!section ? "page" : undefined}
+        >
+          {t.workspace.contentTab}
+        </Link>
+        {edit && (
+          <Link
+            to="/companies/$companyId/programming/playlists/$playlistId"
+            params={{ companyId, playlistId }}
+            search={{ section: "settings" }}
+            aria-current={section === "settings" ? "page" : undefined}
+          >
+            {t.workspace.settingsTab}
+          </Link>
+        )}
+      </nav>
+      {notice && (
+        <p role="status" className="notice notice-success">
+          {notice}
+        </p>
+      )}
       {edit ? (
         <>
-          <PlaylistSettings
-            key={`settings-${item.version}`}
-            companyId={companyId}
-            playlist={item}
-            onChanged={onChanged}
-          />
-          <ItemsEditor
-            key={`items-${item.version}`}
-            companyId={companyId}
-            playlist={item}
-            onChanged={onChanged}
-          />
-          <ConfirmedDelete
-            key={`delete-${item.version}`}
-            title={t.deletePlaylistTitle}
-            lead={t.deletePlaylistLead}
-            confirm={t.deletePlaylistConfirm(item.name)}
-            label={t.deletePlaylist}
-            run={() => deletePlaylist(companyId, item)}
-            onDone={() => {
-              void queryClient.invalidateQueries({
-                queryKey: playlistsKey(companyId),
-              });
-              void navigate({
-                to: "/companies/$companyId/programming",
-                params: { companyId },
-              });
-            }}
-          />
+          <ProgrammingPanel active={!section}>
+            <ItemsEditor
+              key={`items-${item.version}`}
+              companyId={companyId}
+              playlist={item}
+              onChanged={onChanged}
+            />
+            <aside className="programming-next">
+              <p>{t.workspace.playlistNext}</p>
+              <Link
+                className="button-link"
+                to="/companies/$companyId/programming"
+                params={{ companyId }}
+                search={{ view: "groups" }}
+              >
+                {t.workspace.goGroups}
+              </Link>
+            </aside>
+          </ProgrammingPanel>
+          <ProgrammingPanel active={section === "settings"}>
+            <PlaylistSettings
+              key={`settings-${item.version}`}
+              companyId={companyId}
+              playlist={item}
+              onChanged={onChanged}
+            />
+            <details className="programming-permanent">
+              <summary>{t.workspace.deleteArea}</summary>{" "}
+              <ConfirmedDelete
+                key={`delete-${item.version}`}
+                title={t.deletePlaylistTitle}
+                lead={t.deletePlaylistLead}
+                confirm={t.deletePlaylistConfirm(item.name)}
+                label={t.deletePlaylist}
+                run={() => deletePlaylist(companyId, item)}
+                onDone={() => {
+                  void queryClient.invalidateQueries({
+                    queryKey: playlistsKey(companyId),
+                  });
+                  void navigate({
+                    to: "/companies/$companyId/programming",
+                    params: { companyId },
+                  });
+                }}
+              />
+            </details>
+          </ProgrammingPanel>
         </>
+      ) : section === "settings" ? (
+        <p role="alert">{t.errors.PERMISSION_DENIED}</p>
       ) : (
         <ol className="programming-items">
           {item.items.map((entry, index) => (
@@ -955,19 +1079,22 @@ function PlaylistDetail({
 export function PlaylistPage({
   companyId,
   playlistId,
+  section,
 }: {
   companyId: string;
   playlistId: string;
+  section?: ProgrammingSection;
 }) {
   return (
     <CompanyGate
       companyId={companyId}
-      returnTo={`/companies/${companyId}/programming/playlists/${playlistId}`}
+      returnTo={`/companies/${companyId}/programming/playlists/${playlistId}${section ? `?section=${section}` : ""}`}
     >
       {(company) => (
         <PlaylistDetail
           companyId={companyId}
           playlistId={playlistId}
+          section={section}
           company={company}
         />
       )}
@@ -1039,6 +1166,7 @@ function ScheduleEditor({
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
   const [outputKey, setOutputKey] = useState<string | null>(null);
+  const [reloadRevision, setReloadRevision] = useState(0);
   const program = useQuery({
     queryKey: programKey(companyId, source),
     queryFn: () => getProgram(companyId, source),
@@ -1082,15 +1210,22 @@ function ScheduleEditor({
   };
   return (
     <>
-      <LayoutChoice
-        key={`layout-${program.data.version}`}
-        companyId={companyId}
-        source={source}
-        reach={reach}
-        program={program.data}
-        editable={editable}
-        onChanged={(changed) => saved(changed, t.layoutChosen)}
-      />
+      <details className="programming-layout-choice">
+        <summary>
+          <span>{t.workspace.layoutOptions}</span>
+          <span>{program.data.layout?.name ?? t.noLayout}</span>
+        </summary>
+        <p className="hint">{t.workspace.layoutOptionsLead}</p>{" "}
+        <LayoutChoice
+          key={`layout-${program.data.version}`}
+          companyId={companyId}
+          source={source}
+          reach={reach}
+          program={program.data}
+          editable={editable}
+          onChanged={(changed) => saved(changed, t.layoutChosen)}
+        />
+      </details>
       {outputs.length > 1 && (
         <p>
           <label htmlFor="program-output">{t.outputLabel}</label>{" "}
@@ -1111,7 +1246,7 @@ function ScheduleEditor({
         </p>
       )}
       <ScheduleForm
-        key={`program-${program.data.version}-${output.key}`}
+        key={`program-${program.data.version}-${output.key}-${reloadRevision}`}
         companyId={companyId}
         source={source}
         program={program.data}
@@ -1120,6 +1255,13 @@ function ScheduleEditor({
         editable={editable}
         locale={locale}
         notice={notice}
+        onReload={async () => {
+          const result = await program.refetch();
+          if (!result.isError) {
+            setNotice(null);
+            setReloadRevision((revision) => revision + 1);
+          }
+        }}
         onEdit={() => setNotice(null)}
         onSaved={(changed) => saved(changed, t.schedulesSaved)}
       />
@@ -1284,6 +1426,7 @@ function ScheduleForm({
   locale,
   notice,
   onEdit,
+  onReload,
   onSaved,
 }: {
   companyId: string;
@@ -1295,6 +1438,7 @@ function ScheduleForm({
   locale: string;
   notice: string | null;
   onEdit: () => void;
+  onReload: () => Promise<void>;
   onSaved: (program: Program) => Promise<void>;
 }) {
   const { t } = useProgrammingMessages();
@@ -1357,8 +1501,46 @@ function ScheduleForm({
       {notice && <p role="status">{notice}</p>}
       {choices.length === 0 && <p className="hint">{t.noPlaylists}</p>}
       {hidden && <p className="hint">{t.hiddenPlaylists}</p>}
-      <fieldset disabled={!editable} className="programming-rules">
+      <fieldset
+        disabled={!editable || save.isPending || mustReload(save.error)}
+        className="programming-default-content"
+      >
+        <legend>{t.workspace.continuousTitle}</legend>
+        {!viewDefault && (
+          <p className="hint">{t.workspace.continuousLead}</p>
+        )}{" "}
+        {viewDefault ? (
+          <p className="hint">{t.viewDefault}</p>
+        ) : (
+          <>
+            <label htmlFor="default-playlist">{t.defaultPlaylist}</label>
+            <select
+              id="default-playlist"
+              value={fallback}
+              onChange={(event) => setFallback(event.target.value)}
+            >
+              <option value="">{t.noDefault}</option>
+              {choices.map((choice) => (
+                <option key={choice.id} value={choice.id}>
+                  {choice.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+      </fieldset>
+      <div className="programming-rule-heading">
+        <h3>{t.workspace.specificTitle}</h3>
+        <p className="hint">{t.workspace.specificLead}</p>
+      </div>
+      <fieldset
+        disabled={!editable || save.isPending || mustReload(save.error)}
+        className="programming-rules"
+      >
         <legend className="visually-hidden">{t.schedulesTitle}</legend>
+        {rules.length === 0 && (
+          <p className="programming-empty-rules">{t.workspace.noRules}</p>
+        )}
         {rules.map((rule, index) => {
           const position = index + 1;
           const id = (field: string) => `${rule.key}-${field}`;
@@ -1387,6 +1569,30 @@ function ScheduleForm({
               </select>
               <fieldset className="programming-weekdays">
                 <legend>{t.weekdaysLabel}</legend>
+                <div
+                  className="programming-day-presets"
+                  role="group"
+                  aria-label={t.workspace.dayPresets}
+                >
+                  {[
+                    {
+                      label: t.workspace.everyday,
+                      days: [1, 2, 3, 4, 5, 6, 7],
+                    },
+                    { label: t.workspace.workdays, days: [1, 2, 3, 4, 5] },
+                    { label: t.workspace.weekend, days: [6, 7] },
+                  ].map((preset) => (
+                    <button
+                      type="button"
+                      key={preset.label}
+                      onClick={() =>
+                        update(rule.key, { weekdays: preset.days })
+                      }
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
                 {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                   <label key={day} className="checkbox-row">
                     <input
@@ -1438,7 +1644,11 @@ function ScheduleForm({
                   />
                 </span>
               )}
-              <span className="programming-times">
+              {!rule.allDay && rule.endTime < rule.startTime && (
+                <p className="hint">{t.workspace.overnight}</p>
+              )}
+              <fieldset className="programming-times programming-date-range">
+                <legend>{t.workspace.rulePeriod}</legend>
                 <label htmlFor={id("from")}>{t.startsOn}</label>
                 <input
                   id={id("from")}
@@ -1458,7 +1668,7 @@ function ScheduleForm({
                     update(rule.key, { endsOn: event.target.value })
                   }
                 />
-              </span>
+              </fieldset>
               {messages.length > 0 && (
                 <ul
                   id={id("problems")}
@@ -1508,27 +1718,14 @@ function ScheduleForm({
             {t.addRule}
           </button>
         )}
-        {viewDefault ? (
-          <p className="hint">{t.viewDefault}</p>
-        ) : (
-          <>
-            <label htmlFor="default-playlist">{t.defaultPlaylist}</label>
-            <select
-              id="default-playlist"
-              value={fallback}
-              onChange={(event) => setFallback(event.target.value)}
-            >
-              <option value="">{t.noDefault}</option>
-              {choices.map((choice) => (
-                <option key={choice.id} value={choice.id}>
-                  {choice.name}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
       </fieldset>
-      {save.error && <Failure error={save.error} operation="write" />}
+      {save.error && (
+        <Failure
+          error={save.error}
+          operation="write"
+          onReload={() => void onReload()}
+        />
+      )}
       {editable && (
         <button
           type="button"
@@ -1774,10 +1971,12 @@ function GroupSettings({
 function GroupDetail({
   companyId,
   groupId,
+  section,
   company,
 }: {
   companyId: string;
   groupId: string;
+  section?: ProgrammingSection;
   company: CompanyWithAccess;
 }) {
   const { locale, t } = useProgrammingMessages();
@@ -1829,84 +2028,125 @@ function GroupDetail({
       <BackLink companyId={companyId} view="groups" />
       <h1 id="programming-title">{item.name}</h1>
       <p className="hint">{spanText(item, t)}</p>
-      {notice && <p role="status">{notice}</p>}
-      <section aria-labelledby="members-title">
-        <h2 id="members-title">{t.membersTitle}</h2>
-        {item.members.length === 0 ? (
-          <p className="empty-state">{t.membersEmpty}</p>
-        ) : (
-          <ul className="programming-list">
-            {item.members.map((member) => (
-              <li key={member.id}>
-                <Link
-                  to="/companies/$companyId/programming/screens/$deviceId"
-                  params={{ companyId, deviceId: member.id }}
-                >
-                  {member.name}
-                </Link>
-                <span className="hint">{member.branch.name}</span>
-                {states.data?.get(member.id) && (
-                  <span className="hint">
-                    {syncSummary(states.data.get(member.id)!, screenText)}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <ScheduleEditor
+      <p className="programming-lead">
+        {t.workspace.groupLead} · {t.memberCount(item.members.length)}
+      </p>
+      <ProgramNavigation
         companyId={companyId}
         source={{ kind: "group", groupId }}
-        reach={reach}
+        section={section}
         editable={edit}
       />
-      <TimelinePreview
-        key={zones.join()}
-        companyId={companyId}
-        source={{ kind: "group", groupId }}
-        zones={zones}
-      />
-      <PublicationPanel
-        companyId={companyId}
-        source={{ kind: "group", groupId }}
-        company={company}
-      />
-      {edit && (
-        <>
-          <GroupSettings
-            key={`settings-${item.version}`}
-            companyId={companyId}
-            group={item}
-            branches={branches.data?.items ?? []}
-            onChanged={async (changed) => {
-              setNotice(t.saved);
-              queryClient.setQueryData(groupKey(companyId, groupId), changed);
-              await queryClient.invalidateQueries({
-                queryKey: groupsKey(companyId),
-              });
-            }}
-          />
-          <ConfirmedDelete
-            key={`delete-${item.version}`}
-            title={t.deleteGroupTitle}
-            lead={t.deleteGroupLead}
-            confirm={t.deleteGroupConfirm(item.name)}
-            label={t.deleteGroup}
-            run={() => deleteGroup(companyId, item)}
-            onDone={() => {
-              void queryClient.invalidateQueries({
-                queryKey: groupsKey(companyId),
-              });
-              void navigate({
-                to: "/companies/$companyId/programming",
-                params: { companyId },
-                search: { view: "groups" },
-              });
-            }}
-          />
-        </>
+      {notice && (
+        <p role="status" className="notice notice-success">
+          {notice}
+        </p>
       )}
+      <ProgrammingPanel active={section === "screens"}>
+        {" "}
+        <section aria-labelledby="members-title">
+          <h2 id="members-title">{t.membersTitle}</h2>
+          <p className="hint">{t.workspace.screensLead}</p>
+          {can(company, "devices.view") && (
+            <Link
+              className="button-link"
+              to="/companies/$companyId/screens"
+              params={{ companyId }}
+            >
+              {t.workspace.openScreens}
+            </Link>
+          )}
+          {item.members.length === 0 ? (
+            <p className="empty-state">{t.membersEmpty}</p>
+          ) : (
+            <ul className="programming-list">
+              {item.members.map((member) => (
+                <li key={member.id}>
+                  <Link
+                    to="/companies/$companyId/programming/screens/$deviceId"
+                    params={{ companyId, deviceId: member.id }}
+                  >
+                    {member.name}
+                  </Link>
+                  <span className="hint">{member.branch.name}</span>
+                  {states.data?.get(member.id) && (
+                    <span className="hint">
+                      {syncSummary(states.data.get(member.id)!, screenText)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </ProgrammingPanel>
+      <ProgrammingPanel active={!section}>
+        <p className="programming-draft-note">{t.workspace.savedDraft}</p>{" "}
+        <ScheduleEditor
+          companyId={companyId}
+          source={{ kind: "group", groupId }}
+          reach={reach}
+          editable={edit}
+        />
+      </ProgrammingPanel>
+      <ProgrammingPanel active={section === "preview"}>
+        <p className="hint">{t.workspace.previewLead}</p>{" "}
+        <TimelinePreview
+          key={zones.join()}
+          companyId={companyId}
+          source={{ kind: "group", groupId }}
+          zones={zones}
+        />
+      </ProgrammingPanel>
+      <ProgrammingPanel active={section === "publication"}>
+        {" "}
+        <PublicationPanel
+          companyId={companyId}
+          source={{ kind: "group", groupId }}
+          company={company}
+        />
+      </ProgrammingPanel>
+      <ProgrammingPanel active={section === "settings"}>
+        {edit && (
+          <>
+            <GroupSettings
+              key={`settings-${item.version}`}
+              companyId={companyId}
+              group={item}
+              branches={branches.data?.items ?? []}
+              onChanged={async (changed) => {
+                setNotice(t.saved);
+                queryClient.setQueryData(groupKey(companyId, groupId), changed);
+                await queryClient.invalidateQueries({
+                  queryKey: groupsKey(companyId),
+                });
+              }}
+            />
+            <details className="programming-permanent">
+              <summary>{t.workspace.deleteArea}</summary>
+              <ConfirmedDelete
+                key={`delete-${item.version}`}
+                title={t.deleteGroupTitle}
+                lead={t.deleteGroupLead}
+                confirm={t.deleteGroupConfirm(item.name)}
+                label={t.deleteGroup}
+                run={() => deleteGroup(companyId, item)}
+                onDone={() => {
+                  void queryClient.invalidateQueries({
+                    queryKey: groupsKey(companyId),
+                  });
+                  void navigate({
+                    to: "/companies/$companyId/programming",
+                    params: { companyId },
+                    search: { view: "groups" },
+                  });
+                }}
+              />
+            </details>
+          </>
+        )}
+        {!edit && <p role="alert">{t.errors.PERMISSION_DENIED}</p>}
+      </ProgrammingPanel>
     </>
   );
 }
@@ -1914,19 +2154,22 @@ function GroupDetail({
 export function GroupPage({
   companyId,
   groupId,
+  section,
 }: {
   companyId: string;
   groupId: string;
+  section?: ProgrammingSection;
 }) {
   return (
     <CompanyGate
       companyId={companyId}
-      returnTo={`/companies/${companyId}/programming/groups/${groupId}`}
+      returnTo={`/companies/${companyId}/programming/groups/${groupId}${section ? `?section=${section}` : ""}`}
     >
       {(company) => (
         <GroupDetail
           companyId={companyId}
           groupId={groupId}
+          section={section}
           company={company}
         />
       )}
@@ -2082,10 +2325,12 @@ function AssignmentForm({
 function ScreenProgrammingDetail({
   companyId,
   deviceId,
+  section,
   company,
 }: {
   companyId: string;
   deviceId: string;
+  section?: ProgrammingSection;
   company: CompanyWithAccess;
 }) {
   const { t } = useProgrammingMessages();
@@ -2123,7 +2368,19 @@ function ScreenProgrammingDetail({
         </Link>
       </p>
       <h1 id="programming-title">{current.device.name}</h1>
-      {notice && <p role="status">{notice}</p>}
+      <p className="programming-lead">{t.workspace.screenLead}</p>
+      <ProgramNavigation
+        companyId={companyId}
+        source={{ kind: "device", deviceId }}
+        section={section}
+        editable={can(company, "programming.edit")}
+        assignable={assign}
+      />
+      {notice && (
+        <p role="status" className="notice notice-success">
+          {notice}
+        </p>
+      )}
       <dl className="company-settings">
         <dt>{t.branchLabel}</dt>
         <dd>{current.device.branch.name}</dd>
@@ -2141,65 +2398,91 @@ function ScreenProgrammingDetail({
               : t.hiddenGroup}
         </dd>
       </dl>
-      {assign && groups.isPending && <p>{t.loading}</p>}
-      {assign && groups.isError && (
-        <Failure
-          error={groups.error}
-          operation="read"
-          onReload={() => void groups.refetch()}
-        />
-      )}
-      {assign && groups.data && (
-        <AssignmentForm
-          key={`assignment-${current.version}`}
-          companyId={companyId}
-          current={current}
-          groups={groups.data.items}
-          onChanged={async (done) => {
-            setNotice(done || null);
-            await Promise.all([
-              queryClient.invalidateQueries({
-                queryKey: deviceProgrammingKey(companyId, deviceId),
-              }),
-              queryClient.invalidateQueries({ queryKey: groupsKey(companyId) }),
-              queryClient.invalidateQueries({
-                queryKey: timelineKey(companyId, deviceId),
-              }),
-            ]);
-          }}
-        />
-      )}
-      {current.source === "group" && current.group ? (
-        <p>
-          <Link
-            to="/companies/$companyId/programming/groups/$groupId"
-            params={{ companyId, groupId: current.group.id }}
-          >
-            {t.groupSchedules}
-          </Link>
-        </p>
-      ) : current.source === "group" ? (
-        <p className="hint">{t.hiddenGroupSchedules}</p>
-      ) : (
-        <ScheduleEditor
+      <ProgrammingPanel active={section === "settings"}>
+        {assign && groups.isPending && <p>{t.loading}</p>}
+        {assign && groups.isError && (
+          <Failure
+            error={groups.error}
+            operation="read"
+            onReload={() => void groups.refetch()}
+          />
+        )}
+        {assign && groups.data && (
+          <AssignmentForm
+            key={`assignment-${current.version}`}
+            companyId={companyId}
+            current={current}
+            groups={groups.data.items}
+            onChanged={async (done) => {
+              setNotice(done || null);
+              await Promise.all([
+                queryClient.invalidateQueries({
+                  queryKey: deviceProgrammingKey(companyId, deviceId),
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: groupsKey(companyId),
+                }),
+                queryClient.invalidateQueries({
+                  queryKey: timelineKey(companyId, deviceId),
+                }),
+              ]);
+            }}
+          />
+        )}
+        {!assign && <p role="alert">{t.errors.PERMISSION_DENIED}</p>}
+      </ProgrammingPanel>
+      <ProgrammingPanel active={!section}>
+        <p className="programming-draft-note">{t.workspace.savedDraft}</p>
+        {current.source === "group" && current.group ? (
+          <p>
+            <Link
+              to="/companies/$companyId/programming/groups/$groupId"
+              params={{ companyId, groupId: current.group.id }}
+            >
+              {t.groupSchedules}
+            </Link>
+          </p>
+        ) : current.source === "group" ? (
+          <p className="hint">{t.hiddenGroupSchedules}</p>
+        ) : (
+          <ScheduleEditor
+            companyId={companyId}
+            source={{ kind: "device", deviceId }}
+            reach={new Set([current.device.branch.id])}
+            editable={can(company, "programming.edit")}
+          />
+        )}
+      </ProgrammingPanel>
+      <ProgrammingPanel active={section === "preview"}>
+        <p className="hint">{t.workspace.previewLead}</p>
+        <TimelinePreview
+          key={`${current.version}-${zone}`}
           companyId={companyId}
           source={{ kind: "device", deviceId }}
-          reach={new Set([current.device.branch.id])}
-          editable={can(company, "programming.edit")}
         />
-      )}
-      <TimelinePreview
-        key={`${current.version}-${zone}`}
-        companyId={companyId}
-        source={{ kind: "device", deviceId }}
-      />
-      {current.source === "individual" && (
-        <PublicationPanel
-          companyId={companyId}
-          source={{ kind: "device", deviceId }}
-          company={company}
-        />
-      )}
+      </ProgrammingPanel>
+      <ProgrammingPanel active={section === "publication"}>
+        {current.source === "individual" && (
+          <PublicationPanel
+            companyId={companyId}
+            source={{ kind: "device", deviceId }}
+            company={company}
+          />
+        )}
+        {current.source === "group" &&
+          (current.group ? (
+            <Link
+              className="button-link"
+              to="/companies/$companyId/programming/groups/$groupId"
+              params={{ companyId, groupId: current.group.id }}
+              search={{ section: "publication" }}
+            >
+              {t.workspace.publishTab}: {current.group.name}
+            </Link>
+          ) : (
+            <p>{t.hiddenGroupSchedules}</p>
+          ))}
+      </ProgrammingPanel>
     </>
   );
 }
@@ -2207,17 +2490,20 @@ function ScreenProgrammingDetail({
 export function ScreenProgrammingPage({
   companyId,
   deviceId,
+  section,
 }: {
   companyId: string;
   deviceId: string;
+  section?: ProgrammingSection;
 }) {
-  const returnTo = `/companies/${companyId}/programming/screens/${deviceId}`;
+  const returnTo = `/companies/${companyId}/programming/screens/${deviceId}${section ? `?section=${section}` : ""}`;
   return (
     <CompanyGate companyId={companyId} returnTo={returnTo}>
       {(company) => (
         <ScreenProgrammingDetail
           companyId={companyId}
           deviceId={deviceId}
+          section={section}
           company={company}
         />
       )}

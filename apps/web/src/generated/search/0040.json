@@ -4,6 +4,114 @@
     "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "anchor": "adr-0018-isolate-internal-documentation-from-product-distribution",
+    "text": "ADR-0018: Isolate Internal Documentation from Product Distribution\n**Status:** accepted\n**Date:** 2026-10-23\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner requires a complete engineering knowledge system for developers and AI agents while separating it from product UI and public documentation. The existing portal uses the React/Vite application, deterministic generated references, a lazy UI import, local search, and synthetic previews. Lazy loading still emits its entire internal catalog and downloads into production artifacts. Removing navigation or adding a browser route guard would leave those files downloadable.\nADR-0008 already selects Vite and code splitting. Development-only identity behavior already uses build-time exclusion. ADR-0017 retains the portal and its sources in projects and makes composition and brand assets project-owned; it does not require shipping engineering assets in product builds. This decision complements that source-retention contract by defining distribution and publication explicitly. These mechanisms can support the requested separation without selecting another framework, authentication provider, or deployment topology.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nRetain the full internal source catalog, generators, local `/docs` routes, search, previews, and AI-readable references. Treat the portal as a development tool. Exclude its routes, imports, UI styles, generated pages, search assets and reference downloads from every default production web build, in Orion and derived projects. Fail the product build if an accidental included import bypasses that boundary.\nAllow explicit internal builds only with an operator acknowledgement that a trusted external host enforces access to the entire artifact. This build selection grants no permission and supplies no authentication. A real internal deployment requires authorization and verified host controls over assets and downloads as well as routes; API controls remain unchanged.\nProduct documentation belongs to the product's UI, audience, ownership and release process. Public API documentation uses a separately approved source inventory, including referenced schemas and examples. Neither public surface inherits or filters the internal catalog automatically. The foundation does not introduce a public publisher in this change.\nKeep portal layout/navigation/styles inside its optional import boundary. Applications retain control of their shell, home, modules, brand and documentation presentation. Preserve the existing toolchain, repository/manifest contract, local URLs, and generated-source ownership.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nCompile-time selection removes actual emitted bytes and reuses Vite rather than introducing an application boundary solely for packaging. Independent publication sources prevent an internal addition from becoming a public disclosure. Retaining complete generation keeps engineering discovery and agent context intact. External hosting enforcement accommodates an explicitly authorized internal deployment without inventing a provider or pretending static client checks protect downloads.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Hide links or require a browser login",
+    "anchor": "hide-links-or-require-a-browser-login",
+    "text": "Hide links or require a browser login\nThis changes navigation but leaves static references and search content downloadable. It does not establish the required distribution or trust boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Remove the portal and internal sources during derivation",
+    "anchor": "remove-the-portal-and-internal-sources-during-derivation",
+    "text": "Remove the portal and internal sources during derivation\nThis reduces product bytes but also removes developer and agent capabilities, generated-reference validation, and a reusable engineering workflow.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Introduce a separate documentation application immediately",
+    "anchor": "introduce-a-separate-documentation-application-immediately",
+    "text": "Introduce a separate documentation application immediately\nA separate application may be justified by future independent hosting requirements. It is unnecessary for current build exclusion and would add workspace, routing, and validation responsibilities before a concrete deployment exists.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nDefault products contain no internal portal or generated documentation assets.\nLocal engineering workflows and canonical AI-readable knowledge remain available.\nProduct and public documentation can evolve independently of engineering navigation and branding.\nArtifact and browser tests cover exclusion, explicit inclusion, accidental imports, and existing local behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nInternal deployment operators must explicitly select and protect a distinct artifact; the build cannot verify their real host's access controls.\nProducts that previously used `/docs` as end-user help must migrate those links and content.\nPublic documentation requires an approved source inventory and a product-owned publication implementation when needed.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nProduction `/docs` availability intentionally changes; source, local routes, generators, SDKs, database and manifest schemas remain compatible. Rebuild and remove stale deployed assets rather than only changing links. Existing intentional internal deployments must select the protected internal build. The [migration policy](../../architecture/living-documentation.md#existing-project-migration) describes adoption. No derived repository, release, remote push, provider, or deployment is changed by this implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "References",
     "anchor": "references",
     "text": "References\n[Living Documentation policy](../../architecture/living-documentation.md)\n[ADR-0008: web stack](../0008-select-react-vite-and-tanstack-for-web-applications.md)\n[ADR-0017: clean derived baseline](../0017-start-derived-projects-from-a-clean-foundation-baseline.md)\n[Project derivation](../../project-derivation.md)\n[Build isolation tests](../../../apps/web/scripts/documentation-build.test.mjs)\n"
@@ -925,77 +1033,5 @@
     "heading": "Client/Server Dependency Rules",
     "anchor": "clientserver-dependency-rules",
     "text": "Client/Server Dependency Rules\nClients may consume public contracts, SDKs, and explicitly client-safe primitives. They must not import database clients, server credentials/configuration, backend internals, private adapters, filesystem APIs, or server-only SDKs. A shared package must remain safe for every runtime it supports. Secrets must never enter client bundles, generated clients, or public configuration.\nThe web application depends on the workspace SDK package (`packages/sdk`); the API owns its executable wire contracts. Shared code never imports foundation-only reference modules; only the composition files `apps/api/src/modules.ts` and `apps/web/src/modules.tsx` may compose them. Generated artifacts remain identifiable, reproducible, and unedited by hand; semantic documentation belongs to the canonical owner.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Adding or Changing Dependencies",
-    "anchor": "adding-or-changing-dependencies",
-    "text": "Adding or Changing Dependencies\nBefore a new edge, identify its responsibility, canonical owner, public API, permitted direction, platform compatibility, cycle risk, and runtime/deployment coupling. Search existing capabilities before adding a new abstraction. If a legitimate need conflicts with the model, report and resolve that conflict explicitly.\nFor third-party libraries, follow [contributing guidance](../contributing.md#change-workflow) and assess maintenance, security, license, maturity, runtime/bundle cost, portability, testability, lock-in, and overlap. Declare directly used dependencies in the owning application/package; do not rely on undeclared transitives. Optional dependencies must represent genuinely optional capabilities. Dynamic imports, reflection, and plugins need real use cases and must not evade enforcement.\nCycles are forbidden by default. Resolve their ownership by moving a shared responsibility lower, merging one concept, or revising the boundary; do not hide them with lazy imports, global registration, duplicated interfaces, or initialization order. Remove intermediate layers that add no meaning. High fan-out warrants a responsibility review; high fan-in requires focused APIs, stability, careful compatibility, minimal dependencies, and strong tests. Neither metric alone decides correctness.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Mechanical Enforcement",
-    "anchor": "mechanical-enforcement",
-    "text": "Mechanical Enforcement\n`pnpm architecture` runs [dependency-cruiser configuration](../../.dependency-cruiser.mjs) locally and in `pnpm validate`/CI. It rejects cycles, unresolved imports, cross-application imports, package-to-application imports, runtime-to-tooling/infra imports, known client-to-server paths, Node built-ins in browser/SDK runtime, and configured domain-to-infrastructure paths. Type-aware [ESLint restrictions](../../eslint.config.mjs) also reject direct browser/SDK imports of known server infrastructure libraries. `pnpm architecture:test` exercises representative forbidden and permitted edges, including a flat `domain.ts` module and emitted-bundle exclusion.\nEnforcement is path-based, not a proof of every policy above. The domain rule covers named `domain/` directories and flat `domain.ts` modules but cannot infer all business ownership. Browser restrictions list known server libraries rather than every possible unsafe external dependency; the web build also has a [bundle check](../../apps/web/scripts/check-bundle.mjs). Public-surface restrictions, undeclared dependencies, data ownership, dynamic edges, and arbitrary platform leakage require review or additional targeted checks. Generated directories, emitted `dist/` bundles, and dependency internals are excluded from the import scan. Bundler chunk relationships are derived from the checked source graph and must not make architecture results depend on whether a build has already run.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Dependency Enforcement",
-    "anchor": "dependency-enforcement",
-    "text": "Dependency Enforcement\nExtend checks when real boundaries appear. Failures should identify the violating edge, rule, reason, and corrective route. Keep the same core checks available locally and in CI; do not silently weaken them to pass a change. When introducing stricter rules, measure existing violations, prevent new ones, migrate deliberately, remove exceptions, and make the rule fully blocking.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Temporary Exceptions",
-    "anchor": "temporary-exceptions",
-    "text": "Temporary Exceptions\nDocument a significant temporary exception's edge, reason, scope, risk, and removal condition; track it mechanically where practical. It must not become permanent silently. A permanent exception to a major dependency rule normally needs an ADR and corresponding policy/enforcement updates.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Handling",
-    "anchor": "error-handling",
-    "text": "Error Handling\n[Documentation index](../README.md) · [API error contract](../api/error-contract.md) · [Error reporting](../reliability/error-reporting.md)\nThis page owns failure semantics and translation between layers. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) governs executable contracts and [ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) diagnostic signals. Separate what happened, what the caller may know, what the user sees, and what trusted diagnostics need.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Categories",
-    "anchor": "error-categories",
-    "text": "Error Categories\nCategory\nMeaning and handling\nValidation\nInput shape or constraints are invalid. Return stable, safe caller-actionable semantics; structured field details require a public schema.\nDomain\nA valid request violates a business rule/state. Describe business meaning rather than a database/provider failure.\nAuthentication\nIdentity cannot be established. Avoid unnecessary credential/account-existence disclosure.\nAuthorization\nAn actor lacks permission. Enforce at the trusted boundary and avoid exposing protected resource information.\nNot found\nA resource cannot be resolved. Security policy may require indistinguishable not-found/denied behavior.\nConflict\nState, uniqueness, idempotency, or concurrent version prevents the action. Map to the intended business condition.\nRate limit\nA threshold is exceeded. Expose useful retry guidance where safe without revealing anti-abuse internals.\nExternal dependency/infrastructure\nA provider, database, queue, filesystem, network, or runtime fails. Translate at its boundary according to operation semantics.\nUnexpected internal\nA defect, broken invariant, unmodeled response, or unexpected dependency failure. Capture once, correlate, and return a safe generic result.\nThese categories classify meaning, not guaranteed retry safety or operational severity. The same provider can produce a business rejection, transient outage, or internal credential/configuration incident.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Expected vs Unexpected Failures",
-    "anchor": "expected-vs-unexpected-failures",
-    "text": "Expected vs Unexpected Failures\nExpected failures are modeled outcomes such as invalid input, missing access, or an invalid transition. They should not automatically receive the severity/alerting of an unexpected exception. Unexpected failures need diagnostic telemetry and, when the operating environment supplies it, centralized error reporting.\nCatch only where the boundary can recover, translate, enrich, retry safely, compensate, or report. Otherwise propagate to its owner. Never turn every failure into “not found,” swallow exceptions as `null`, or claim success when a required effect failed. Assertions detect impossible internal states; they do not replace validation of external input.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Contract",
-    "anchor": "error-contract",
-    "text": "Error Contract\nThe API already has a canonical [`errorRegistry`, envelope schema, and safe builder](../../apps/api/src/errors.ts), with a [generated reference](../generated/api/errors.md). [API error policy](../api/error-contract.md) owns serialization, status mapping, and operation metadata. Add codes there rather than inventing a parallel format. The current envelope contains code, safe message, required request ID, and optional trace/error IDs; it has no arbitrary details property.\nStable public codes are machine-readable, normally uppercase, English, owned by the relevant capability, and independent of localization. Consumers branch on codes rather than message text, class names, SQLSTATE, ORM codes, or provider exceptions. HTTP status expresses protocol-level meaning and may cover several distinct application errors; domain logic must not depend on HTTP status.\nChoose public granularity according to meaningful consumer actions. Avoid both one generic error for every domain outcome and a permanent code for every internal branch. Public details, if added, need explicit safe schemas. Human messages can evolve or be localized and should explain the problem/action without internal jargon, filesystem paths, SQL, hostnames, or stack traces. Never reuse a code for a different meaning; renaming, removing, or changing consumed codes requires [compatibility review](versioning-and-compatibility.md).\n"
   }
 ]

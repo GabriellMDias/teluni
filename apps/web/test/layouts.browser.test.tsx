@@ -286,6 +286,7 @@ test("creates a portrait layout with one full-canvas area and opens it", async (
     return undefined;
   });
   const { screen, router } = await open(`${base}?view=layouts`);
+  await screen.getByText(l.createTitle, { exact: true }).first().click();
   await screen.getByLabelText(t.fieldName, { exact: true }).fill("Vitrine");
   await screen
     .getByLabelText(t.fieldScope, { exact: true })
@@ -344,6 +345,7 @@ test("imports an exported file and refuses one that is not JSON", async () => {
     return undefined;
   });
   const { screen } = await open(`${base}?view=layouts`);
+  await screen.getByText(l.importTitle, { exact: true }).first().click();
   const file = screen.getByLabelText(l.importFile);
   await file.upload(
     new File(["not json"], "vitrine.json", { type: "application/json" }),

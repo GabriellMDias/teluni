@@ -245,7 +245,7 @@ export async function discardMedia(
 /** Same-origin URL of a rendition; the session cookie authorizes it. */
 export function contentUrl(
   companyId: string,
-  item: Media,
+  item: Pick<Media, "id">,
   variant: MediaVariant,
 ): string {
   const base = loadClientConfig().apiBaseUrl.replace(/\/$/, "");

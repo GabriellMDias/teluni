@@ -5,8 +5,69 @@ import type { Transition } from "./api.js";
 // by locale.
 
 const ptBR = {
+  workspace: {
+    guideTitle: "Do conteúdo à tela",
+    stepContent: "Organize o conteúdo",
+    stepContentLead:
+      "Monte playlists com imagens e vídeos na ordem em que devem tocar.",
+    stepSchedule: "Escolha quando e onde",
+    stepScheduleLead:
+      "Use grupos para programar várias telas juntas, ou ajuste uma tela individualmente.",
+    stepPublish: "Revise e publique",
+    stepPublishLead:
+      "Salvar mantém o rascunho. Publique para enviar a programação às telas.",
+    playlistsLead:
+      "Sequências de conteúdo que você pode reutilizar nos horários.",
+    groupsLead: "Reúna telas que devem seguir a mesma programação.",
+    layoutsLead:
+      "Opcional: divida a tela em áreas para exibir conteúdos ao mesmo tempo.",
+    imageSeconds: "Segundos",
+    contentTab: "Conteúdo",
+    settingsTab: "Configurações",
+    scheduleTab: "Programação",
+    previewTab: "Prévia",
+    screensTab: "Telas",
+    publishTab: "Publicação",
+    destinationTab: "Destino",
+    detailSections: "Etapas desta programação",
+    playlistSections: "Seções da playlist",
+    playlistLead:
+      "Escolha os arquivos, ajuste a ordem e defina o tempo de cada imagem.",
+    playlistNext: "Playlist pronta? Escolha onde e quando ela deve tocar.",
+    goGroups: "Definir horários e telas",
+    savedDraft:
+      "Salvar altera o rascunho. Para atualizar as telas, revise e publique na seção Publicação.",
+    groupLead: "Uma programação compartilhada pelas telas deste grupo.",
+    screenLead: "Defina o que esta tela segue e confira o que está programado.",
+    continuousTitle: "Conteúdo padrão",
+    continuousLead:
+      "Para repetir uma playlist o dia todo, escolha-a aqui. Os horários específicos abaixo substituem esse conteúdo enquanto estiverem em vigor.",
+    specificTitle: "Horários específicos",
+    specificLead:
+      "Opcional: alterne playlists conforme os dias e horários. Fora desses períodos, vale o conteúdo padrão.",
+    noRules: "Sem horários específicos. O conteúdo padrão vale o tempo todo.",
+    everyday: "Todos os dias",
+    workdays: "Dias úteis",
+    weekend: "Fim de semana",
+    dayPresets: "Selecionar dias",
+    rulePeriod: "Período de exibição",
+    overnight: "Termina no dia seguinte.",
+    layoutOptions: "Composição da tela",
+    layoutOptionsLead:
+      "Use a tela inteira ou escolha um layout com várias áreas.",
+    previewLead:
+      "Confira os próximos sete dias conforme os horários salvos. Alterações ainda não salvas não aparecem nesta prévia.",
+    screensLead:
+      "Estas telas seguem o grupo. Na programação de uma tela, escolha este grupo para vinculá-la.",
+    openScreens: "Escolher telas",
+    settingsLead:
+      "Ajustes do grupo e ações permanentes ficam separados dos horários.",
+    deleteArea: "Ações permanentes",
+    createHint:
+      "Preencha os dados para começar. Você pode ajustar os detalhes depois.",
+  },
   title: "Programação",
-  lead: "Playlists, layouts, grupos de telas e horários. Tudo aqui é rascunho até ser publicado.",
+  lead: "Escolha o conteúdo, defina quando ele toca e publique nas telas.",
   backToCompany: "Voltar para a empresa",
   backToProgramming: "Voltar para programação",
   viewsLabel: "Seções da programação",
@@ -528,6 +589,65 @@ const ptBR = {
 type Messages = typeof ptBR;
 
 const enUS: Messages = {
+  workspace: {
+    guideTitle: "From content to screen",
+    stepContent: "Organize content",
+    stepContentLead:
+      "Build playlists with images and videos in playback order.",
+    stepSchedule: "Choose when and where",
+    stepScheduleLead:
+      "Use groups to schedule several screens together, or adjust an individual screen.",
+    stepPublish: "Review and publish",
+    stepPublishLead:
+      "Saving keeps a draft. Publish to send the program to screens.",
+    playlistsLead: "Content sequences you can reuse in schedules.",
+    groupsLead: "Bring together screens that should follow the same program.",
+    layoutsLead:
+      "Optional: divide the screen into areas to show content together.",
+    imageSeconds: "Seconds",
+    contentTab: "Content",
+    settingsTab: "Settings",
+    scheduleTab: "Program",
+    previewTab: "Preview",
+    screensTab: "Screens",
+    publishTab: "Publication",
+    destinationTab: "Destination",
+    detailSections: "Program steps",
+    playlistSections: "Playlist sections",
+    playlistLead:
+      "Choose files, arrange their order and set each image's duration.",
+    playlistNext: "Playlist ready? Choose where and when it should play.",
+    goGroups: "Choose schedules and screens",
+    savedDraft:
+      "Saving changes the draft. To update screens, review and publish in Publication.",
+    groupLead: "A shared program for the screens in this group.",
+    screenLead: "Choose what this screen follows and check its schedule.",
+    continuousTitle: "Default content",
+    continuousLead:
+      "To repeat one playlist all day, choose it here. Specific schedules below replace it while they apply.",
+    specificTitle: "Specific schedules",
+    specificLead:
+      "Optional: switch playlists by day and time. Outside those periods, default content plays.",
+    noRules: "No specific schedules. Default content applies all the time.",
+    everyday: "Every day",
+    workdays: "Weekdays",
+    weekend: "Weekend",
+    dayPresets: "Select days",
+    rulePeriod: "Display period",
+    overnight: "Ends the next day.",
+    layoutOptions: "Screen composition",
+    layoutOptionsLead:
+      "Use the whole screen or choose a layout with multiple areas.",
+    previewLead:
+      "Check the next seven days using saved schedules. Unsaved changes do not appear in this preview.",
+    screensLead:
+      "These screens follow the group. Choose this group in a screen's programming to link it.",
+    openScreens: "Choose screens",
+    settingsLead:
+      "Group settings and permanent actions are separate from schedules.",
+    deleteArea: "Permanent actions",
+    createHint: "Enter the basics to start. You can adjust details later.",
+  },
   title: "Programming",
   lead: "Playlists, layouts, screen groups and schedules. Everything here is a draft until it is published.",
   backToCompany: "Back to the company",

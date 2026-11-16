@@ -125,6 +125,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await page.getByRole("link", { name: "Programação", exact: true }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/programming`);
   await expect(page.getByText("Nenhuma playlist ainda.")).toBeVisible();
+  await page.locator("summary").filter({ hasText: "Nova playlist" }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Manhã");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -143,6 +144,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await afterNavigation(page).toHaveURL(
     `${companyUrl}/programming?view=groups`,
   );
+  await page.locator("summary").filter({ hasText: "Novo grupo" }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitrines");
   await page.getByLabel("Centro", { exact: true }).check();
   await page.getByRole("button", { name: "Criar", exact: true }).click();
@@ -171,6 +173,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await afterNavigation(
     page.getByRole("heading", { level: 1, name: "Caixa 1" }),
   ).toBeVisible();
+  await page.getByRole("link", { name: "Destino", exact: true }).click();
   await page.getByLabel("Grupo", { exact: true }).selectOption("Vitrines");
   const save = page.getByRole("button", { name: "Salvar escolha" });
   await expect(save).toBeDisabled();
@@ -180,6 +183,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await save.click();
   await expect(page.getByRole("status")).toContainText("Escolha salva.");
   await expect(page.getByText("Grupo: Vitrines")).toBeVisible();
+  await page.getByRole("link", { name: "Prévia", exact: true }).click();
   await expect(
     page.getByRole("cell", { name: "Manhã", exact: true }).first(),
   ).toBeVisible();

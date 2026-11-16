@@ -194,6 +194,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   ).toContainText("Pronta");
 
   await page.goto(`${companyUrl}/programming`);
+  await page.locator("summary").filter({ hasText: "Nova playlist" }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitrine");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -204,6 +205,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await expect(page.getByRole("status")).toContainText("Itens salvos.");
 
   await page.goto(`${companyUrl}/programming?view=groups`);
+  await page.locator("summary").filter({ hasText: "Novo grupo" }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Lojas");
   await page.getByLabel("Centro", { exact: true }).check();
   await page.getByRole("button", { name: "Criar", exact: true }).click();
@@ -217,6 +219,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await page.getByRole("button", { name: "Salvar horários" }).click();
   await expect(page.getByRole("status")).toContainText("Horários salvos.");
 
+  await page.getByRole("link", { name: "Publicação", exact: true }).click();
   // Review shows what will be published; publishing makes generation 1.
   await expect(
     page.getByText("Nada foi publicado ainda", { exact: false }),
@@ -251,6 +254,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await page
     .getByRole("link", { name: "Ver a programação desta tela" })
     .click();
+  await page.getByRole("link", { name: "Destino", exact: true }).click();
   await page.getByLabel("Grupo", { exact: true }).selectOption("Lojas");
   await expect(
     page.getByText("O destino escolhido tem a geração 1 publicada", {
@@ -315,6 +319,6 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
     "difere mais de 60 segundos",
   );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await page.goto(groupUrl);
+  await page.goto(`${groupUrl}?section=screens`);
   await expect(page.getByText("Conectada · Atualizada")).toBeVisible();
 });

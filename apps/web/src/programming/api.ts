@@ -192,12 +192,18 @@ export async function deletePlaylist(companyId: string, playlist: Playlist) {
 export async function listSelectableMedia(
   companyId: string,
   text: string | undefined,
+  cursor?: string,
 ) {
   return unwrap(
     await client().GET("/companies/{companyId}/media", {
       params: {
         path: { companyId },
-        query: { limit: 48, view: "selectable", ...(text ? { text } : {}) },
+        query: {
+          limit: 48,
+          view: "selectable",
+          ...(text ? { text } : {}),
+          ...(cursor ? { cursor } : {}),
+        },
       },
     }),
     programmingErrorCodes,

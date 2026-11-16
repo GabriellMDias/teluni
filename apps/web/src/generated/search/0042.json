@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Categories and discovery",
+    "anchor": "categories-and-discovery",
+    "text": "Categories and discovery\nThe default categories are **Actions, Inputs, Forms, Data Display, Feedback, Navigation, Overlays and Layout**. They describe UI responsibility rather than require implementations. A metadata file may add categories through its `categories` string array; additions should represent a useful discovery distinction. Unknown explicit categories fail validation, helping catch typos. Legacy entries without a category use `Uncategorized` until their owner classifies them.\nThe internal catalog offers category links with URL-owned selection, searchable ownership/scope/usage, props, states, accessibility, code examples, optional live previews, and source/metadata links. Existing `/docs/components/<name>` URLs remain stable; optional `id` supports namespaced identifiers when features use the same component name. Changing a name need not change an explicitly recorded ID. The generated manifest indexes category, scope, owner and source; its per-component JSON pages contain the normalized metadata. These files and the generated Markdown reference remain machine-readable for agents even when production builds exclude the portal.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Owned metadata and compatibility",
+    "anchor": "owned-metadata-and-compatibility",
+    "text": "Owned metadata and compatibility\nThe canonical root [components.docs.json](../../apps/web/src/components.docs.json) remains valid in its existing shape. Additional `components.docs.json` files are discovered under `apps/web/src/` through Git's tracked and non-ignored files. Each uses a `components` array and may declare additional `categories` or a default `source`. Each entry may set:\nField\nContract\n`name`, `summary`, `usage`, `accessibility`, `props`, `states`, `examples`\nExisting required fields remain supported. Props may be empty for a component without props; states and examples must be meaningful and nonempty.\n`source`\nRepository-relative owned source under `apps/web/src/`; defaults to `components.tsx` beside the metadata file. The named export must exist.\n`exportName`\nActual named export when it differs from the displayed name; defaults to `name`.\n`id`\nStable unique catalog identifier using letters, digits, dot, underscore or hyphen; defaults to `name`.\n`category`, `scope`, `owner`\nExplicit discovery and maintenance fields. Legacy defaults are `Uncategorized`, `shared` for a matching public entry-point export or `feature-specific` elsewhere, and the source path as owner. A public re-export retains shared scope when its metadata references the implementation file. New or substantially changed entries should specify all three.\nProp `required`, `default`\nOptional boolean and explanatory string. Existing `name`, `type`, and `meaning` remain canonical authored guidance; native prop inheritance can be described as a rest-props row.\nExample `code`, `live`\nOptional JSX/TSX text and live-preview selection. Code-only examples default to static. Existing examples without code retain their registered live renderer. `live: true` requires the existing explicit renderer in `documentation/examples.tsx`; metadata never instantiates arbitrary code.\nRegister a feature component locally with its actual source, owner, `feature-specific` scope and a code example by default. Existing projects' root-owned entries, extension fields and custom registered live examples remain supported; migration is additive. An explicitly maintained application example renderer may compose a feature's presentation with synthetic props and local state. It must not connect credentials, use production adapters, call domain APIs or cause workflow side effects; cover interactions with browser checks that assert no such requests. Generic catalog/rendering modules do not import features or instantiate metadata as code. Orion's foundation-only feature examples remain static so derivation never leaves a shared import of removed implementation. Only metadata owned by a foundation-only feature is removed with that feature; product-owned metadata and registrations remain the project's responsibility. Resolve canonical sources and preserve product examples before regenerating upgrade conflicts.\nRun `pnpm docs:references:write` after metadata, public exports, examples or relevant documentation changes. `pnpm docs:references:check` and `pnpm docs:references:test` detect missing public metadata, invalid IDs/categories/scopes/props, duplicate entries/examples, broken source/re-export references, unsafe paths and missing live renderers. Source discovery follows only selected component files and their local re-exports, rejects symlinks and ignored sources, and does not index private source bodies. Generated files are never independently edited. These checks do not verify every prop's runtime meaning, visual quality or reuse decision; review and behavior tests remain required.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Styling, themes and accessibility",
+    "anchor": "styling-themes-and-accessibility",
+    "text": "Styling, themes and accessibility\nThe small [reference stylesheet](../../apps/web/src/ui.css) and each composed component's own stylesheet use component-scoped classes and inherited semantic CSS variables with neutral fallbacks. `--ui-font-family`, `--ui-font-size` and `--ui-font-weight-semibold` control typography; `--ui-space-2`, `--ui-space-3` and `--ui-space-4` are the implemented spacing hooks; `--ui-radius` controls shape. Semantic `--ui-color-*` values cover surface and muted surface, text, border, divider (the subtle lines between grid cells and around lists), action/on-action, focus, selected rows, muted text and danger/surface/border. `--ui-shadow-overlay` shades popovers and `--ui-datagrid-max-height` limits a grid's scrolling height. Add a token only for a demonstrated shared visual meaning, and retain one source for each value rather than duplicating unexplained literals across shared controls.\nProducts own token values, typography, theme selection, brand assets, shell and layout. Override tokens on the application root or a scoped theme container; controls inherit them without a React provider or a mandatory light/dark palette. The catalog's token-override example is synthetic, scoped to the preview, and imposes no product identity. Preserve existing class hooks when evolving a shared component compatibly; migrate legacy feature styling incrementally when touched, rather than redesigning the entire application as a side effect.\nUse native semantics and preserve native props/ref forwarding where practical. Define default, hover, focus, disabled, pending, validation and empty/populated states as relevant. Keep focus visible, disabled activation reliable, labels persistent, hint/error relationships explicit and errors understandable without color alone. Preserve keyboard operation and native form behavior; use links for navigation and explicit submit buttons for form submission. Test themes for readable contrast and relevant accessibility at the browser boundary. Features own asynchronous work, validation and live announcements; a visual component never grants authorization or retries an unknown write outcome.\nThe reference set intentionally stays small: **Button**, **TextField**, **Checkbox** and **ErrorNotice** ([`controls.tsx`](../../apps/web/src/controls.tsx) and the entry point), exercised in real composition and local examples. Record screens added a concrete requirement for overlays and grids, so the set also composes **Popover** (the native popover attribute in the top layer), **Menu**, **MultiSelectList**, **DataGrid** and **DataSet**; DataGrid and MultiSelectList build on the headless libraries of [ADR-0034](../adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md), grids offer opt-in Excel, CSV and PDF exports under [ADR-0035](../adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md) and each carries browser tests for its keyboard and focus behavior. No modal, form engine or general layout library is implied by a taxonomy entry. Further complex keyboard/focus patterns require their own concrete requirement and proportional tests before introduction.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing and Documentation",
+    "anchor": "contributing-and-documentation",
+    "text": "Contributing and Documentation\nUse the [task index](README.md) to locate the policy relevant to a change. This guide owns the contributor workflow and documentation-maintenance rules; it does not replace the architectural policies or [accepted decisions](adr/README.md).\n"
+  },
+  {
     "id": "repository/docs/contributing",
     "title": "Contributing and Documentation",
     "group": "Project guides",
@@ -898,104 +934,5 @@
     "heading": "MediaBrowser",
     "anchor": "mediabrowser",
     "text": "MediaBrowser\nCompany media file manager with URL-owned navigation and an in-memory selection and clipboard.\nCategory: Data Display. Scope: feature-specific. Owner: Media.\nSource: [apps/web/src/media/manager.tsx](../../../apps/web/src/media/manager.tsx) (export `MediaBrowser`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-11",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company identifier.\nYes\n—\n`company`\n`CompanyWithAccess`\nCurrent company and capability snapshot; the API enforces owning scope.\nYes\n—\n`filter`\n`MediaFilter`\nValidated router-owned view, folder, filters, layout and cursors.\nYes\n—\n`branches`\n`BranchChoice[]`\nVisible branch labels for scope selection.\nYes\n—\n`renderUpload`\n`function`\nExisting upload workflow with destination, initial files and busy-state callback.\nYes\n—\n`renderPreview`\n`function`\nExisting authorized rendition renderer for one asset.\nYes\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-11",
-    "text": "States\nRoot or nested folder\nGlobal name search\nGrid/list\nMultiple selection and cut/copy clipboard\nUpload/rename/destination/preview dialogs\nRead denial or stale write\nUnknown outcome with same-command reconciliation\nArchived and trash views\nAccessibility: Native breadcrumbs and links preserve navigation. Grid tiles have named selection checkboxes and Enter/double-click activation; list view uses DataGrid keyboard semantics. Ctrl/Command+A/C/X/V and F2 skip editable inputs and modal tasks. Menus and native dialogs manage keyboard/focus; visible status and failures accompany semantic colors. Responsive layouts and semantic tokens support narrow screens and both themes.\nUsage: Use as the company library inside its existing session/company gate. Composes shared Menu, Checkbox and DataGrid. Folder/filter/layout/page state belongs to the router, remote resources to Query, and temporary selection, clipboard and dialogs to React. Server permissions, scope, lifecycle, depth and reference checks remain authoritative. Upload and full media rendering are supplied by the owning workflow. Keep this authenticated composition out of static live catalog examples.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-11",
-    "text": "Examples\n**Authenticated library composition** (`media-browser-composition`): Feature composition is documented without making live requests in the catalog.\n<MediaBrowser companyId={companyId} company={company} filter={search} branches={branches} renderUpload={renderUpload} renderPreview={renderPreview} />\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "MediaDialog",
-    "anchor": "mediadialog",
-    "text": "MediaDialog\nNative modal shell for bounded media management tasks.\nCategory: Feedback. Scope: feature-specific. Owner: Media.\nSource: [apps/web/src/media/dialogs.tsx](../../../apps/web/src/media/dialogs.tsx) (export `MediaDialog`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-12",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`title`\n`string`\nDialog heading and accessible name.\nYes\n—\n`children`\n`ReactNode`\nTask content.\nYes\n—\n`onClose`\n`function`\nDismisses caller-owned state.\nYes\n—\n`busy`\n`boolean`\nPrevents dismissal during an operation.\nSee type\nfalse\n`wide`\n`boolean`\nLarger preview width.\nSee type\nfalse\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-12",
-    "text": "States\nOpen\nBusy\nPreview width\nAccessibility: Uses dialog.showModal, a labelled heading, autofocus target, native focus containment and Escape, with opener restoration when still connected. Close controls are unavailable while busy.\nUsage: Supply a localized title and close callback. Set busy during writes/uploads to prevent dismissal; wide is reserved for previews. The caller owns form state and write recovery.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-12",
-    "text": "Examples\n**Rename task** (`media-dialog-task`): Feature modal with caller-owned fields.\n<MediaDialog title=\"Rename\" onClose={close}><form>…</form></MediaDialog>\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "MediaFolderPicker",
-    "anchor": "mediafolderpicker",
-    "text": "MediaFolderPicker\nOn-demand destination browsing for atomic move/copy commands.\nCategory: Forms. Scope: feature-specific. Owner: Media.\nSource: [apps/web/src/media/dialogs.tsx](../../../apps/web/src/media/dialogs.tsx) (export `MediaFolderPicker`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-13",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company.\nYes\n—\n`initialId`\n`string | null`\nStarting folder or root.\nYes\n—\n`action`\n`MOVE | COPY`\nControls scope guidance.\nYes\n—\n`sourceFolderIds`\n`readonly string[]`\nSelected folders to exclude as destinations.\nYes\n—\n`sourceScopes`\n`readonly (string | null)[]`\nOwning scopes for move compatibility.\nYes\n—\n`onChoose`\n`function`\nSubmits the chosen destination identity.\nYes\n—\n`pending`\n`boolean`\nWrite in progress.\nYes\n—\n`error`\n`unknown`\nAuthoritative command failure.\nYes\n—\n`onReload`\n`function`\nReconciles unknown outcomes or refreshes stale selection.\nYes\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-13",
-    "text": "States\nRoot\nNested folder\nPagination\nScope/descendant refusal\nRead failure\nUnknown write outcome\nAccessibility: Named native breadcrumb and folder buttons, visible scope hints, loading/error feedback and a disabled confirmation for incompatible or unresolved destinations.\nUsage: Use within MediaDialog, with source identities/scopes and the action. Loads paginated visible folders rather than the entire tree. Scope and descendant hints improve choice; server validation remains authoritative.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-13",
-    "text": "Examples\n**Move destination** (`media-folder-picker-task`): Documented composition requires authenticated data.\n<MediaFolderPicker companyId={companyId} initialId={null} action=\"MOVE\" sourceFolderIds={ids} sourceScopes={scopes} pending={pending} error={error} onReload={reload} onChoose={move} />\n\n"
   }
 ]

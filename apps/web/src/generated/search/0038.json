@@ -4,6 +4,96 @@
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Dependency grouping",
+    "anchor": "dependency-grouping",
+    "text": "Dependency grouping\nRelated dependency families may be grouped when they are expected to evolve together.\nExamples may include ecosystems such as:\nReact ecosystem\nTanStack ecosystem\nPrisma ecosystem\nOpenTelemetry ecosystem\nFastify ecosystem\nVitest ecosystem\nPlaywright ecosystem\n\nGrouping should reduce update noise without creating large unrelated upgrade pull requests.\nA generic \"update every dependency\" mega-group will not be the default.\nThe objective is:\ncoherent upgrade units\n\nrather than:\nminimum possible number of pull requests\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Major dependency upgrades",
+    "anchor": "major-dependency-upgrades",
+    "text": "Major dependency upgrades\nMajor-version upgrades require deliberate review.\nRenovate should expose pending major upgrades and may require Dependency Dashboard approval before opening selected major-upgrade pull requests when that improves signal.\nA major version must not be ignored indefinitely merely to keep automation quiet.\nMajor upgrades should remain visible even when they are intentionally deferred.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automerge",
+    "anchor": "dependency-automerge",
+    "text": "Dependency automerge\nAutomatic merging of dependency updates will be **disabled by default initially**.\nPassing CI is necessary but does not prove that every dependency change is semantically harmless.\nSelective automerge may later be enabled for explicitly identified low-risk dependency classes when sufficient repository experience demonstrates that doing so is safe.\nExamples might eventually include narrowly scoped patch updates to development-only tooling.\nThere will be no blanket:\npatch update\n    → automerge\n\nrule initially.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Lockfile maintenance",
+    "anchor": "lockfile-maintenance",
+    "text": "Lockfile maintenance\nAutomated dependency updates must keep the shared pnpm lockfile synchronized with package manifests.\nThe lockfile remains committed repository state.\nDependency automation must not create manifest changes without the corresponding deterministic lockfile update.\nPeriodic lockfile maintenance may be enabled if it produces concrete value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency security alerts",
+    "anchor": "dependency-security-alerts",
+    "text": "Dependency security alerts\nOrion will enable GitHub's dependency graph and **Dependabot vulnerability alerts** where supported.\nThis use of Dependabot is distinct from Dependabot version-update automation.\nThe responsibility split is:\nRenovate\n    → routine/version dependency updates\n\nDependabot alerts / GitHub advisory data\n    → vulnerability visibility\n\nSecurity findings should result in explicit remediation, acceptance, or documented exception rather than being silently ignored.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency review",
+    "anchor": "dependency-review",
+    "text": "Dependency review\nWhere the repository's GitHub feature entitlement supports it, Orion will enable the GitHub dependency review capability for pull requests.\nDependency review should prevent newly introduced vulnerable dependencies from entering unnoticed.\nThe initial enforcement threshold should block newly introduced vulnerabilities rated **high or critical**, unless an explicitly reviewed exception exists.\nThe policy may become stricter for applications with higher risk or regulatory requirements.\nDependency review is an additional guardrail and does not replace repository tests or dependency update automation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Static security analysis",
+    "anchor": "static-security-analysis",
+    "text": "Static security analysis\nWhere available for the repository, Orion will enable **GitHub CodeQL for JavaScript and TypeScript security analysis**.\nCode scanning should be represented by repository-visible configuration when customization is required.\nThe initial objective is to detect actionable security defects without making a paid GitHub security product a mandatory dependency of the Orion architecture.\nIf CodeQL is unavailable for a particular private repository, the absence of that GitHub entitlement does not invalidate the Orion foundation.\nA different SAST implementation may be introduced when the risk profile of that application requires one.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Secret scanning and push protection",
+    "anchor": "secret-scanning-and-push-protection",
+    "text": "Secret scanning and push protection\nGitHub secret scanning and push protection should be enabled where available.\nThese capabilities complement Orion's existing secrets-management policies by detecting common credentials committed to repository history or preventing supported secrets from being pushed.\nThey do not eliminate the need to:\navoid committing secrets;\nrotate exposed credentials;\nscope credentials narrowly;\nuse environment or secret-management systems appropriately.\nA secret that reaches Git history must be treated as potentially exposed even if the commit is later removed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency audit commands",
+    "anchor": "dependency-audit-commands",
+    "text": "Dependency audit commands\nPackage-manager vulnerability-audit commands may be used for diagnostics or additional automation.\nThey will not initially serve as Orion's sole security gate.\nSecurity decisions should combine:\ndependency advisory visibility;\ndependency review when available;\nautomated remediation;\ntests;\napplication-specific risk assessment.\nThis avoids making one advisory command the complete definition of dependency security.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "License policy",
+    "anchor": "license-policy",
+    "text": "License policy\nThis ADR does not establish a global dependency-license allowlist or denylist.\nAcceptable licensing depends on how a specific Orion-based product is:\ndistributed;\nsold;\nembedded;\nhosted;\nmodified.\nLicense enforcement should be added when the product's legal/distribution model establishes the required policy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "CI-generated modifications",
     "anchor": "ci-generated-modifications",
     "text": "CI-generated modifications\nRequired validation workflows must not silently modify tracked source files to make CI pass.\nThis preserves ADR-0003's distinction between:\nvalidation\n    → check\n\nfixing\n    → explicit developer action\n\nCI may generate temporary artifacts for validation, but source corrections belong in a committed change.\n"
@@ -1474,77 +1564,5 @@
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nKeeps human credentials with an established provider and browser tokens out of JavaScript-accessible persistence.\nPreserves provider-independent identity and explicit failure/revocation/assurance boundaries.\nDefines compatibility and operational evidence before a production integration is claimed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nSelf-hosting adds patching, resources, recovery and mail-delivery responsibilities despite no procurement budget.\nServer sessions introduce persistence, CSRF, concurrency and logout synchronization work.\nCurrent foundation principal/configuration contracts do not yet carry all needed session/assurance semantics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical identity and access policies](../project/identity-and-access.md)\n[Provider evidence and qualification gaps](../project/identity-provider-evaluation.md)\n[Existing JWT access-token decision](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\n[Authentication policy](../security/authentication.md)\n[Application boundaries](../architecture/application-boundaries.md)\n[OAuth security best current practice](https://www.rfc-editor.org/rfc/rfc9700.html)\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "anchor": "adr-0025-adopt-application-owned-scoped-access-profiles",
-    "text": "ADR-0025: Adopt Application-Owned Scoped Access Profiles\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nApplication ownership keeps mutable company permissions and resources independent of provider migration and stale identity claims. Explicit capabilities/scopes accommodate both small-business presets and teams working across branches without making every operator an administrator. Attributable publication/support checks preserve the approved product behavior and tenant boundaries.\nThe owner approved policy and required allow/deny cases, not a database model or proven permission evaluator. Custom profiles, optional approvals and bounded asynchronous revocation add real implementation work and must not be claimed merely from a matrix.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Fixed roles only:** simpler, but cannot satisfy the selected customizable capability/scoping policy without revisiting the product requirements.\n**Provider roles/groups as complete authorization:** insufficient for current memberships, mutable resource relationships, publication fan-out and tenant-safe support; would couple application permission meaning to identity infrastructure.\n**General-purpose policy engine:** no measured need or evaluation justifies another dependency or distributed component at this stage. Review if actual policy complexity warrants it later.\n**Platform superuser and silent price partial success:** obscure authority and violate selected customer-content boundaries and complete price-impact validation.\n"
   }
 ]
