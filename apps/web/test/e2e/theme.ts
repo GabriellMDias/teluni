@@ -13,9 +13,13 @@ export async function chooseTheme(
   theme: "light" | "dark",
 ): Promise<void> {
   const toggle = themeSwitch(page);
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  // Wait for the shell before deciding whether this is the narrow-screen menu.
+  await expect
+    .poll(async () => (await toggle.isVisible()) || (await menu.isVisible()))
+    .toBe(true);
   const opened = !(await toggle.isVisible());
-  if (opened)
-    await page.getByRole("button", { name: "Menu", exact: true }).click();
+  if (opened) await menu.click();
   const checked = String(theme === "dark");
   if ((await toggle.getAttribute("aria-checked")) !== checked)
     await toggle.click();
