@@ -291,20 +291,12 @@ These come with the existing access, `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CON
 
 A **Catálogos** area per company (en-US "Catalogs"), shown with `catalogs.view`:
 
-- **List.** Catalogs with scope and record count. Creation offers three starting points: empty, products (name, description, image, category selection, price in BRL) and weekly agenda (title, weekdays, start and end times, details). These are presets that create ordinary fields.
-- **Catalog page:**
-  - a **Campos** tab: an ordered field editor with type-specific options and the archive action;
-  - an **Itens** tab: a paginated table of records with an editor form per type;
-  - the availability toggle and reorder.
-- **Prices.** A section in the record editor for each money field:
-  - the base price;
-  - branch overrides in a table of the catalog's branches;
-  - promotions, with their windows and the conflict errors;
-  - the effective price per branch at a chosen local time.
+- **List.** The shared DataSet presents catalog name, scope, item count, active field count and status. Its filter dialog sends name and active/archived selection to the server, with URL-owned cursor pagination and a clear-filter action. Column tools work on the loaded page. Creation opens on demand for catalog managers, preserves the list query on cancellation, and previews fields for the products, weekly agenda or empty template before saving ordinary fields.
+- **Catalog page.** Items and Fields are linkable sections. The item DataSet shows availability and the first active money field’s **base** price when present; it retains name search and pagination when returning from an item. Item creation opens separately for editors of an active catalog. Fields uses the ordered schema editor or a read-only field list. Managers have a Settings section for name, archive/restore and an explicit deletion disclosure.
+- **Item page.** Item details contains the typed values and availability toggle. Prices groups base price, branch overrides, promotions and the effective-price preview. Read-only users see saved prices as text; amounts follow the field’s currency and the person's locale. Switching between item details and prices preserves drafts while the record version is unchanged. Settings holds reordering and confirmed deletion for editors of an active catalog.
+- **Screen publications.** A separate item section lists what each price change did per program for the whole catalog (queued, published, skipped, blocked or failed, with the reason), refreshes while some are queued, and allows authorized reattempts for blocked or failed intents. Publication history marks generations with automatically updated prices.
 
-  Amounts are typed and shown in the field's currency with the person's locale. Copy is in `pt-BR` and `en-US`.
-
-Increment 4 adds **Publicação nas telas** to the record page: what each price change did per program (queued, published as a generation, skipped, blocked or failed, with the reason), refreshed while some are queued, and a button that authorizes a blocked or failed one again. Publication history marks generations with automatically updated prices.
+The workspace is localized in `pt-BR` and `en-US`. Read and write capabilities, optimistic versions, schema validation, price precedence and automatic publication remain server-owned.
 
 Increment 2 adds the **Layouts** editor under Programação: a canvas preview with drag and resize, plus numeric inputs and arrow keys for keyboard users; the area list; the view editor; the fit report with overflow by record; pages; and JSON import and export.
 

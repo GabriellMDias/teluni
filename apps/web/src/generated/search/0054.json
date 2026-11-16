@@ -1,5 +1,86 @@
 [
   {
+    "id": "repository/docs/runbooks/README",
+    "title": "Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Create a procedure",
+    "anchor": "create-a-procedure",
+    "text": "Create a procedure\nRead the [authoring policy](authoring.md#creation-and-follow-up), choose one real condition, and copy the template. Identify ownership, triggers, required access, verifiable preconditions, bounded diagnosis/actions, recovery verification, and stop/escalation conditions. Do not invent provider commands.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/README",
+    "title": "Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Find related policy",
+    "anchor": "find-related-policy",
+    "text": "Find related policy\n[Health checks](../reliability/health-checks.md) and [observability](../reliability/observability.md) for diagnostic evidence.\n[Alerting](../reliability/alerting.md) for actionable signals and runbook references.\n[Secrets](../security/secrets-management.md), [classification](../security/data-classification.md), and [retention](../security/data-retention.md) for safe handling of credentials, evidence, and temporary exports.\n[Documentation task index](../README.md) for other current policies.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Procedure Title",
+    "anchor": "runbook-procedure-title",
+    "text": "Runbook: Procedure Title\n**Owner:** actual responsible owner\n**Status:** active only after the procedure exists and is verified\n**Environment / applicability:**\n**Related alerts:**\n**Required access:**\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md). Replace prompts with current, verified details; this template is not an executable procedure or an authorization grant.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nState the one operational condition or task handled by this procedure.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nIdentify observable alerts, errors, or symptoms that activate the procedure, and cases where it must not be used.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nDescribe affected capabilities, scope, urgency, and data/security risk, including any known limit on impact.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\nVerify the target environment and observed condition.\nVerify required access and authorization for the planned actions.\nVerify procedure-specific safety conditions and current state.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\nOrder low-risk inspection before mutation: relevant metrics, alerts, logs, traces, errors, and bounded read-only checks. Establish affected scope and whether deployment, migration, configuration, or dependency changes contributed. Include expected results and evidence-based branches. Add provider commands only when tooling exists; continue only while evidence matches the procedure.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation / Procedure",
+    "anchor": "mitigation--procedure",
+    "text": "Mitigation / Procedure\nWrite ordered, bounded, copyable actions with consequences, expected output, decision points, and temporary-measure removal needs. Before a destructive, irreversible, or high-risk action, explain the exact affected scope and consequences. Stop when observed state differs from the documented scope.\nState whether actions are safe to repeat and how to inspect an unknown outcome before retrying. For long-running work, specify supported batch size, progress, monitoring, pause/resume, failure recovery, and concurrent-execution limits.\n"
+  },
+  {
     "id": "repository/docs/runbooks/template",
     "title": "Runbook: Procedure Title",
     "group": "Runbooks",
@@ -871,32 +952,5 @@
     "heading": "Try sign-in locally",
     "anchor": "try-sign-in-locally",
     "text": "Try sign-in locally\nThe identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:\npnpm db:generate\npnpm -C apps/api build\nnode apps/web/test/e2e/identity/manual.ts\n\nIt starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It also configures the API's mail relay to Mailpit. It prints the panel URL, the Mailpit inbox URL and the email and password of a synthetic user and of a synthetic invitee; invitations sent from a company's Invitations view arrive in Mailpit, and you can also create an account on the Keycloak sign-in page and read its verification email there. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Exercise automated workflows",
-    "anchor": "exercise-automated-workflows",
-    "text": "Exercise automated workflows\nAutomated workflows use disposable databases and synthetic identities. No seed data or external account is needed:\npnpm build\npnpm smoke\npnpm test:e2e\n\n`pnpm smoke` exercises the emitted API process, then any module process smokes. `pnpm test:e2e` runs the emitted API and the Vite web app for the shared documentation and shell journeys; module journeys start their own migrated PostgreSQL and synthetic issuer through the shared [end-to-end stack helpers](../apps/web/test/e2e/stack.ts). These fixtures are disposable and are not release or production data.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Validate, regenerate, and build",
-    "anchor": "validate-regenerate-and-build",
-    "text": "Validate, regenerate, and build\nRun the full, non-mutating tracked-source gate after changes:\npnpm validate\n\nIt checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, project provenance, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated API/database/SDK drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change those references, edit their canonical TypeBox/schema/metadata sources and run `pnpm -C apps/api references:write`, then `pnpm -C packages/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`.\nAfter intentional repository Markdown, API, database, or component-metadata changes, run `pnpm docs:references:write` and review the generated component Markdown, catalog, detail pages, and search shards. Vite serves/emits the existing API, database, error, and component artifacts without committing duplicate copies. `pnpm docs:references:check` is non-mutating and fails on drift, missing component metadata, or known secret patterns; it runs within `pnpm validate` and CI. Do not edit either generated layer directly.\n`pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.\n"
-  },
-  {
-    "id": "repository/docs/validation",
-    "title": "Validation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Validation",
-    "anchor": "validation",
-    "text": "Validation\n"
   }
 ]

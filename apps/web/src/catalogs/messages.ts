@@ -7,7 +7,7 @@ import type { FieldType } from "./api.js";
 const ptBR = {
   title: "Catálogos",
   listTitle: "Lista de catálogos",
-  lead: "Produtos, cardápios, agendas e outras listas com os campos que você definir. Preços ficam exatos, na moeda de cada campo.",
+  lead: "Organize produtos, cardápios e agendas para exibir nas suas telas.",
   backToCompany: "Voltar para a empresa",
   backToCatalogs: "Voltar para catálogos",
   backToCatalog: "Voltar para o catálogo",
@@ -59,7 +59,26 @@ const ptBR = {
   archivedNotice:
     "Este catálogo está arquivado e não pode ser alterado até ser restaurado.",
   viewsLabel: "Seções do catálogo",
-  views: { items: "Itens", fields: "Campos" },
+  views: { items: "Itens", fields: "Campos", settings: "Configurações" },
+  workspace: {
+    createLead:
+      "Escolha onde usar o catálogo e um modelo para começar. Você pode ajustar os campos depois.",
+    templateFields: "Campos deste modelo",
+    emptyTemplate: "Você define os campos na aba Campos após criar o catálogo.",
+    cancel: "Cancelar",
+    clearFilters: "Limpar filtros",
+    noResults:
+      "Nenhum resultado com os filtros atuais. Tente outro nome ou limpe os filtros.",
+    searchFor: (text: string) => `Busca: ${text}`,
+    active: "Ativo",
+    available: "Disponível",
+    itemName: "Item",
+    basePriceColumn: (name: string) => `${name} (base)`,
+    itemsLead:
+      "Abra um item para editar seus dados e preços. Os valores da lista são preços base.",
+    recordDetails: "Dados do item",
+    recordViews: "Seções do item",
+  },
   // Fields
   fieldsTitle: "Campos",
   fieldsLead:
@@ -305,7 +324,7 @@ type Messages = typeof ptBR;
 const enUS: Messages = {
   title: "Catalogs",
   listTitle: "Catalog list",
-  lead: "Products, menus, agendas and other lists with the fields you define. Prices stay exact, in each field's currency.",
+  lead: "Organize products, menus and schedules to display on your screens.",
   backToCompany: "Back to the company",
   backToCatalogs: "Back to catalogs",
   backToCatalog: "Back to the catalog",
@@ -358,7 +377,27 @@ const enUS: Messages = {
   archivedNotice:
     "This catalog is archived and cannot be changed until it is restored.",
   viewsLabel: "Catalog sections",
-  views: { items: "Items", fields: "Fields" },
+  views: { items: "Items", fields: "Fields", settings: "Settings" },
+  workspace: {
+    createLead:
+      "Choose where to use the catalog and a template to start. You can adjust the fields later.",
+    templateFields: "Fields in this template",
+    emptyTemplate:
+      "Define your fields in the Fields tab after creating the catalog.",
+    cancel: "Cancel",
+    clearFilters: "Clear filters",
+    noResults:
+      "No results match these filters. Try another name or clear the filters.",
+    searchFor: (text: string) => `Search: ${text}`,
+    active: "Active",
+    available: "Available",
+    itemName: "Item",
+    basePriceColumn: (name: string) => `${name} (base)`,
+    itemsLead:
+      "Open an item to edit its details and prices. Values in the list are base prices.",
+    recordDetails: "Item details",
+    recordViews: "Item sections",
+  },
   fieldsTitle: "Fields",
   fieldsLead:
     "Each field holds one kind of information. A saved field's type and currency never change; archive a field to hide it without losing its values.",
