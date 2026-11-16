@@ -1200,9 +1200,13 @@ test("keeps playlist item edits while changing sections and pages through select
 });
 
 test("blocks an unknown schedule write until a successful authoritative reload, including an unchanged version", async () => {
+  let failRead = false;
   respond(editor, (url, request) => {
     if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
-    if (url.pathname.endsWith("/program")) return { body: emptyProgram };
+    if (url.pathname.endsWith("/program"))
+      return failRead
+        ? { status: 503, body: { error: { code: "INTERNAL_ERROR" } } }
+        : { body: emptyProgram };
     if (url.pathname.endsWith("/rule-checks"))
       return { body: { issues: [], conflicts: [] } };
     if (url.pathname.endsWith("/programming/playlists"))
@@ -1221,9 +1225,20 @@ test("blocks an unknown schedule write until a successful authoritative reload, 
   await expect.element(save).toBeDisabled();
   await expect.element(screen.getByLabelText(t.defaultPlaylist)).toBeDisabled();
   expect(sentCount("PUT", "/outputs/screen")).toBe(1);
+  failRead = true;
   await screen
     .getByRole("alert")
     .getByRole("button", { name: t.reload, exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.defaultPlaylist))
+    .toHaveValue(playlistId);
+  await expect.element(save).toBeDisabled();
+  await expect.element(screen.getByRole("alert").nth(1)).toBeVisible();
+  failRead = false;
+  await screen
+    .getByRole("button", { name: t.reload, exact: true })
+    .first()
     .click();
   await expect
     .element(screen.getByLabelText(t.defaultPlaylist))

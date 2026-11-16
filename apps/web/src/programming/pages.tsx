@@ -1175,13 +1175,20 @@ function ScheduleEditor({
     queryKey: [...playlistsKey(companyId), "choices"],
     queryFn: () => listPlaylistChoices(companyId),
   });
+  const reload = async () => {
+    const result = await program.refetch();
+    if (!result.isError) {
+      setNotice(null);
+      setReloadRevision((revision) => revision + 1);
+    }
+  };
   if (program.isPending) return <p>{t.loading}</p>;
-  if (program.isError)
+  if (!program.data)
     return (
       <Failure
         error={program.error}
         operation="read"
-        onReload={() => void program.refetch()}
+        onReload={() => void reload()}
       />
     );
   const fits = (playlist: { branch: { id: string } | null }) =>
@@ -1210,6 +1217,13 @@ function ScheduleEditor({
   };
   return (
     <>
+      {program.isError && (
+        <Failure
+          error={program.error}
+          operation="read"
+          onReload={() => void reload()}
+        />
+      )}
       <details className="programming-layout-choice">
         <summary>
           <span>{t.workspace.layoutOptions}</span>
@@ -1255,13 +1269,7 @@ function ScheduleEditor({
         editable={editable}
         locale={locale}
         notice={notice}
-        onReload={async () => {
-          const result = await program.refetch();
-          if (!result.isError) {
-            setNotice(null);
-            setReloadRevision((revision) => revision + 1);
-          }
-        }}
+        onReload={reload}
         onEdit={() => setNotice(null)}
         onSaved={(changed) => saved(changed, t.schedulesSaved)}
       />
