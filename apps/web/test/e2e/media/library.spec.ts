@@ -81,7 +81,10 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
 
   await page.getByRole("link", { name: "Mídia", exact: true }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/media`);
-  await expect(page.getByText("Nenhuma mídia aqui ainda.")).toBeVisible();
+  await expect(page.getByText("Esta pasta está vazia")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Enviar arquivos", exact: true })
+    .click();
   await page
     .getByLabel("Arquivos", { exact: true })
     .setInputFiles([join(fixtures, "logo.png"), join(fixtures, "vitrine.mp4")]);
@@ -90,21 +93,63 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
     page.getByText("Enviado. Preparando para as telas."),
   ).toHaveCount(2, { timeout: 60_000 });
 
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
+
   // The list refreshes itself until both items are prepared.
   // Library items carry a link; the upload rows that also name the files do not.
   const item = (name: string) =>
     page
       .getByRole("listitem")
-      .filter({ has: page.getByRole("link", { name }) });
+      .filter({ has: page.getByRole("button", { name, exact: true }) });
   const logo = item("logo");
   const video = item("vitrine");
   await afterProcessing(logo).toContainText("Pronta");
   await afterProcessing(video).toContainText("Pronta");
   await expect(video).toContainText("0:02");
+  // Folder commands operate on real metadata while keeping the original reusable.
+  await page.getByRole("button", { name: "Nova pasta", exact: true }).click();
+  await page.getByLabel("Nome da pasta").fill("Campanhas");
+  await page.getByRole("button", { name: "Criar pasta", exact: true }).click();
+  await page.getByRole("button", { name: "logo", exact: true }).click();
+  await page.keyboard.press("Control+c");
+  await page.getByRole("button", { name: "Campanhas", exact: true }).dblclick();
+  await expect(
+    page.getByRole("heading", { name: "Campanhas", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Colar", exact: true }).click();
+  const copiedLogo = page.getByRole("button", {
+    name: "Cópia de logo",
+    exact: true,
+  });
+  await expect(copiedLogo).toBeVisible();
+  await copiedLogo.click();
+  await page.keyboard.press("Control+x");
+  await page
+    .getByRole("navigation", { name: "Localização na biblioteca" })
+    .getByRole("link", { name: "Biblioteca", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Colar", exact: true }).click();
+  await expect(copiedLogo).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "logo", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Ações de Campanhas", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Remover pasta vazia", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Remover pasta", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Campanhas", exact: true }),
+  ).toHaveCount(0);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   // The video's display rendition streams with ranges from the same origin.
-  await video.getByRole("link").click();
+  await video.getByRole("button", { name: "vitrine", exact: true }).dblclick();
+  await page.getByRole("link", { name: "Abrir detalhes completos" }).click();
   await afterNavigation(
     page.getByRole("heading", { name: "vitrine" }),
   ).toBeVisible();
@@ -119,7 +164,8 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   expect((await ranged.body()).length).toBe(100);
 
   await page.getByRole("link", { name: "Voltar para mídia" }).click();
-  await page.getByRole("link", { name: "logo", exact: true }).click();
+  await page.getByRole("button", { name: "logo", exact: true }).dblclick();
+  await page.getByRole("link", { name: "Abrir detalhes completos" }).click();
   await afterNavigation(
     page.getByRole("heading", { name: "logo" }),
   ).toBeVisible();
@@ -147,7 +193,8 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   await page.getByRole("link", { name: "Voltar para mídia" }).click();
   await page.getByRole("link", { name: "Lixeira" }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/media?view=trash`);
-  await page.getByRole("link", { name: "logo", exact: true }).click();
+  await page.getByRole("button", { name: "logo", exact: true }).dblclick();
+  await page.getByRole("link", { name: "Abrir detalhes completos" }).click();
   await expect(page.getByText("Exclusão definitiva em")).toBeVisible();
   await page.getByRole("button", { name: "Restaurar da lixeira" }).click();
   await expect(page.getByRole("status")).toContainText("Mídia restaurada.");

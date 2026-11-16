@@ -6,6 +6,93 @@ import type { MediaKind, MediaStatus, RejectionReason } from "./api.js";
 
 const ptBR = {
   title: "Mídia",
+  manager: {
+    clearClipboard: "Limpar área de transferência",
+    reconcile: "Verificar operação",
+    lead: "Organize seus arquivos e encontre o conteúdo certo para cada tela.",
+    newFolder: "Nova pasta",
+    folderName: "Nome da pasta",
+    createFolder: "Criar pasta",
+    folder: "Pasta",
+    files: "Arquivos",
+    folders: "Pastas",
+    root: "Biblioteca",
+    breadcrumbs: "Localização na biblioteca",
+    open: "Abrir",
+    preview: "Visualizar",
+    rename: "Renomear",
+    move: "Mover para…",
+    copy: "Copiar",
+    cut: "Recortar",
+    paste: "Colar",
+    removeFolder: "Remover pasta vazia",
+    clearSelection: "Limpar seleção",
+    selectAll: "Selecionar todos",
+    gridView: "Modo miniaturas",
+    listView: "Modo lista",
+    actions: "Ações dos arquivos",
+    more: (name: string) => `Ações de ${name}`,
+    select: (name: string) => `Selecionar ${name}`,
+    selected: (count: number) =>
+      `${count} ${count === 1 ? "item selecionado" : "itens selecionados"}`,
+    count: (count: number) =>
+      `${count} ${count === 1 ? "item exibido" : "itens exibidos"}`,
+    copied: (count: number) =>
+      `${count} ${count === 1 ? "item copiado" : "itens copiados"}. Escolha uma pasta e use Colar.`,
+    cutNotice: (count: number) =>
+      `${count} ${count === 1 ? "item pronto" : "itens prontos"} para mover. Escolha uma pasta e use Colar.`,
+    clipboard: "Área de transferência",
+    clipboardHint:
+      "Ctrl/⌘ + C para copiar, X para recortar e V para colar. A seleção fica nesta biblioteca.",
+    copyName: (name: string) => `Cópia de ${name}`,
+    moveTitle: "Mover itens",
+    copyTitle: "Copiar itens",
+    chooseFolder: "Escolher pasta de destino",
+    useFolder: "Usar esta pasta",
+    parent: "Pasta anterior",
+    destinationHint:
+      "Mover mantém o acesso original. As cópias seguem o acesso da pasta de destino.",
+    incompatible:
+      "Escopo diferente: escolha Copiar para criar um item com outro acesso.",
+    drop: "Arraste arquivos para enviar ou mova itens para uma pasta.",
+    emptyFolder: "Esta pasta está vazia",
+    emptyLead: "Crie uma pasta ou envie arquivos para começar.",
+    close: "Fechar",
+    refresh: "Atualizar biblioteca",
+    sort: "Ordenar itens exibidos",
+    sortName: "Nome",
+    sortRecent: "Mais recentes",
+    sortSize: "Tamanho",
+    size: "Tamanho",
+    modified: "Adicionado em",
+    loading: "Carregando biblioteca…",
+    results: "Resultados da busca",
+    searchHint: "Busca em todas as pastas visíveis.",
+    done: "Organização concluída.",
+    renamed: "Nome atualizado.",
+    folderCreated: "Pasta criada.",
+    folderRemoved: "Pasta removida.",
+    removeHint:
+      "Somente pastas vazias podem ser removidas. Arquivos arquivados e na lixeira também mantêm sua pasta.",
+    confirmRemove: "Remover pasta",
+    showDetails: "Abrir detalhes completos",
+    previewUnavailable: "A prévia aparece quando o arquivo estiver pronto.",
+    clearFilters: "Limpar filtros",
+    processing: "Em preparação",
+    uploadDestination: "Destino do envio",
+    rootScopeHint:
+      "Na biblioteca principal, os itens mantêm o escopo de origem.",
+    archive: "Arquivar",
+    restore: "Restaurar",
+    trash: "Mover para lixeira",
+    trashHint:
+      "A mídia precisa estar arquivada e sem referências protegidas. A lixeira permite recuperação por pelo menos 30 dias.",
+    confirmTrash: "Confirmar envio à lixeira",
+    download: "Baixar original",
+    moreFolders: "Mais pastas",
+    moreFiles: "Mais arquivos",
+  },
+
   lead: "Imagens e vídeos da empresa e das filiais que você pode ver.",
   backToCompany: "Voltar para a empresa",
   backToMedia: "Voltar para mídia",
@@ -128,6 +215,16 @@ const ptBR = {
       "Esta mídia está em uso em uma programação ou publicação e não pode ser excluída.",
     MEDIA_STORAGE_FULL:
       "O armazenamento de mídia está cheio. Fale com o suporte do Teluni.",
+    MEDIA_FOLDER_NOT_EMPTY:
+      "A pasta ainda contém itens, inclusive arquivados ou na lixeira. Mova-os antes de remover a pasta.",
+    MEDIA_FOLDER_LIMIT:
+      "Limite de pastas, profundidade ou itens por operação atingido. Selecione até 100 itens e use no máximo 12 níveis.",
+    MEDIA_INVALID_DESTINATION:
+      "Escolha outra pasta: não é possível mover ou copiar uma pasta para dentro dela mesma.",
+    MEDIA_SCOPE_MISMATCH:
+      "Mover preserva o acesso original. Escolha uma pasta da mesma empresa/filial, ou use Copiar com permissão no destino.",
+    IDEMPOTENCY_KEY_REUSED:
+      "Esta operação já foi usada com outro conteúdo. Atualize a biblioteca antes de continuar.",
     MEDIA_INVALID_STATE:
       "Esta ação não vale para a situação atual da mídia. Recarregue a página.",
     BRANCH_ARCHIVED: "A filial escolhida está arquivada.",
@@ -156,6 +253,92 @@ type Messages = typeof ptBR;
 
 const enUS: Messages = {
   title: "Media",
+  manager: {
+    clearClipboard: "Clear clipboard",
+    reconcile: "Verify operation",
+    lead: "Organize your files and find the right content for every screen.",
+    newFolder: "New folder",
+    folderName: "Folder name",
+    createFolder: "Create folder",
+    folder: "Folder",
+    files: "Files",
+    folders: "Folders",
+    root: "Library",
+    breadcrumbs: "Library location",
+    open: "Open",
+    preview: "Preview",
+    rename: "Rename",
+    move: "Move to…",
+    copy: "Copy",
+    cut: "Cut",
+    paste: "Paste",
+    removeFolder: "Remove empty folder",
+    clearSelection: "Clear selection",
+    selectAll: "Select all",
+    gridView: "Thumbnail view",
+    listView: "List view",
+    actions: "File actions",
+    more: (name: string) => `Actions for ${name}`,
+    select: (name: string) => `Select ${name}`,
+    selected: (count: number) =>
+      `${count} ${count === 1 ? "item selected" : "items selected"}`,
+    count: (count: number) =>
+      `${count} ${count === 1 ? "item shown" : "items shown"}`,
+    copied: (count: number) =>
+      `${count} ${count === 1 ? "item copied" : "items copied"}. Choose a folder and paste.`,
+    cutNotice: (count: number) =>
+      `${count} ${count === 1 ? "item ready" : "items ready"} to move. Choose a folder and paste.`,
+    clipboard: "Clipboard",
+    clipboardHint:
+      "Ctrl/⌘ + C to copy, X to cut and V to paste. Selection stays in this library.",
+    copyName: (name: string) => `Copy of ${name}`,
+    moveTitle: "Move items",
+    copyTitle: "Copy items",
+    chooseFolder: "Choose a destination folder",
+    useFolder: "Use this folder",
+    parent: "Parent folder",
+    destinationHint:
+      "Moving preserves access. Copies follow the destination folder's access.",
+    incompatible:
+      "Different scope: choose Copy to create an item with different access.",
+    drop: "Drop files to upload or move items onto a folder.",
+    emptyFolder: "This folder is empty",
+    emptyLead: "Create a folder or upload files to get started.",
+    close: "Close",
+    refresh: "Refresh library",
+    sort: "Sort displayed items",
+    sortName: "Name",
+    sortRecent: "Most recent",
+    sortSize: "Size",
+    size: "Size",
+    modified: "Added",
+    loading: "Loading library…",
+    results: "Search results",
+    searchHint: "Searches all visible folders.",
+    done: "Organization completed.",
+    renamed: "Name updated.",
+    folderCreated: "Folder created.",
+    folderRemoved: "Folder removed.",
+    removeHint:
+      "Only empty folders can be removed. Archived and trashed files also keep their folder.",
+    confirmRemove: "Remove folder",
+    showDetails: "Open full details",
+    previewUnavailable: "The preview appears when the file is ready.",
+    clearFilters: "Clear filters",
+    processing: "Preparing",
+    uploadDestination: "Upload destination",
+    rootScopeHint: "At the library root, items retain their original scope.",
+    archive: "Archive",
+    restore: "Restore",
+    trash: "Move to trash",
+    trashHint:
+      "Media must be archived and have no protected references. Trash allows recovery for at least 30 days.",
+    confirmTrash: "Confirm move to trash",
+    download: "Download original",
+    moreFolders: "More folders",
+    moreFiles: "More files",
+  },
+
   lead: "Images and videos of the company and of the branches you can see.",
   backToCompany: "Back to the company",
   backToMedia: "Back to media",
@@ -274,6 +457,16 @@ const enUS: Messages = {
     MEDIA_IN_USE:
       "This media is used by a schedule or publication and cannot be deleted.",
     MEDIA_STORAGE_FULL: "Media storage is full. Contact Teluni support.",
+    MEDIA_FOLDER_NOT_EMPTY:
+      "The folder still contains items, including archived or trashed files. Move them before removing it.",
+    MEDIA_FOLDER_LIMIT:
+      "The folder, depth or operation limit was reached. Select up to 100 items and use at most 12 levels.",
+    MEDIA_INVALID_DESTINATION:
+      "Choose another folder: a folder cannot be moved or copied into itself.",
+    MEDIA_SCOPE_MISMATCH:
+      "Moving preserves access. Choose a folder of the same company/branch scope, or copy with destination permission.",
+    IDEMPOTENCY_KEY_REUSED:
+      "This operation was already used with different content. Refresh the library before continuing.",
     MEDIA_INVALID_STATE:
       "This action does not apply to the media's current status. Reload the page.",
     BRANCH_ARCHIVED: "The chosen branch is archived.",

@@ -1,7 +1,7 @@
 {
   "kind": "database",
   "name": "media_audit_events",
-  "description": "Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.",
+  "description": "An append-only media event targeting one asset or one organizational folder, with an actor and allowlisted facts; never names, paths or content.",
   "owner": "Media",
   "classification": "CONFIDENTIAL",
   "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
@@ -29,11 +29,11 @@
     {
       "Column": "asset_id",
       "PostgreSQL type": "uuid",
-      "Nullable": "no",
+      "Nullable": "yes",
       "Default": "—",
       "Classification": "INTERNAL",
       "Meaning": "Media item the event concerns.",
-      "Null meaning": "—",
+      "Null meaning": "This event targets a folder instead.",
       "Unit": "—"
     },
     {
@@ -85,6 +85,16 @@
       "Meaning": "Allowlisted IDs, kinds, sizes, states and reason codes; never names of other items, hashes or paths.",
       "Null meaning": "—",
       "Unit": "—"
+    },
+    {
+      "Column": "folder_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Folder targeted by this event; a deleted folder remains as a hidden audit tombstone.",
+      "Null meaning": "This event targets an asset instead.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -112,6 +122,16 @@
       "Object": "media_audit_events_details_object",
       "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
       "Purpose": "Details are a JSON object."
+    },
+    {
+      "Object": "media_audit_events_folder_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, folder_id) REFERENCES media_folders(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "Folder audit targets belong to the same company."
+    },
+    {
+      "Object": "media_audit_events_one_target",
+      "Physical definition": "CHECK ((num_nonnulls(asset_id, folder_id) = 1))",
+      "Purpose": "Every event targets exactly one asset or folder."
     },
     {
       "Object": "media_audit_events_pkey",

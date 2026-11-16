@@ -335,6 +335,16 @@
       "Meaning": "PostgreSQL-clock instant of the latest change.",
       "Null meaning": "—",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "folder_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Organizational folder within the same company and owning scope; changing it preserves asset identity, content and every programming reference.",
+      "Null meaning": "The item is unfiled at the library root.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -387,6 +397,11 @@
       "Object": "media_assets_dimensions_positive",
       "Physical definition": "CHECK ((((width IS NULL) OR (width > 0)) AND ((height IS NULL) OR (height > 0))))",
       "Purpose": "Dimensions are positive."
+    },
+    {
+      "Object": "media_assets_folder_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, folder_id) REFERENCES media_folders(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The folder belongs to the same company as the asset. The application enforces equal owning scopes under library locks."
     },
     {
       "Object": "media_assets_hash_lengths",
@@ -467,6 +482,11 @@
       "Object": "media_assets_display_idx",
       "Physical definition": "CREATE INDEX media_assets_display_idx ON public.media_assets USING btree (company_id, display_sha256)",
       "Purpose": "Finds whether another item still references an object before it is deleted."
+    },
+    {
+      "Object": "media_assets_folder_created_idx",
+      "Physical definition": "CREATE INDEX media_assets_folder_created_idx ON public.media_assets USING btree (company_id, folder_id, created_at DESC, id DESC)",
+      "Purpose": "Lists direct folder contents newest first without scanning unrelated assets."
     },
     {
       "Object": "media_assets_original_idx",

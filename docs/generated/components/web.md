@@ -456,3 +456,127 @@ Usage: Use in the screen list and details for pairing, connection and publicatio
 ```tsx
 <ScreenStatus tone="danger">Update failed</ScreenStatus>
 ```
+
+
+## MediaBrowser
+
+Company media file manager with URL-owned navigation and an in-memory selection and clipboard.
+
+Category: Data Display. Scope: feature-specific. Owner: Media.
+
+Source: [apps/web/src/media/manager.tsx](../../../apps/web/src/media/manager.tsx) (export `MediaBrowser`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `companyId` | `string` | Authorized company identifier. | Yes | — |
+| `company` | `CompanyWithAccess` | Current company and capability snapshot; the API enforces owning scope. | Yes | — |
+| `filter` | `MediaFilter` | Validated router-owned view, folder, filters, layout and cursors. | Yes | — |
+| `branches` | `BranchChoice[]` | Visible branch labels for scope selection. | Yes | — |
+| `renderUpload` | `function` | Existing upload workflow with destination, initial files and busy-state callback. | Yes | — |
+| `renderPreview` | `function` | Existing authorized rendition renderer for one asset. | Yes | — |
+
+### States
+
+- Root or nested folder
+- Global name search
+- Grid/list
+- Multiple selection and cut/copy clipboard
+- Upload/rename/destination/preview dialogs
+- Read denial or stale write
+- Unknown outcome with same-command reconciliation
+- Archived and trash views
+
+Accessibility: Native breadcrumbs and links preserve navigation. Grid tiles have named selection checkboxes and Enter/double-click activation; list view uses DataGrid keyboard semantics. Ctrl/Command+A/C/X/V and F2 skip editable inputs and modal tasks. Menus and native dialogs manage keyboard/focus; visible status and failures accompany semantic colors. Responsive layouts and semantic tokens support narrow screens and both themes.
+
+Usage: Use as the company library inside its existing session/company gate. Composes shared Menu, Checkbox and DataGrid. Folder/filter/layout/page state belongs to the router, remote resources to Query, and temporary selection, clipboard and dialogs to React. Server permissions, scope, lifecycle, depth and reference checks remain authoritative. Upload and full media rendering are supplied by the owning workflow. Keep this authenticated composition out of static live catalog examples.
+
+### Examples
+
+- **Authenticated library composition** (`media-browser-composition`): Feature composition is documented without making live requests in the catalog.
+
+```tsx
+<MediaBrowser companyId={companyId} company={company} filter={search} branches={branches} renderUpload={renderUpload} renderPreview={renderPreview} />
+```
+
+
+## MediaDialog
+
+Native modal shell for bounded media management tasks.
+
+Category: Feedback. Scope: feature-specific. Owner: Media.
+
+Source: [apps/web/src/media/dialogs.tsx](../../../apps/web/src/media/dialogs.tsx) (export `MediaDialog`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `title` | `string` | Dialog heading and accessible name. | Yes | — |
+| `children` | `ReactNode` | Task content. | Yes | — |
+| `onClose` | `function` | Dismisses caller-owned state. | Yes | — |
+| `busy` | `boolean` | Prevents dismissal during an operation. | See type | false |
+| `wide` | `boolean` | Larger preview width. | See type | false |
+
+### States
+
+- Open
+- Busy
+- Preview width
+
+Accessibility: Uses dialog.showModal, a labelled heading, autofocus target, native focus containment and Escape, with opener restoration when still connected. Close controls are unavailable while busy.
+
+Usage: Supply a localized title and close callback. Set busy during writes/uploads to prevent dismissal; wide is reserved for previews. The caller owns form state and write recovery.
+
+### Examples
+
+- **Rename task** (`media-dialog-task`): Feature modal with caller-owned fields.
+
+```tsx
+<MediaDialog title="Rename" onClose={close}><form>…</form></MediaDialog>
+```
+
+
+## MediaFolderPicker
+
+On-demand destination browsing for atomic move/copy commands.
+
+Category: Forms. Scope: feature-specific. Owner: Media.
+
+Source: [apps/web/src/media/dialogs.tsx](../../../apps/web/src/media/dialogs.tsx) (export `MediaFolderPicker`). Metadata: [apps/web/src/media/components.docs.json](../../../apps/web/src/media/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `companyId` | `string` | Authorized company. | Yes | — |
+| `initialId` | `string \| null` | Starting folder or root. | Yes | — |
+| `action` | `MOVE \| COPY` | Controls scope guidance. | Yes | — |
+| `sourceFolderIds` | `readonly string[]` | Selected folders to exclude as destinations. | Yes | — |
+| `sourceScopes` | `readonly (string \| null)[]` | Owning scopes for move compatibility. | Yes | — |
+| `onChoose` | `function` | Submits the chosen destination identity. | Yes | — |
+| `pending` | `boolean` | Write in progress. | Yes | — |
+| `error` | `unknown` | Authoritative command failure. | Yes | — |
+| `onReload` | `function` | Reconciles unknown outcomes or refreshes stale selection. | Yes | — |
+
+### States
+
+- Root
+- Nested folder
+- Pagination
+- Scope/descendant refusal
+- Read failure
+- Unknown write outcome
+
+Accessibility: Named native breadcrumb and folder buttons, visible scope hints, loading/error feedback and a disabled confirmation for incompatible or unresolved destinations.
+
+Usage: Use within MediaDialog, with source identities/scopes and the action. Loads paginated visible folders rather than the entire tree. Scope and descendant hints improve choice; server validation remains authoritative.
+
+### Examples
+
+- **Move destination** (`media-folder-picker-task`): Documented composition requires authenticated data.
+
+```tsx
+<MediaFolderPicker companyId={companyId} initialId={null} action="MOVE" sourceFolderIds={ids} sourceScopes={scopes} pending={pending} error={error} onReload={reload} onChoose={move} />
+```

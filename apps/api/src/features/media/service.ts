@@ -3,7 +3,6 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import type { HumanContext } from "../identity/public.js";
 import {
   branchReach,
-  decide,
   OrganizationFailure,
   requireCapability,
   type Capability,
@@ -34,6 +33,8 @@ import type {
   PublishableMedia,
   SelectableMedia,
 } from "./public.js";
+import type { MediaLibraryService } from "./library.js";
+import { visible, requireOn } from "./access.js";
 import { UploadIdle, UploadTooLong, type MediaObjectStore } from "./storage.js";
 
 export type MediaView = MediaRecord &
@@ -76,34 +77,6 @@ function decodeCursor(
   throw new MediaFailure("VALIDATION_FAILED");
 }
 
-/**
- * Whether the access may see an item: company items through any media
- * grant in the company, branch items through a grant on their branch, and
- * items in the trash only with company-wide deletion authority.
- */
-function visible(access: CompanyAccess, item: MediaRecord): boolean {
-  if (item.status === "PURGED") return false;
-  if (item.status === "DELETED")
-    return decide(access, "media.delete") === "allow";
-  if (item.branchId === null) {
-    const reach = branchReach(access, "media.view");
-    return reach === "all" || reach.size > 0;
-  }
-  return decide(access, "media.view", item.branchId) === "allow";
-}
-
-/** Hidden items answer RESOURCE_NOT_FOUND; visible ones explain denials. */
-function requireOn(
-  access: CompanyAccess,
-  capability: Capability,
-  item: MediaRecord,
-): void {
-  if (access.companyStatus === "SUSPENDED")
-    throw new OrganizationFailure("COMPANY_SUSPENDED");
-  if (!visible(access, item)) throw new MediaFailure("RESOURCE_NOT_FOUND");
-  requireCapability(access, capability, item.branchId ?? undefined);
-}
-
 export type ListQuery = Readonly<{
   limit: number;
   cursor?: string;
@@ -112,11 +85,13 @@ export type ListQuery = Readonly<{
   scope?: string;
   tag?: string;
   text?: string;
+  folderId?: string;
 }>;
 
 /** The media library over the organizations access boundary (ADR-0028). */
 export class MediaService {
   readonly #repository: PrismaMediaRepository;
+  readonly #library: MediaLibraryService;
   readonly #companies: CompanyAccessPort;
   readonly #store: MediaObjectStore;
   readonly #guards = new Map<string, MediaReferenceGuard>();
@@ -124,12 +99,14 @@ export class MediaService {
 
   constructor(options: {
     repository: PrismaMediaRepository;
+    library: MediaLibraryService;
     companies: CompanyAccessPort;
     store: MediaObjectStore;
     /** Asks the processor for a prompt pass after an upload commits. */
     wake: () => void;
   }) {
     this.#repository = options.repository;
+    this.#library = options.library;
     this.#companies = options.companies;
     this.#store = options.store;
     this.#wake = options.wake;
@@ -165,6 +142,7 @@ export class MediaService {
     input: {
       name: string;
       branchId: string | null;
+      folderId?: string | null;
       contentType: string;
       size: number;
       tags?: readonly string[];
@@ -187,6 +165,13 @@ export class MediaService {
       requireCapability(locked.access, "media.upload", scope);
       if (input.branchId && !locked.activeBranchIds.has(input.branchId))
         throw new MediaFailure("VALIDATION_FAILED");
+      if (input.folderId)
+        await this.#library.validateUploadFolder(
+          tx,
+          locked.access,
+          input.folderId,
+          input.branchId,
+        );
       const usage = await this.#repository.usage(
         tx,
         companyId,
@@ -208,6 +193,7 @@ export class MediaService {
         {
           companyId,
           branchId: input.branchId,
+          folderId: input.folderId ?? null,
           name,
           tags,
           kind: declared.kind,
@@ -312,6 +298,10 @@ export class MediaService {
       !reach.has(query.scope)
     )
       return { items: [], nextCursor: null };
+    if (query.folderId && query.folderId !== "root")
+      await this.#repository.transaction((tx) =>
+        this.#library.requireFolder(tx, access, query.folderId!),
+      );
     const tag = query.tag === undefined ? undefined : mediaTags([query.tag])[0];
     const text = query.text?.trim() || undefined;
     const scope = [
@@ -321,6 +311,7 @@ export class MediaService {
       query.scope ?? "",
       tag ?? "",
       text ?? "",
+      ...(query.folderId ? [query.folderId] : []),
     ].join("|");
     const cursor = decodeCursor(query.cursor, {
       company: companyId,
@@ -334,6 +325,7 @@ export class MediaService {
       ...(query.scope ? { scope: query.scope } : {}),
       ...(tag ? { tag } : {}),
       ...(text ? { text } : {}),
+      ...(query.folderId ? { folderId: query.folderId } : {}),
       ...(cursor
         ? { before: { createdAt: new Date(cursor.t), id: cursor.i } }
         : {}),

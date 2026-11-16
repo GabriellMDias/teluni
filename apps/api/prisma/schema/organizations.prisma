@@ -82,6 +82,8 @@ model Company {
   deviceClaimFailures     DeviceClaimFailure[]
   deviceAuditEvents       DeviceAuditEvent[]
   // Back-relations of the media module; never traversed across modules.
+  mediaFolders            MediaFolder[]
+  mediaLibraryOperations  MediaLibraryOperation[]
   mediaObjects            MediaObject[]
   mediaAssets             MediaAsset[]
   mediaAuditEvents        MediaAuditEvent[]
@@ -120,6 +122,7 @@ model Branch {
   deviceAuditBranches  DeviceAuditEventBranch[]
   auditEventBranches   OrganizationAuditEventBranch[]
   devices              Device[]
+  mediaFolders         MediaFolder[]
   mediaAssets          MediaAsset[]
   playlists            Playlist[]
   layouts              Layout[]
@@ -135,36 +138,38 @@ model Branch {
 }
 
 model Membership {
-  id                String                   @id @db.Uuid
-  companyId         String                   @map("company_id") @db.Uuid
-  principalId       String                   @map("principal_id") @db.Uuid
-  status            MembershipStatus         @default(ACTIVE)
-  version           Int                      @default(1)
-  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company           Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  principal         Principal                @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  responsibility    CompanyResponsibility?
-  grants            MembershipGrant[]        @relation("GrantHolder")
-  grantedGrants     MembershipGrant[]        @relation("GrantGrantor")
-  auditEvents       OrganizationAuditEvent[]
-  outgoingTransfers ResponsibilityTransfer[] @relation("TransferFrom")
-  incomingTransfers ResponsibilityTransfer[] @relation("TransferTo")
-  sentInvitations   CompanyInvitation[]      @relation("InvitationInviter")
-  invitationJoins   CompanyInvitation[]      @relation("InvitationAcceptance")
-  pairedDevices     Device[]                 @relation("DevicePairer")
-  deviceAuditEvents DeviceAuditEvent[]       @relation("DeviceAuditActorMembership")
-  createdMedia      MediaAsset[]             @relation("MediaCreator")
-  mediaAuditEvents  MediaAuditEvent[]        @relation("MediaAuditActorMembership")
-  programmingAudit  ProgrammingAuditEvent[]  @relation("ProgrammingAuditActorMembership")
-  publications      Publication[]            @relation("PublicationPublisherMembership")
-  publicationAudit  PublicationAuditEvent[]  @relation("PublicationAuditActorMembership")
-  authoredIntents   PriceIntent[]            @relation("PriceIntentAuthor")
-  authorizedIntents PriceIntent[]            @relation("PriceIntentAuthorizer")
-  createdRecords    CatalogRecord[]          @relation("CatalogRecordCreator")
-  updatedRecords    CatalogRecord[]          @relation("CatalogRecordUpdater")
-  createdPromotions CatalogPromotion[]       @relation("CatalogPromotionCreator")
-  catalogAudit      CatalogAuditEvent[]      @relation("CatalogAuditActorMembership")
+  id                     String                   @id @db.Uuid
+  companyId              String                   @map("company_id") @db.Uuid
+  principalId            String                   @map("principal_id") @db.Uuid
+  status                 MembershipStatus         @default(ACTIVE)
+  version                Int                      @default(1)
+  createdAt              DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company                Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  principal              Principal                @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  responsibility         CompanyResponsibility?
+  grants                 MembershipGrant[]        @relation("GrantHolder")
+  grantedGrants          MembershipGrant[]        @relation("GrantGrantor")
+  auditEvents            OrganizationAuditEvent[]
+  outgoingTransfers      ResponsibilityTransfer[] @relation("TransferFrom")
+  incomingTransfers      ResponsibilityTransfer[] @relation("TransferTo")
+  sentInvitations        CompanyInvitation[]      @relation("InvitationInviter")
+  invitationJoins        CompanyInvitation[]      @relation("InvitationAcceptance")
+  pairedDevices          Device[]                 @relation("DevicePairer")
+  deviceAuditEvents      DeviceAuditEvent[]       @relation("DeviceAuditActorMembership")
+  createdMediaFolders    MediaFolder[]            @relation("MediaFolderCreator")
+  mediaLibraryOperations MediaLibraryOperation[]  @relation("MediaLibraryOperationActor")
+  createdMedia           MediaAsset[]             @relation("MediaCreator")
+  mediaAuditEvents       MediaAuditEvent[]        @relation("MediaAuditActorMembership")
+  programmingAudit       ProgrammingAuditEvent[]  @relation("ProgrammingAuditActorMembership")
+  publications           Publication[]            @relation("PublicationPublisherMembership")
+  publicationAudit       PublicationAuditEvent[]  @relation("PublicationAuditActorMembership")
+  authoredIntents        PriceIntent[]            @relation("PriceIntentAuthor")
+  authorizedIntents      PriceIntent[]            @relation("PriceIntentAuthorizer")
+  createdRecords         CatalogRecord[]          @relation("CatalogRecordCreator")
+  updatedRecords         CatalogRecord[]          @relation("CatalogRecordUpdater")
+  createdPromotions      CatalogPromotion[]       @relation("CatalogPromotionCreator")
+  catalogAudit           CatalogAuditEvent[]      @relation("CatalogAuditActorMembership")
 
   // One current (not REMOVED) membership per principal and company is a
   // partial unique index in the reviewed SQL, which Prisma cannot express.

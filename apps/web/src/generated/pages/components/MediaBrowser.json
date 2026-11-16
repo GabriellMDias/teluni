@@ -1,0 +1,73 @@
+{
+  "name": "MediaBrowser",
+  "category": "Data Display",
+  "scope": "feature-specific",
+  "owner": "Media",
+  "summary": "Company media file manager with URL-owned navigation and an in-memory selection and clipboard.",
+  "usage": "Use as the company library inside its existing session/company gate. Composes shared Menu, Checkbox and DataGrid. Folder/filter/layout/page state belongs to the router, remote resources to Query, and temporary selection, clipboard and dialogs to React. Server permissions, scope, lifecycle, depth and reference checks remain authoritative. Upload and full media rendering are supplied by the owning workflow. Keep this authenticated composition out of static live catalog examples.",
+  "accessibility": "Native breadcrumbs and links preserve navigation. Grid tiles have named selection checkboxes and Enter/double-click activation; list view uses DataGrid keyboard semantics. Ctrl/Command+A/C/X/V and F2 skip editable inputs and modal tasks. Menus and native dialogs manage keyboard/focus; visible status and failures accompany semantic colors. Responsive layouts and semantic tokens support narrow screens and both themes.",
+  "props": [
+    {
+      "name": "companyId",
+      "type": "string",
+      "meaning": "Authorized company identifier.",
+      "required": true
+    },
+    {
+      "name": "company",
+      "type": "CompanyWithAccess",
+      "meaning": "Current company and capability snapshot; the API enforces owning scope.",
+      "required": true
+    },
+    {
+      "name": "filter",
+      "type": "MediaFilter",
+      "meaning": "Validated router-owned view, folder, filters, layout and cursors.",
+      "required": true
+    },
+    {
+      "name": "branches",
+      "type": "BranchChoice[]",
+      "meaning": "Visible branch labels for scope selection.",
+      "required": true
+    },
+    {
+      "name": "renderUpload",
+      "type": "function",
+      "meaning": "Existing upload workflow with destination, initial files and busy-state callback.",
+      "required": true
+    },
+    {
+      "name": "renderPreview",
+      "type": "function",
+      "meaning": "Existing authorized rendition renderer for one asset.",
+      "required": true
+    }
+  ],
+  "states": [
+    "Root or nested folder",
+    "Global name search",
+    "Grid/list",
+    "Multiple selection and cut/copy clipboard",
+    "Upload/rename/destination/preview dialogs",
+    "Read denial or stale write",
+    "Unknown outcome with same-command reconciliation",
+    "Archived and trash views"
+  ],
+  "examples": [
+    {
+      "id": "media-browser-composition",
+      "label": "Authenticated library composition",
+      "description": "Feature composition is documented without making live requests in the catalog.",
+      "code": "<MediaBrowser companyId={companyId} company={company} filter={search} branches={branches} renderUpload={renderUpload} renderPreview={renderPreview} />",
+      "live": false
+    }
+  ],
+  "id": "MediaBrowser",
+  "exportName": "MediaBrowser",
+  "source": "apps/web/src/media/manager.tsx",
+  "metadataSource": "apps/web/src/media/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/media/manager.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/media/components.docs.json"
+}

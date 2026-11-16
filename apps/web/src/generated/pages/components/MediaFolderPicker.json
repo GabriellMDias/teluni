@@ -1,0 +1,89 @@
+{
+  "name": "MediaFolderPicker",
+  "category": "Forms",
+  "scope": "feature-specific",
+  "owner": "Media",
+  "summary": "On-demand destination browsing for atomic move/copy commands.",
+  "usage": "Use within MediaDialog, with source identities/scopes and the action. Loads paginated visible folders rather than the entire tree. Scope and descendant hints improve choice; server validation remains authoritative.",
+  "accessibility": "Named native breadcrumb and folder buttons, visible scope hints, loading/error feedback and a disabled confirmation for incompatible or unresolved destinations.",
+  "props": [
+    {
+      "name": "companyId",
+      "type": "string",
+      "meaning": "Authorized company.",
+      "required": true
+    },
+    {
+      "name": "initialId",
+      "type": "string | null",
+      "meaning": "Starting folder or root.",
+      "required": true
+    },
+    {
+      "name": "action",
+      "type": "MOVE | COPY",
+      "meaning": "Controls scope guidance.",
+      "required": true
+    },
+    {
+      "name": "sourceFolderIds",
+      "type": "readonly string[]",
+      "meaning": "Selected folders to exclude as destinations.",
+      "required": true
+    },
+    {
+      "name": "sourceScopes",
+      "type": "readonly (string | null)[]",
+      "meaning": "Owning scopes for move compatibility.",
+      "required": true
+    },
+    {
+      "name": "onChoose",
+      "type": "function",
+      "meaning": "Submits the chosen destination identity.",
+      "required": true
+    },
+    {
+      "name": "pending",
+      "type": "boolean",
+      "meaning": "Write in progress.",
+      "required": true
+    },
+    {
+      "name": "error",
+      "type": "unknown",
+      "meaning": "Authoritative command failure.",
+      "required": true
+    },
+    {
+      "name": "onReload",
+      "type": "function",
+      "meaning": "Reconciles unknown outcomes or refreshes stale selection.",
+      "required": true
+    }
+  ],
+  "states": [
+    "Root",
+    "Nested folder",
+    "Pagination",
+    "Scope/descendant refusal",
+    "Read failure",
+    "Unknown write outcome"
+  ],
+  "examples": [
+    {
+      "id": "media-folder-picker-task",
+      "label": "Move destination",
+      "description": "Documented composition requires authenticated data.",
+      "code": "<MediaFolderPicker companyId={companyId} initialId={null} action=\"MOVE\" sourceFolderIds={ids} sourceScopes={scopes} pending={pending} error={error} onReload={reload} onChoose={move} />",
+      "live": false
+    }
+  ],
+  "source": "apps/web/src/media/dialogs.tsx",
+  "id": "MediaFolderPicker",
+  "exportName": "MediaFolderPicker",
+  "metadataSource": "apps/web/src/media/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/media/dialogs.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/media/components.docs.json"
+}

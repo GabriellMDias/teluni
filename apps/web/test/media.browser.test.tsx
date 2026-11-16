@@ -1,4 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -13,6 +14,7 @@ import { mediaMessages } from "../src/media/messages.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
 import { shellMessages } from "../src/shell-messages.js";
+import { companyKey } from "../src/organizations/api.js";
 import { organizationMessages } from "../src/organizations/messages.js";
 
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -235,13 +237,17 @@ test("lists media with filters in the URL and no upload for viewers", async () =
           nextCursor: null,
         },
       };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["media.view"]) };
   });
   const { screen, router } = await open(mediaPath);
   await expect
-    .element(screen.getByRole("link", { name: "Promoção de verão" }))
-    .toHaveAttribute("href", `${mediaPath}/${assetId}`);
+    .element(
+      screen.getByRole("button", { name: "Promoção de verão", exact: true }),
+    )
+    .toBeVisible();
   await expect
     .element(screen.getByText(t.companyScope, { exact: false }).last())
     .toBeVisible();
@@ -253,7 +259,9 @@ test("lists media with filters in the URL and no upload for viewers", async () =
     .not.toBeInTheDocument();
   await screen.getByLabelText(t.filterKind).selectOptions(t.kinds.VIDEO);
   await expect
-    .element(screen.getByRole("link", { name: "Vídeo da vitrine" }))
+    .element(
+      screen.getByRole("button", { name: "Vídeo da vitrine", exact: true }),
+    )
     .toBeVisible();
   expect(router.state.location.search).toEqual({ kind: "VIDEO" });
   await expect
@@ -288,6 +296,8 @@ test("explains rejections and shows preparation progress", async () => {
           nextCursor: null,
         },
       };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["media.view"]) };
   });
@@ -317,6 +327,8 @@ test("creates each item, then streams its bytes with progress", async () => {
     }
     if (url.pathname.endsWith("/media"))
       return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["media.view", "media.upload"]) };
   });
@@ -325,7 +337,10 @@ test("creates each item, then streams its bytes with progress", async () => {
     body: media({ status: "PROCESSING", version: 2 }),
   }));
   const { screen } = await open(mediaPath);
-  await expect.element(screen.getByText(t.empty)).toBeVisible();
+  await expect.element(screen.getByText(t.manager.emptyFolder)).toBeVisible();
+  await screen
+    .getByRole("button", { name: t.uploadTitle, exact: true })
+    .click();
   const files = screen.getByLabelText(t.uploadFiles);
   await files.upload([
     new File([new Uint8Array(1200)], "Promoção de verão.jpg", {
@@ -363,10 +378,15 @@ test("shows a failed upload with the server's explanation", async () => {
       };
     if (url.pathname.endsWith("/media"))
       return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["media.view", "media.upload"]) };
   });
   const { screen } = await open(mediaPath);
+  await screen
+    .getByRole("button", { name: t.uploadTitle, exact: true })
+    .click();
   await screen
     .getByLabelText(t.uploadFiles)
     .upload(new File([new Uint8Array(10)], "a.png", { type: "image/png" }));
@@ -496,6 +516,8 @@ test("discards a rejected upload and returns to the library", async () => {
       };
     if (url.pathname.endsWith("/media"))
       return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["media.view", "media.upload"]) };
   });
@@ -508,9 +530,360 @@ test("discards a rejected upload and returns to the library", async () => {
     )
     .toBeVisible();
   await screen.getByRole("button", { name: t.discard }).click();
-  await expect.element(screen.getByText(t.empty)).toBeVisible();
+  await expect.element(screen.getByText(t.manager.emptyFolder)).toBeVisible();
   expect(router.state.location.pathname).toBe(mediaPath);
   expect(await sent("DELETE", `/media/${assetId}`)).toEqual({
     expectedVersion: 3,
+  });
+});
+
+const folderId = "00000000-0000-4000-8000-0000000000f1";
+function folder(overrides: Record<string, unknown> = {}) {
+  return {
+    id: folderId,
+    name: "Campanhas",
+    parentId: null,
+    branch: null,
+    createdAt: "2026-11-15T12:00:00.000Z",
+    updatedAt: "2026-11-15T12:00:00.000Z",
+    version: 1,
+    ...overrides,
+  };
+}
+
+test("creates folders and renames them with the current version, then navigates by URL", async () => {
+  let current = folder(),
+    exists = false;
+  respond(async (url, request) => {
+    if (url.pathname.endsWith("/media-folders") && request.method === "POST") {
+      const body = (await request.clone().json()) as { name: string };
+      current = folder({ name: body.name });
+      exists = true;
+      return { status: 201, body: current };
+    }
+    if (url.pathname.endsWith(`/media-folders/${folderId}`)) {
+      if (request.method === "PATCH") {
+        const body = (await request.clone().json()) as { name: string };
+        current = folder({ name: body.name, version: 2 });
+        return { body: current };
+      }
+      return { body: { folder: current, ancestors: [] } };
+    }
+    if (url.pathname.endsWith("/media-folders"))
+      return {
+        body: {
+          items:
+            exists && url.searchParams.get("parentId") === "root"
+              ? [current]
+              : [],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith("/media"))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  const { screen, router } = await open(mediaPath);
+  await screen
+    .getByRole("button", { name: t.manager.newFolder, exact: true })
+    .click();
+  await screen.getByLabelText(t.manager.folderName).fill("Campanhas");
+  await screen
+    .getByRole("button", { name: t.manager.createFolder, exact: true })
+    .click();
+  await expect
+    .element(screen.getByRole("button", { name: "Campanhas", exact: true }))
+    .toBeVisible();
+  await expect.element(screen.getByText(t.manager.folderCreated)).toBeVisible();
+  expect(await sent("POST", "/media-folders")).toEqual({
+    operationId: expect.any(String) as unknown,
+    name: "Campanhas",
+    parentId: null,
+    branchId: null,
+  });
+  await screen
+    .getByRole("button", { name: t.manager.more("Campanhas") })
+    .click();
+  await screen
+    .getByRole("menuitem", { name: t.manager.rename, exact: true })
+    .click();
+  await screen.getByLabelText(t.fieldName).fill("Campanhas 2027");
+  await screen.getByRole("button", { name: t.save, exact: true }).click();
+  await expect
+    .element(
+      screen.getByRole("button", { name: "Campanhas 2027", exact: true }),
+    )
+    .toBeVisible();
+  await expect.element(screen.getByText(t.manager.renamed)).toBeVisible();
+  expect(await sent("PATCH", `/media-folders/${folderId}`)).toEqual({
+    expectedVersion: 1,
+    name: "Campanhas 2027",
+  });
+  await screen
+    .getByRole("button", { name: "Campanhas 2027", exact: true })
+    .dblClick();
+  await expect.poll(() => router.state.location.search).toEqual({ folderId });
+  await expect
+    .element(
+      screen.getByRole("heading", { name: "Campanhas 2027", exact: true }),
+    )
+    .toBeVisible();
+  await screen
+    .getByRole("navigation", { name: t.manager.breadcrumbs })
+    .getByRole("link", { name: t.manager.root, exact: true })
+    .click();
+  await expect.poll(() => router.state.location.search).toEqual({});
+});
+
+test("copies a selection with keyboard shortcuts and reconciles an unknown result using the same command", async () => {
+  const commands: unknown[] = [];
+  let copied = false;
+  respond(async (url, request) => {
+    if (url.pathname.endsWith("/media-operations")) {
+      commands.push(await request.clone().json());
+      if (commands.length === 1)
+        throw new TypeError("Connection lost after commit");
+      copied = true;
+      return {
+        body: {
+          items: [
+            { kind: "asset", id: "00000000-0000-4000-8000-0000000000e2" },
+          ],
+          affected: 1,
+        },
+      };
+    }
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [folder()], nextCursor: null } };
+    if (url.pathname.endsWith(`/media-folders/${folderId}`))
+      return { body: { folder: folder(), ancestors: [] } };
+    if (url.pathname.endsWith("/media"))
+      return {
+        body: {
+          items:
+            url.searchParams.get("folderId") === folderId
+              ? copied
+                ? [
+                    media({
+                      id: "00000000-0000-4000-8000-0000000000e2",
+                      name: t.manager.copyName(media().name),
+                      folderId,
+                    }),
+                  ]
+                : []
+              : [media()],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  const { screen } = await open(mediaPath);
+  await screen.getByRole("button", { name: media().name, exact: true }).click();
+  await userEvent.keyboard("{Control>}c{/Control}");
+  await expect
+    .element(screen.getByText(t.manager.clipboard + ":", { exact: false }))
+    .toBeVisible();
+  await screen
+    .getByRole("button", { name: "Campanhas", exact: true })
+    .dblClick();
+  await expect
+    .element(screen.getByRole("heading", { name: "Campanhas", exact: true }))
+    .toBeVisible();
+  await screen.getByRole("group", { name: t.title, exact: true }).click();
+  await userEvent.keyboard("{Control>}v{/Control}");
+  await expect.element(screen.getByRole("alert")).toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.paste, exact: true }))
+    .toBeDisabled();
+  expect(commands).toHaveLength(1);
+  await screen.getByRole("button", { name: t.manager.reconcile }).click();
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: t.manager.copyName(media().name),
+        exact: true,
+      }),
+    )
+    .toBeVisible();
+  expect(commands).toHaveLength(2);
+  expect(commands[1]).toEqual(commands[0]);
+  expect(commands[0]).toMatchObject({
+    operationId: expect.any(String) as unknown,
+    action: "COPY",
+    destinationFolderId: folderId,
+    items: [
+      {
+        kind: "asset",
+        id: assetId,
+        expectedVersion: 3,
+        name: t.manager.copyName(media().name),
+      },
+    ],
+  });
+});
+
+test("moves files with the destination picker, and preserves server scope refusals", async () => {
+  let allow = false,
+    moved = false;
+  respond((url) => {
+    if (url.pathname.endsWith("/media-operations")) {
+      if (!allow)
+        return {
+          status: 409,
+          body: { error: { code: "MEDIA_SCOPE_MISMATCH", message: "Scope" } },
+        };
+      moved = true;
+      return { body: { items: [{ kind: "asset", id: assetId }], affected: 1 } };
+    }
+    if (url.pathname.endsWith("/media-folders"))
+      return {
+        body: {
+          items: url.searchParams.get("parentId") === "root" ? [folder()] : [],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith(`/media-folders/${folderId}`))
+      return { body: { folder: folder(), ancestors: [] } };
+    if (url.pathname.endsWith("/media"))
+      return { body: { items: moved ? [] : [media()], nextCursor: null } };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  const { screen, router } = await open(mediaPath);
+  await screen.getByRole("button", { name: t.manager.listView }).click();
+  await expect
+    .poll(() => router.state.location.search)
+    .toEqual({ layout: "list" });
+  await expect
+    .element(screen.getByRole("grid", { name: t.title }))
+    .toBeVisible();
+  await screen
+    .getByRole("button", { name: t.manager.more(media().name) })
+    .click();
+  await screen
+    .getByRole("menuitem", { name: t.manager.move, exact: true })
+    .click();
+  const dialog = screen.getByRole("dialog", { name: t.manager.moveTitle });
+  await dialog.getByRole("button", { name: "Campanhas", exact: false }).click();
+  await dialog.getByRole("button", { name: t.manager.useFolder }).click();
+  await expect
+    .element(dialog.getByText(t.errors.MEDIA_SCOPE_MISMATCH, { exact: false }))
+    .toBeVisible();
+  expect(await sent("POST", "/media-operations")).toMatchObject({
+    action: "MOVE",
+    destinationFolderId: folderId,
+    items: [{ kind: "asset", id: assetId, expectedVersion: 3 }],
+  });
+  allow = true;
+  await dialog.getByRole("button", { name: t.manager.useFolder }).click();
+  await expect.element(screen.getByText(t.manager.done)).toBeVisible();
+});
+
+test("clears the clipboard and selection when switching company libraries", async () => {
+  respond((url) => {
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media"))
+      return { body: { items: [media()], nextCursor: null } };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  const { screen, router, client } = await open(mediaPath);
+  const secondId = "00000000-0000-4000-8000-000000000002";
+  // A cached company gate must not allow React to retain another library's temporary state.
+  client.setQueryData(
+    companyKey(secondId),
+    company(["media.view", "media.upload"]),
+  );
+  await screen.getByRole("button", { name: media().name, exact: true }).click();
+  await screen
+    .getByRole("button", { name: t.manager.copy, exact: true })
+    .click();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.paste, exact: true }))
+    .toBeEnabled();
+  await router.navigate({
+    to: "/companies/$companyId/media",
+    params: { companyId: secondId },
+  });
+  await expect
+    .element(screen.getByRole("button", { name: media().name, exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.paste, exact: true }))
+    .toBeDisabled();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.clearClipboard }))
+    .not.toBeInTheDocument();
+});
+
+test("refreshes folder versions after admitted uploads even when transferring bytes fails", async () => {
+  let version = 1;
+  respond((url, request) => {
+    if (url.pathname.endsWith("/media") && request.method === "POST") {
+      version = 2;
+      return {
+        status: 201,
+        body: media({ status: "UPLOADING", version: 1, folderId }),
+      };
+    }
+    if (url.pathname.endsWith("/media"))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [folder({ version })], nextCursor: null } };
+    if (url.pathname.endsWith(`/media-folders/${folderId}`))
+      return { body: folder({ name: "Updated folder", version: 3 }) };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  stubUploads(() => ({
+    status: 400,
+    body: { error: { code: "MEDIA_UPLOAD_INCOMPLETE", message: "Incomplete" } },
+  }));
+  const { screen } = await open(mediaPath);
+  const target = screen.getByRole("button", { name: "Campanhas", exact: true });
+  await expect.element(target).toBeVisible();
+  const data = new DataTransfer();
+  data.items.add(
+    new File([new Uint8Array(10)], "a.png", { type: "image/png" }),
+  );
+  target
+    .element()
+    .closest("li")!
+    .dispatchEvent(
+      new DragEvent("drop", {
+        dataTransfer: data,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  await screen.getByRole("button", { name: t.upload, exact: true }).click();
+  await expect
+    .element(screen.getByText(t.errors.MEDIA_UPLOAD_INCOMPLETE))
+    .toBeVisible();
+  expect(await sent("POST", "/media")).toMatchObject({
+    folderId,
+    branchId: null,
+  });
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.close, exact: true }))
+    .toBeEnabled();
+  await screen
+    .getByRole("button", { name: t.manager.close, exact: true })
+    .click();
+  await screen
+    .getByRole("button", { name: t.manager.more("Campanhas") })
+    .click();
+  await screen
+    .getByRole("menuitem", { name: t.manager.rename, exact: true })
+    .click();
+  await screen.getByLabelText(t.fieldName).fill("Updated folder");
+  await screen.getByRole("button", { name: t.save, exact: true }).click();
+  await expect.element(screen.getByText(t.manager.renamed)).toBeVisible();
+  expect(await sent("PATCH", `/media-folders/${folderId}`)).toEqual({
+    expectedVersion: 2,
+    name: "Updated folder",
   });
 });

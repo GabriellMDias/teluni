@@ -1,0 +1,102 @@
+{
+  "kind": "database",
+  "name": "media_library_operations",
+  "description": "Operational idempotency receipt for folder creation and atomic copy/move commands, scoped to a company, acting membership and normalized request hash. Authoritative business events remain in media_audit_events.",
+  "owner": "Media",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted with the command result in the same transaction as its changes. Immutable during a 30-day replay window. Maintenance deletes up to 1000 expired receipts per pass; repeating an expired operation ID is a new command.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company owning the command and result; part of the receipt key.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Caller-generated UUID for one command intent, reused for safe replay within the retention window.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that submitted the command; another membership cannot replay it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "request_hash",
+      "PostgreSQL type": "bytea",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "SHA-256 of the normalized command and operation category, compared to refuse key reuse with different intent. Never exposed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "result",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Bounded result containing root item IDs/kinds and affected-item count, with no file content, names, paths or credentials.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock receipt creation instant; controls the replay retention window.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "media_library_operations_actor_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The submitting membership belongs to the same company."
+    },
+    {
+      "Object": "media_library_operations_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The command belongs to an existing company."
+    },
+    {
+      "Object": "media_library_operations_hash_length",
+      "Physical definition": "CHECK ((octet_length(request_hash) = 32))",
+      "Purpose": "Request hashes are full SHA-256 digests."
+    },
+    {
+      "Object": "media_library_operations_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, id)",
+      "Purpose": "One receipt per command UUID within a company."
+    },
+    {
+      "Object": "media_library_operations_result_valid",
+      "Physical definition": "CHECK ((jsonb_typeof(result) = 'object'::text))",
+      "Purpose": "Stored command results are JSON objects."
+    },
+    {
+      "Object": "media_library_operations_created_idx",
+      "Physical definition": "CREATE INDEX media_library_operations_created_idx ON public.media_library_operations USING btree (created_at)",
+      "Purpose": "Finds expired operational receipts without scanning live results."
+    }
+  ]
+}

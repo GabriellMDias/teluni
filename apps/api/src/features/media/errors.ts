@@ -5,6 +5,34 @@ import { organizationErrors } from "../organizations/public.js";
 // Public conditions owned by the media module. Rejections found while
 // inspecting a file are a closed enumeration on the asset, not these errors.
 export const mediaErrors = defineErrors({
+  MEDIA_FOLDER_NOT_EMPTY: {
+    status: 409,
+    message:
+      "Move the folder's contents elsewhere before removing it. Archived and trashed items also keep their folder.",
+    category: "conflict",
+    retryable: false,
+  },
+  MEDIA_INVALID_DESTINATION: {
+    status: 409,
+    message:
+      "A folder cannot be moved or copied into itself or one of its descendants.",
+    category: "conflict",
+    retryable: false,
+  },
+  MEDIA_FOLDER_LIMIT: {
+    status: 409,
+    message:
+      "The folder or operation exceeds the library's folder, depth or batch limits.",
+    category: "conflict",
+    retryable: false,
+  },
+  MEDIA_SCOPE_MISMATCH: {
+    status: 409,
+    message:
+      "Moving an item must preserve its owning scope. Choose a folder of the same scope, or copy it with the required destination upload permission.",
+    category: "conflict",
+    retryable: false,
+  },
   MEDIA_TYPE_UNSUPPORTED: {
     status: 400,
     message:

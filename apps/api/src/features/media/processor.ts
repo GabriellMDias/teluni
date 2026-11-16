@@ -293,6 +293,7 @@ export class MediaProcessor {
   /** Upkeep: expired uploads, due purges, stale work and orphan files. */
   async maintain(): Promise<void> {
     const { repository, service, store } = this.#options;
+    await repository.pruneLibraryOperations();
     // Files go after each purge commits; see PrismaMediaRepository.removeFiles.
     for (const due of await repository.expiredUploads(100)) {
       const released = await repository.transaction(async (tx) => {
