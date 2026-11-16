@@ -4,6 +4,15 @@
     "title": "Teluni Identity Provider Evaluation",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Teluni Identity Provider Evaluation",
+    "anchor": "teluni-identity-provider-evaluation",
+    "text": "Teluni Identity Provider Evaluation\n[Selected policies](identity-and-access.md) · [PH-11](human-actions.md#ph-11) · [ADR-0024 decision](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md)\n"
+  },
+  {
+    "id": "repository/docs/project/identity-provider-evaluation",
+    "title": "Teluni Identity Provider Evaluation",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Evaluation scope and result",
     "anchor": "evaluation-scope-and-result",
     "text": "Evaluation scope and result\nOn **2026-10-18**, the owner selected self-hosting and **Keycloak**, then explicitly approved all pending Teluni ADRs, including ADR-0024/ADR-0025. Host feasibility and actual integration qualification remain delivery prerequisites. No recurring identity/email procurement budget is available. This is a documentation/source review, not a deployed-provider experiment, security assessment or proof of operational capacity. Keycloak **26.8.1**, release published on 2026-10-13, was inspected at source commit `24ed1dadf3f246a555adb6d3d4a99e9b3003fb3b` for the assessment below. This pins review evidence only; no deployment image/digest has been selected or installed. Reassess the deployment version and security status before implementation; mutable `latest` documentation does not pin a production dependency.\nThe existing [verifier](../../apps/api/src/authentication.ts) and accepted [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) are the executable/governing boundary. Do not weaken it because a candidate emits different defaults. The source/documentation review and explicit owner approval satisfy PH-11's architectural decision scope. They do not qualify a running integration. Required policies and measured bounds remain in the [identity policy](identity-and-access.md), not vendor defaults.\n"

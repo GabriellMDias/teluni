@@ -52,9 +52,9 @@ export function createProgrammingModule(options: {
       if (!widgets) throw new Error("The programming module is not active");
       return widgets.data(widget);
     },
-    activateWidgetLinks: (tx, companyId, areas) => {
+    activateWidgetLinks: (tx, companyId, areas, mode) => {
       if (!widgets) throw new Error("The programming module is not active");
-      return widgets.activate(tx, companyId, areas);
+      return widgets.activate(tx, companyId, areas, mode);
     },
     onPublicationFacts(facts) {
       publicationFacts = facts;
@@ -113,14 +113,14 @@ export function createProgrammingModule(options: {
     ],
     errors: programmingErrors,
     activate: ({ database, humanIdentity }) => {
+      // Activation guarantees the database and the required modules.
+      const layoutRepository = new PrismaLayoutRepository(database!);
       const widgetService = new WidgetService({
-        database: database!,
+        repository: layoutRepository,
         companies: options.companies,
         ...(humanIdentity ? { publicOrigin: humanIdentity.publicOrigin } : {}),
       });
       widgets = widgetService;
-      // Activation guarantees the database and the required modules.
-      const layoutRepository = new PrismaLayoutRepository(database!);
       const active: ProgrammingService = new ProgrammingService({
         repository: new PrismaProgrammingRepository(database!),
         companies: options.companies,

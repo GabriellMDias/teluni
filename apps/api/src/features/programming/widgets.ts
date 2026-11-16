@@ -90,6 +90,7 @@ export function widgetUrl(value: unknown): value is string {
   try {
     const url = new URL(value);
     return (
+      url.href.length <= widgetPolicy.maxUrl &&
       url.protocol === "https:" &&
       !url.username &&
       !url.password &&

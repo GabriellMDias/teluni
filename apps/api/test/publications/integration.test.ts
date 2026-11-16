@@ -1061,6 +1061,49 @@ describe("publications: publishing, synchronization and retention", () => {
     expect(manifest.layout.areas[1].widget.targetUrl).toBe(
       "https://example.org/menu-v1",
     );
+    const restore = await call(
+      "aAdmin",
+      "POST",
+      `${base}/groups/${info.id}/publications/${publication.id}/restore`,
+    );
+    expect(restore.status, JSON.stringify(restore.body)).toBe(201);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).body).toEqual({
+      url: "https://example.org/menu-v1",
+    });
+    const currentProgram = await call(
+      "aAdmin",
+      "GET",
+      `${base}/groups/${info.id}/program`,
+    );
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PUT",
+          `${base}/groups/${info.id}/program/layout`,
+          {
+            body: {
+              expectedVersion: currentProgram.body.version,
+              layoutId: null,
+            },
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call("aAdmin", "DELETE", layoutPath, {
+          body: { expectedVersion: saved.body.version },
+        })
+      ).status,
+    ).toBe(204);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).status).toBe(404);
+    const cannotRestore = await call(
+      "aAdmin",
+      "POST",
+      `${base}/groups/${info.id}/publications/${(second.body.publication as Body).id}/restore`,
+    );
+    expect(cannotRestore.body.error?.code).toBe("PUBLICATION_INVALID");
   });
 
   it("publishes a program with a layout as protocol 2 with its catalog", async () => {

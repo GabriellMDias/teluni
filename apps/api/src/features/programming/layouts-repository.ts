@@ -441,9 +441,58 @@ export class PrismaLayoutRepository {
     tx: Prisma.TransactionClient,
     current: LayoutRecord,
   ): Promise<void> {
+    // Restoring a QR publication locks its public link rows in the same order.
+    await tx.$queryRaw`SELECT id FROM layout_qr_links
+      WHERE company_id = ${current.companyId}::uuid AND layout_id = ${current.id}::uuid
+      ORDER BY id COLLATE "C" FOR UPDATE`;
     await tx.$executeRaw`
       DELETE FROM layouts
       WHERE company_id = ${current.companyId}::uuid AND id = ${current.id}::uuid`;
+  }
+
+  /** The source layout is already share-locked for a manual publication. */
+  async activateQrLinks(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    links: readonly {
+      id: string;
+      layoutId: string;
+      areaKey: string;
+      targetUrl: string;
+    }[],
+    mode: "publish" | "restore",
+  ): Promise<boolean> {
+    // Deletion takes these same child-row locks in identifier order.
+    const ordered = [...links].sort((a, b) =>
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+    );
+    for (const link of ordered) {
+      if (mode === "restore") {
+        // Updating existing identities avoids old-layout FK locks after program/publication locks.
+        const changed =
+          await tx.$executeRaw`UPDATE layout_qr_links SET target_url = ${link.targetUrl}, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ${link.id} AND company_id = ${companyId}::uuid AND layout_id = ${link.layoutId}::uuid AND area_key = ${link.areaKey}`;
+        if (changed !== 1) return false;
+      } else {
+        const changed =
+          await tx.$executeRaw`INSERT INTO layout_qr_links (id, company_id, layout_id, area_key, target_url)
+          VALUES (${link.id}, ${companyId}::uuid, ${link.layoutId}::uuid, ${link.areaKey}, ${link.targetUrl})
+          ON CONFLICT (id) DO UPDATE SET target_url = EXCLUDED.target_url, updated_at = CURRENT_TIMESTAMP
+          WHERE layout_qr_links.company_id = EXCLUDED.company_id AND layout_qr_links.layout_id = EXCLUDED.layout_id AND layout_qr_links.area_key = EXCLUDED.area_key`;
+        if (changed !== 1) return false;
+      }
+    }
+    return true;
+  }
+
+  /** Public capability lookup only; the service checks company liveness through Organizations. */
+  async findQrDestination(
+    linkId: string,
+  ): Promise<{ companyId: string; url: string } | null> {
+    const [row] = await this.#db.$queryRaw<
+      { company_id: string; target_url: string }[]
+    >`SELECT company_id, target_url FROM layout_qr_links WHERE id = ${linkId}`;
+    return row ? { companyId: row.company_id, url: row.target_url } : null;
   }
 
   /** Layouts binding a catalog, and each field, for the catalogs guard. */

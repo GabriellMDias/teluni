@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import QRCode from "qrcode";
-import type { Database } from "../../database.js";
+import type { PrismaLayoutRepository } from "./layouts-repository.js";
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { HumanContext } from "../identity/public.js";
 import {
@@ -70,20 +70,20 @@ export function snapshotWidget(
 /** Programming owns widget sources, bounded shared caches and published QR destinations. */
 export class WidgetService {
   readonly #cache = new Map<string, Entry>();
-  readonly #db: Database;
+  readonly #repository: PrismaLayoutRepository;
   readonly #companies: CompanyAccessPort;
   readonly #origin: string | undefined;
   readonly #fetch: WidgetFetcher;
   readonly #now: () => number;
   #active = 0;
   constructor(options: {
-    database: Database;
+    repository: PrismaLayoutRepository;
     companies: CompanyAccessPort;
     publicOrigin?: string;
     fetch?: WidgetFetcher;
     now?: () => number;
   }) {
-    this.#db = options.database;
+    this.#repository = options.repository;
     this.#companies = options.companies;
     this.#origin = options.publicOrigin;
     this.#fetch = options.fetch ?? fetchWidgetSource;
@@ -122,32 +122,38 @@ export class WidgetService {
     tx: Prisma.TransactionClient,
     companyId: string,
     areas: readonly { key: string; widget?: WidgetSnapshot }[],
+    mode: "publish" | "restore",
   ): Promise<boolean> {
+    const links: {
+      id: string;
+      layoutId: string;
+      areaKey: string;
+      targetUrl: string;
+    }[] = [];
     for (const area of areas) {
       const widget = area.widget;
       if (widget?.type !== "qr") continue;
-      if (
-        !widget.layoutId ||
-        widget.linkId !== widgetLinkId(widget.layoutId, area.key)
-      )
+      const { layoutId, linkId } = widget;
+      if (!layoutId || !linkId || linkId !== widgetLinkId(layoutId, area.key))
         throw new Error("Invalid published QR identity");
-      const [layout] = await tx.$queryRaw<
-        { id: string }[]
-      >`SELECT id FROM layouts WHERE company_id = ${companyId}::uuid AND id = ${widget.layoutId}::uuid`;
-      if (!layout) return false;
-      await tx.$executeRaw`INSERT INTO layout_qr_links (id, company_id, layout_id, area_key, target_url)
-        VALUES (${widget.linkId}, ${companyId}::uuid, ${widget.layoutId}::uuid, ${area.key}, ${widget.targetUrl})
-        ON CONFLICT (id) DO UPDATE SET target_url = EXCLUDED.target_url, updated_at = CURRENT_TIMESTAMP`;
+      links.push({
+        id: linkId,
+        layoutId,
+        areaKey: area.key,
+        targetUrl: widget.targetUrl,
+      });
     }
-    return true;
+    return this.#repository.activateQrLinks(tx, companyId, links, mode);
   }
   async destination(linkId: string): Promise<{ url: string }> {
-    const [row] = await this.#db.$queryRaw<
-      { target_url: string }[]
-    >`SELECT q.target_url FROM layout_qr_links q
-      JOIN companies c ON c.id = q.company_id WHERE q.id = ${linkId} AND c.status = 'ACTIVE'`;
-    if (!row) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
-    return { url: row.target_url };
+    const link = await this.#repository.findQrDestination(linkId);
+    if (
+      !link ||
+      (await this.#companies.describe(link.companyId, [])).companyStatus !==
+        "ACTIVE"
+    )
+      throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+    return { url: link.url };
   }
   async data(widget: WidgetDefinition): Promise<WidgetData> {
     if (widget.type !== "weather" && widget.type !== "rss") return unavailable;

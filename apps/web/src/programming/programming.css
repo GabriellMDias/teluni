@@ -1029,8 +1029,8 @@ fieldset.programming-rules {
   flex: 0 1 auto;
 }
 
-.layout-widget-face { position: absolute; inset: 24px 0 0; pointer-events: none; container-type: inline-size; }
-.widget-face { display: flex; position: relative; box-sizing: border-box; width: 100%; height: 100%; padding: 4%; flex-direction: column; align-items: flex-start; justify-content: center; gap: .5em; overflow: hidden; font-size: var(--widget-size); text-align: start; }
+.layout-widget-face { position: absolute; inset: 0; pointer-events: none; container-type: size; }
+.widget-face { display: flex; position: relative; box-sizing: border-box; width: 100%; height: 100%; padding: 4%; flex-direction: column; align-items: flex-start; justify-content: center; gap: .5em; overflow: hidden; font-size: min(var(--widget-size), 18cqh); text-align: start; }
 .widget-primary { font-size: 1em; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .widget-clock .widget-primary, .widget-weather .widget-primary { font-size: 1.7em; font-variant-numeric: tabular-nums; }
 .widget-secondary { font-size: .55em; line-height: 1.35; }
@@ -1039,9 +1039,10 @@ fieldset.programming-rules {
 .widget-qr-code { display: block; flex: 1; min-height: 0; max-width: 100%; aspect-ratio: 1; }
 .widget-qr-placeholder { display: grid; place-items: center; color: #102131; background: #fff; width: min(55%, 120px); aspect-ratio: 1; }
 .widget-qr-placeholder .ui-icon { width: 65%; height: 65%; }
+.widget-ticker { font-size: min(var(--widget-size), 70cqh); }
 .widget-ticker .widget-primary { display: block; white-space: nowrap; overflow: visible; animation: widget-scroll 18s linear infinite; }
 .widget-range-labels { display: flex; justify-content: space-between; color: var(--color-muted); }
-.widget-loaded-preview { container-type: inline-size; height: 180px; border-radius: .65rem; overflow: hidden; }
+.widget-loaded-preview { container-type: size; height: 180px; border-radius: .65rem; overflow: hidden; }
 .widget-loaded-preview .widget-face { --widget-size: 6cqw !important; }
 .widget-settings h4 { margin: .6rem 0 0; }
 .widget-settings textarea { width: 100%; min-width: 0; box-sizing: border-box; }

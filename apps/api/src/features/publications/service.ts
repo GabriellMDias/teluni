@@ -1069,6 +1069,7 @@ export class PublicationService {
         tx,
         companyId,
         input.payload.content.layout.areas,
+        input.origin === "RESTORE" ? "restore" : "publish",
       ))
     )
       throw new PublicationFailure("PUBLICATION_INVALID");

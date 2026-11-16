@@ -242,6 +242,7 @@ export type ProgrammingPort = Readonly<{
     tx: Prisma.TransactionClient,
     companyId: string,
     areas: readonly { key: string; widget?: WidgetSnapshot }[],
+    mode: "publish" | "restore",
   ): Promise<boolean>;
   /** Registers the publication facts; register before activation. */
   onPublicationFacts(facts: PublicationFacts): void;

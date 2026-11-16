@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import jsQR from "jsqr";
-import type { Database } from "../../src/database.js";
+import type { PrismaLayoutRepository } from "../../src/features/programming/layouts-repository.js";
 import type { CompanyAccessPort } from "../../src/features/organizations/public.js";
 import {
   parseWidget,
@@ -51,7 +51,7 @@ const service = (
   options: Partial<ConstructorParameters<typeof WidgetService>[0]> = {},
 ) =>
   new WidgetService({
-    database: {} as Database,
+    repository: {} as PrismaLayoutRepository,
     companies: {} as CompanyAccessPort,
     publicOrigin: "https://display.example.org",
     ...options,
@@ -66,6 +66,7 @@ describe("layout widgets", () => {
     ).toBeNull();
     for (const targetUrl of [
       "http://example.org",
+      "https://example.org/" + "é".repeat(1000),
       "https://user:secret@example.org",
       "javascript:alert(1)",
       "https://example.org:8443",

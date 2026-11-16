@@ -1,6 +1,6 @@
 # ADR-0037: Publish Widget Configuration and Proxy Live Public Data
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-11-16
 
 ## Context
@@ -17,7 +17,7 @@ Treat live data as a bounded sidecar to an authorized protocol 3 generation, rat
 
 A dynamic QR uses a stable opaque link derived from the layout identity and area key. Saving remains a draft: the public destination becomes active only when an authorized publication commits. The most recent publication of that layout area sets the destination across its uses; restoring a publication deliberately restores that destination. Layout deletion removes its links. QR destinations are explicitly public HTTPS addresses; links grant no access to tenant APIs. The panel owns the public short-link route and resolves it through the generated API client.
 
-Implementation on this branch is a review candidate under the owner's implementation authorization and prior delegation of product decisions. This record starts as proposed; repository review and integration establish acceptance. It does not claim hardware or pilot qualification.
+Accepted on 2026-11-16 after repository review under the owner's explicit component request and the decision delegation recorded in PH-25. The review retains Programming's persistence ownership, Organizations' company-status port, exact protocol 1/2 compatibility and the existing publication authorization boundary. Acceptance selects the direction; implementation and qualification evidence remain in the [implementation plan](../project/implementation-plan.md#layout-information-components), without claiming hardware or pilot qualification.
 
 ## Rationale
 
