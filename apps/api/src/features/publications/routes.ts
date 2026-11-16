@@ -341,6 +341,14 @@ export function registerPublicationRoutes(
               case "getDeviceKeys":
                 reply.header("cache-control", "no-store");
                 return reply.send(await service.keys(authorization));
+              case "getDeviceWidgetData": {
+                const { publicationId } = request.params as {
+                  publicationId: string;
+                };
+                return reply
+                  .header("cache-control", "private, no-store")
+                  .send(await service.widgets(authorization, publicationId));
+              }
               case "getDeviceManifest": {
                 const { publicationId } = request.params as {
                   publicationId: string;

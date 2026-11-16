@@ -1,4 +1,7 @@
 import { useRef, useState, type PointerEvent, type KeyboardEvent } from "react";
+import { WidgetFace } from "./widget-settings.js";
+import { widgetMessages } from "./widget-messages.js";
+import type { LayoutComponent, Widget } from "./widgets.js";
 import { UiIcon } from "../ui-icon.js";
 import { useProgrammingMessages } from "./common.js";
 import {
@@ -10,11 +13,12 @@ import {
 } from "./layout-geometry.js";
 
 export const layoutComponentType = "application/x-teluni-layout-component";
-type Kind = "media" | "catalog";
+type Kind = "media" | "catalog" | "widget";
 type CanvasArea = Geometry & {
   uid: string;
   name: string;
   kind: Kind;
+  widget?: Widget;
   background: string;
   z: number;
 };
@@ -43,10 +47,10 @@ export function LayoutCanvas({
   onMove?: (uid: string, geometry: Geometry) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
-  dragging?: Kind | null;
-  onInsert?: (kind: Kind, geometry: Geometry) => void;
+  dragging?: LayoutComponent | null;
+  onInsert?: (kind: LayoutComponent, geometry: Geometry) => void;
 }) {
-  const { t } = useProgrammingMessages();
+  const { t, locale } = useProgrammingMessages();
   const box = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<Geometry | null>(null);
   const drag = useRef<{
@@ -180,17 +184,25 @@ export function LayoutCanvas({
       {areas.map((area, index) => {
         const label = t.layouts.areaButton(
           area.name,
-          t.layouts.kinds[area.kind],
+          area.widget
+            ? widgetMessages[locale].names[area.widget.type]
+            : t.layouts.kinds[area.kind],
         );
         const content = (
           <>
             <span className="layout-area-label">{label}</span>
-            <span className="layout-area-symbol" aria-hidden="true">
-              <UiIcon name={area.kind === "media" ? "image" : "grid"} />
-              <small>
-                {area.width} × {area.height}
-              </small>
-            </span>
+            {area.widget ? (
+              <span className="layout-widget-face" aria-hidden="true">
+                <WidgetFace widget={area.widget} width={area.width} />
+              </span>
+            ) : (
+              <span className="layout-area-symbol" aria-hidden="true">
+                <UiIcon name={area.kind === "media" ? "image" : "grid"} />
+                <small>
+                  {area.width} × {area.height}
+                </small>
+              </span>
+            )}
           </>
         );
         const areaStyle = {
@@ -239,7 +251,9 @@ export function LayoutCanvas({
           style={style(preview)}
           aria-hidden="true"
         >
-          {t.layouts.kinds[dragging]}
+          {dragging === "media" || dragging === "catalog"
+            ? t.layouts.kinds[dragging]
+            : widgetMessages[locale].names[dragging]}
         </div>
       )}
     </div>

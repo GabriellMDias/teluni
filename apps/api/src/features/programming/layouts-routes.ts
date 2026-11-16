@@ -78,6 +78,7 @@ const layoutWire = (item: LayoutView) => ({
       muted: area.muted,
       volume: area.volume,
       kind: area.kind,
+      ...(area.widget ? { widget: area.widget } : {}),
       pageControlled: area.pageControlled,
       view: area.view
         ? {

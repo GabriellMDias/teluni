@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "importLayout",
   "summary": "",
-  "description": "Create a layout from its exported `teluni.layout` JSON (schema 1) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED.",
+  "description": "Create a layout from its exported `teluni.layout` JSON (schema 1 or 2) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. Issue reasons: WIDGET_INVALID, WIDGET_NOT_APPLICABLE, WIDGET_SETTINGS_INVALID, WIDGET_QR_TOO_SMALL, AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -125,7 +125,250 @@
                       "kind": {
                         "anyOf": [
                           { "type": "string", "const": "media" },
-                          { "type": "string", "const": "catalog" }
+                          { "type": "string", "const": "catalog" },
+                          { "type": "string", "const": "widget" }
+                        ]
+                      },
+                      "widget": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "version",
+                              "locale",
+                              "textSize",
+                              "foreground",
+                              "type",
+                              "showTime",
+                              "showDate",
+                              "seconds",
+                              "hour12",
+                              "dateStyle"
+                            ],
+                            "properties": {
+                              "version": { "type": "number", "const": 1 },
+                              "locale": {
+                                "anyOf": [
+                                  { "type": "string", "const": "pt-BR" },
+                                  { "type": "string", "const": "en-US" }
+                                ]
+                              },
+                              "textSize": {
+                                "type": "integer",
+                                "minimum": 24,
+                                "maximum": 200
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$"
+                              },
+                              "type": { "type": "string", "const": "clock" },
+                              "showTime": { "type": "boolean" },
+                              "showDate": { "type": "boolean" },
+                              "seconds": { "type": "boolean" },
+                              "hour12": { "type": "boolean" },
+                              "dateStyle": {
+                                "anyOf": [
+                                  { "type": "string", "const": "short" },
+                                  { "type": "string", "const": "long" }
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "version",
+                              "locale",
+                              "textSize",
+                              "foreground",
+                              "type",
+                              "targetUrl",
+                              "caption"
+                            ],
+                            "properties": {
+                              "version": { "type": "number", "const": 1 },
+                              "locale": {
+                                "anyOf": [
+                                  { "type": "string", "const": "pt-BR" },
+                                  { "type": "string", "const": "en-US" }
+                                ]
+                              },
+                              "textSize": {
+                                "type": "integer",
+                                "minimum": 24,
+                                "maximum": 200
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$"
+                              },
+                              "type": { "type": "string", "const": "qr" },
+                              "targetUrl": {
+                                "type": "string",
+                                "minLength": 9,
+                                "maxLength": 2048
+                              },
+                              "caption": {
+                                "type": "string",
+                                "minLength": 0,
+                                "maxLength": 120
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "version",
+                              "locale",
+                              "textSize",
+                              "foreground",
+                              "type",
+                              "text",
+                              "speed"
+                            ],
+                            "properties": {
+                              "version": { "type": "number", "const": 1 },
+                              "locale": {
+                                "anyOf": [
+                                  { "type": "string", "const": "pt-BR" },
+                                  { "type": "string", "const": "en-US" }
+                                ]
+                              },
+                              "textSize": {
+                                "type": "integer",
+                                "minimum": 24,
+                                "maximum": 200
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$"
+                              },
+                              "type": { "type": "string", "const": "ticker" },
+                              "text": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
+                              },
+                              "speed": {
+                                "type": "integer",
+                                "minimum": 20,
+                                "maximum": 160
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "version",
+                              "locale",
+                              "textSize",
+                              "foreground",
+                              "type",
+                              "latitude",
+                              "longitude",
+                              "label",
+                              "units"
+                            ],
+                            "properties": {
+                              "version": { "type": "number", "const": 1 },
+                              "locale": {
+                                "anyOf": [
+                                  { "type": "string", "const": "pt-BR" },
+                                  { "type": "string", "const": "en-US" }
+                                ]
+                              },
+                              "textSize": {
+                                "type": "integer",
+                                "minimum": 24,
+                                "maximum": 200
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$"
+                              },
+                              "type": { "type": "string", "const": "weather" },
+                              "latitude": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "longitude": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              "label": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              },
+                              "units": {
+                                "anyOf": [
+                                  { "type": "string", "const": "celsius" },
+                                  { "type": "string", "const": "fahrenheit" }
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "version",
+                              "locale",
+                              "textSize",
+                              "foreground",
+                              "type",
+                              "feedUrl",
+                              "title",
+                              "itemSeconds",
+                              "maxItems"
+                            ],
+                            "properties": {
+                              "version": { "type": "number", "const": 1 },
+                              "locale": {
+                                "anyOf": [
+                                  { "type": "string", "const": "pt-BR" },
+                                  { "type": "string", "const": "en-US" }
+                                ]
+                              },
+                              "textSize": {
+                                "type": "integer",
+                                "minimum": 24,
+                                "maximum": 200
+                              },
+                              "foreground": {
+                                "type": "string",
+                                "pattern": "^#[0-9a-fA-F]{6}$"
+                              },
+                              "type": { "type": "string", "const": "rss" },
+                              "feedUrl": {
+                                "type": "string",
+                                "minLength": 9,
+                                "maxLength": 2048
+                              },
+                              "title": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              },
+                              "itemSeconds": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "maxItems": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 20
+                              }
+                            },
+                            "additionalProperties": false
+                          }
                         ]
                       },
                       "pageControlled": { "type": "boolean" },
@@ -356,7 +599,250 @@
                   "kind": {
                     "anyOf": [
                       { "type": "string", "const": "media" },
-                      { "type": "string", "const": "catalog" }
+                      { "type": "string", "const": "catalog" },
+                      { "type": "string", "const": "widget" }
+                    ]
+                  },
+                  "widget": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "version",
+                          "locale",
+                          "textSize",
+                          "foreground",
+                          "type",
+                          "showTime",
+                          "showDate",
+                          "seconds",
+                          "hour12",
+                          "dateStyle"
+                        ],
+                        "properties": {
+                          "version": { "type": "number", "const": 1 },
+                          "locale": {
+                            "anyOf": [
+                              { "type": "string", "const": "pt-BR" },
+                              { "type": "string", "const": "en-US" }
+                            ]
+                          },
+                          "textSize": {
+                            "type": "integer",
+                            "minimum": 24,
+                            "maximum": 200
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "pattern": "^#[0-9a-fA-F]{6}$"
+                          },
+                          "type": { "type": "string", "const": "clock" },
+                          "showTime": { "type": "boolean" },
+                          "showDate": { "type": "boolean" },
+                          "seconds": { "type": "boolean" },
+                          "hour12": { "type": "boolean" },
+                          "dateStyle": {
+                            "anyOf": [
+                              { "type": "string", "const": "short" },
+                              { "type": "string", "const": "long" }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "version",
+                          "locale",
+                          "textSize",
+                          "foreground",
+                          "type",
+                          "targetUrl",
+                          "caption"
+                        ],
+                        "properties": {
+                          "version": { "type": "number", "const": 1 },
+                          "locale": {
+                            "anyOf": [
+                              { "type": "string", "const": "pt-BR" },
+                              { "type": "string", "const": "en-US" }
+                            ]
+                          },
+                          "textSize": {
+                            "type": "integer",
+                            "minimum": 24,
+                            "maximum": 200
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "pattern": "^#[0-9a-fA-F]{6}$"
+                          },
+                          "type": { "type": "string", "const": "qr" },
+                          "targetUrl": {
+                            "type": "string",
+                            "minLength": 9,
+                            "maxLength": 2048
+                          },
+                          "caption": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 120
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "version",
+                          "locale",
+                          "textSize",
+                          "foreground",
+                          "type",
+                          "text",
+                          "speed"
+                        ],
+                        "properties": {
+                          "version": { "type": "number", "const": 1 },
+                          "locale": {
+                            "anyOf": [
+                              { "type": "string", "const": "pt-BR" },
+                              { "type": "string", "const": "en-US" }
+                            ]
+                          },
+                          "textSize": {
+                            "type": "integer",
+                            "minimum": 24,
+                            "maximum": 200
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "pattern": "^#[0-9a-fA-F]{6}$"
+                          },
+                          "type": { "type": "string", "const": "ticker" },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          },
+                          "speed": {
+                            "type": "integer",
+                            "minimum": 20,
+                            "maximum": 160
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "version",
+                          "locale",
+                          "textSize",
+                          "foreground",
+                          "type",
+                          "latitude",
+                          "longitude",
+                          "label",
+                          "units"
+                        ],
+                        "properties": {
+                          "version": { "type": "number", "const": 1 },
+                          "locale": {
+                            "anyOf": [
+                              { "type": "string", "const": "pt-BR" },
+                              { "type": "string", "const": "en-US" }
+                            ]
+                          },
+                          "textSize": {
+                            "type": "integer",
+                            "minimum": 24,
+                            "maximum": 200
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "pattern": "^#[0-9a-fA-F]{6}$"
+                          },
+                          "type": { "type": "string", "const": "weather" },
+                          "latitude": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          "label": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "units": {
+                            "anyOf": [
+                              { "type": "string", "const": "celsius" },
+                              { "type": "string", "const": "fahrenheit" }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "version",
+                          "locale",
+                          "textSize",
+                          "foreground",
+                          "type",
+                          "feedUrl",
+                          "title",
+                          "itemSeconds",
+                          "maxItems"
+                        ],
+                        "properties": {
+                          "version": { "type": "number", "const": 1 },
+                          "locale": {
+                            "anyOf": [
+                              { "type": "string", "const": "pt-BR" },
+                              { "type": "string", "const": "en-US" }
+                            ]
+                          },
+                          "textSize": {
+                            "type": "integer",
+                            "minimum": 24,
+                            "maximum": 200
+                          },
+                          "foreground": {
+                            "type": "string",
+                            "pattern": "^#[0-9a-fA-F]{6}$"
+                          },
+                          "type": { "type": "string", "const": "rss" },
+                          "feedUrl": {
+                            "type": "string",
+                            "minLength": 9,
+                            "maxLength": 2048
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "itemSeconds": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "maxItems": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 20
+                          }
+                        },
+                        "additionalProperties": false
+                      }
                     ]
                   },
                   "pageControlled": { "type": "boolean" },
@@ -591,8 +1077,13 @@
       },
       {
         "name": "document.areas[].kind",
-        "type": "\"media\" | \"catalog\"",
+        "type": "\"media\" | \"catalog\" | \"widget\"",
         "required": true
+      },
+      {
+        "name": "document.areas[].widget",
+        "type": "object | object | object | object | object",
+        "required": false
       },
       {
         "name": "document.areas[].pageControlled",
@@ -757,7 +1248,250 @@
                     "kind": {
                       "anyOf": [
                         { "type": "string", "const": "media" },
-                        { "type": "string", "const": "catalog" }
+                        { "type": "string", "const": "catalog" },
+                        { "type": "string", "const": "widget" }
+                      ]
+                    },
+                    "widget": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "locale",
+                            "textSize",
+                            "foreground",
+                            "type",
+                            "showTime",
+                            "showDate",
+                            "seconds",
+                            "hour12",
+                            "dateStyle"
+                          ],
+                          "properties": {
+                            "version": { "type": "number", "const": 1 },
+                            "locale": {
+                              "anyOf": [
+                                { "type": "string", "const": "pt-BR" },
+                                { "type": "string", "const": "en-US" }
+                              ]
+                            },
+                            "textSize": {
+                              "type": "integer",
+                              "minimum": 24,
+                              "maximum": 200
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$"
+                            },
+                            "type": { "type": "string", "const": "clock" },
+                            "showTime": { "type": "boolean" },
+                            "showDate": { "type": "boolean" },
+                            "seconds": { "type": "boolean" },
+                            "hour12": { "type": "boolean" },
+                            "dateStyle": {
+                              "anyOf": [
+                                { "type": "string", "const": "short" },
+                                { "type": "string", "const": "long" }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "locale",
+                            "textSize",
+                            "foreground",
+                            "type",
+                            "targetUrl",
+                            "caption"
+                          ],
+                          "properties": {
+                            "version": { "type": "number", "const": 1 },
+                            "locale": {
+                              "anyOf": [
+                                { "type": "string", "const": "pt-BR" },
+                                { "type": "string", "const": "en-US" }
+                              ]
+                            },
+                            "textSize": {
+                              "type": "integer",
+                              "minimum": 24,
+                              "maximum": 200
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$"
+                            },
+                            "type": { "type": "string", "const": "qr" },
+                            "targetUrl": {
+                              "type": "string",
+                              "minLength": 9,
+                              "maxLength": 2048
+                            },
+                            "caption": {
+                              "type": "string",
+                              "minLength": 0,
+                              "maxLength": 120
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "locale",
+                            "textSize",
+                            "foreground",
+                            "type",
+                            "text",
+                            "speed"
+                          ],
+                          "properties": {
+                            "version": { "type": "number", "const": 1 },
+                            "locale": {
+                              "anyOf": [
+                                { "type": "string", "const": "pt-BR" },
+                                { "type": "string", "const": "en-US" }
+                              ]
+                            },
+                            "textSize": {
+                              "type": "integer",
+                              "minimum": 24,
+                              "maximum": 200
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$"
+                            },
+                            "type": { "type": "string", "const": "ticker" },
+                            "text": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "speed": {
+                              "type": "integer",
+                              "minimum": 20,
+                              "maximum": 160
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "locale",
+                            "textSize",
+                            "foreground",
+                            "type",
+                            "latitude",
+                            "longitude",
+                            "label",
+                            "units"
+                          ],
+                          "properties": {
+                            "version": { "type": "number", "const": 1 },
+                            "locale": {
+                              "anyOf": [
+                                { "type": "string", "const": "pt-BR" },
+                                { "type": "string", "const": "en-US" }
+                              ]
+                            },
+                            "textSize": {
+                              "type": "integer",
+                              "minimum": 24,
+                              "maximum": 200
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$"
+                            },
+                            "type": { "type": "string", "const": "weather" },
+                            "latitude": {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "units": {
+                              "anyOf": [
+                                { "type": "string", "const": "celsius" },
+                                { "type": "string", "const": "fahrenheit" }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "locale",
+                            "textSize",
+                            "foreground",
+                            "type",
+                            "feedUrl",
+                            "title",
+                            "itemSeconds",
+                            "maxItems"
+                          ],
+                          "properties": {
+                            "version": { "type": "number", "const": 1 },
+                            "locale": {
+                              "anyOf": [
+                                { "type": "string", "const": "pt-BR" },
+                                { "type": "string", "const": "en-US" }
+                              ]
+                            },
+                            "textSize": {
+                              "type": "integer",
+                              "minimum": 24,
+                              "maximum": 200
+                            },
+                            "foreground": {
+                              "type": "string",
+                              "pattern": "^#[0-9a-fA-F]{6}$"
+                            },
+                            "type": { "type": "string", "const": "rss" },
+                            "feedUrl": {
+                              "type": "string",
+                              "minLength": 9,
+                              "maxLength": 2048
+                            },
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            },
+                            "itemSeconds": {
+                              "type": "integer",
+                              "minimum": 5,
+                              "maximum": 120
+                            },
+                            "maxItems": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 20
+                            }
+                          },
+                          "additionalProperties": false
+                        }
                       ]
                     },
                     "pageControlled": { "type": "boolean" },
@@ -1094,7 +1828,250 @@
                 "kind": {
                   "anyOf": [
                     { "type": "string", "const": "media" },
-                    { "type": "string", "const": "catalog" }
+                    { "type": "string", "const": "catalog" },
+                    { "type": "string", "const": "widget" }
+                  ]
+                },
+                "widget": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "locale",
+                        "textSize",
+                        "foreground",
+                        "type",
+                        "showTime",
+                        "showDate",
+                        "seconds",
+                        "hour12",
+                        "dateStyle"
+                      ],
+                      "properties": {
+                        "version": { "type": "number", "const": 1 },
+                        "locale": {
+                          "anyOf": [
+                            { "type": "string", "const": "pt-BR" },
+                            { "type": "string", "const": "en-US" }
+                          ]
+                        },
+                        "textSize": {
+                          "type": "integer",
+                          "minimum": 24,
+                          "maximum": 200
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        "type": { "type": "string", "const": "clock" },
+                        "showTime": { "type": "boolean" },
+                        "showDate": { "type": "boolean" },
+                        "seconds": { "type": "boolean" },
+                        "hour12": { "type": "boolean" },
+                        "dateStyle": {
+                          "anyOf": [
+                            { "type": "string", "const": "short" },
+                            { "type": "string", "const": "long" }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "locale",
+                        "textSize",
+                        "foreground",
+                        "type",
+                        "targetUrl",
+                        "caption"
+                      ],
+                      "properties": {
+                        "version": { "type": "number", "const": 1 },
+                        "locale": {
+                          "anyOf": [
+                            { "type": "string", "const": "pt-BR" },
+                            { "type": "string", "const": "en-US" }
+                          ]
+                        },
+                        "textSize": {
+                          "type": "integer",
+                          "minimum": 24,
+                          "maximum": 200
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        "type": { "type": "string", "const": "qr" },
+                        "targetUrl": {
+                          "type": "string",
+                          "minLength": 9,
+                          "maxLength": 2048
+                        },
+                        "caption": {
+                          "type": "string",
+                          "minLength": 0,
+                          "maxLength": 120
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "locale",
+                        "textSize",
+                        "foreground",
+                        "type",
+                        "text",
+                        "speed"
+                      ],
+                      "properties": {
+                        "version": { "type": "number", "const": 1 },
+                        "locale": {
+                          "anyOf": [
+                            { "type": "string", "const": "pt-BR" },
+                            { "type": "string", "const": "en-US" }
+                          ]
+                        },
+                        "textSize": {
+                          "type": "integer",
+                          "minimum": 24,
+                          "maximum": 200
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        "type": { "type": "string", "const": "ticker" },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "speed": {
+                          "type": "integer",
+                          "minimum": 20,
+                          "maximum": 160
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "locale",
+                        "textSize",
+                        "foreground",
+                        "type",
+                        "latitude",
+                        "longitude",
+                        "label",
+                        "units"
+                      ],
+                      "properties": {
+                        "version": { "type": "number", "const": 1 },
+                        "locale": {
+                          "anyOf": [
+                            { "type": "string", "const": "pt-BR" },
+                            { "type": "string", "const": "en-US" }
+                          ]
+                        },
+                        "textSize": {
+                          "type": "integer",
+                          "minimum": 24,
+                          "maximum": 200
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        "type": { "type": "string", "const": "weather" },
+                        "latitude": {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "units": {
+                          "anyOf": [
+                            { "type": "string", "const": "celsius" },
+                            { "type": "string", "const": "fahrenheit" }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "locale",
+                        "textSize",
+                        "foreground",
+                        "type",
+                        "feedUrl",
+                        "title",
+                        "itemSeconds",
+                        "maxItems"
+                      ],
+                      "properties": {
+                        "version": { "type": "number", "const": 1 },
+                        "locale": {
+                          "anyOf": [
+                            { "type": "string", "const": "pt-BR" },
+                            { "type": "string", "const": "en-US" }
+                          ]
+                        },
+                        "textSize": {
+                          "type": "integer",
+                          "minimum": 24,
+                          "maximum": 200
+                        },
+                        "foreground": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        "type": { "type": "string", "const": "rss" },
+                        "feedUrl": {
+                          "type": "string",
+                          "minLength": 9,
+                          "maxLength": 2048
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "itemSeconds": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "maxItems": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 20
+                        }
+                      },
+                      "additionalProperties": false
+                    }
                   ]
                 },
                 "pageControlled": { "type": "boolean" },
@@ -1365,8 +2342,13 @@
         },
         {
           "name": "areas[].kind",
-          "type": "\"media\" | \"catalog\"",
+          "type": "\"media\" | \"catalog\" | \"widget\"",
           "required": true
+        },
+        {
+          "name": "areas[].widget",
+          "type": "object | object | object | object | object",
+          "required": false
         },
         {
           "name": "areas[].pageControlled",

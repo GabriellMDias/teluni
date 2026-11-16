@@ -1,5 +1,14 @@
 package app.teluni.player.core.sync
 
+import app.teluni.player.core.Fixtures
+import app.teluni.player.core.string
+import app.teluni.player.core.protocol.WidgetBatch
+import app.teluni.player.core.protocol.WidgetLive
+import app.teluni.player.core.protocol.WidgetSourceData
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.PlaybackCondition
 import app.teluni.player.core.protocol.StagingFailureCode
@@ -573,12 +582,61 @@ class PlayerEngineTest {
     }
 
     @Test
+    fun `widget caches survive restart refresh new generations immediately and retry unavailable sources`() {
+        var requests = 0
+        var unavailable = false
+        val api = object : DeviceApi by server {
+            override fun widgets(credential: String, publicationId: String): WidgetBatch {
+                requests++
+                val live = if (unavailable) WidgetLive("unavailable", null, null, null) else
+                    WidgetLive("ready", server.now.toString(), server.now.plusSeconds(900).toString(), WidgetSourceData.Weather(24.0, 70.0, "clearsky_day", server.now.toString()))
+                return WidgetBatch(publicationId, listOf(WidgetBatch.Item("weather", live)))
+            }
+        }
+        fun widgets(id: String): FakePublication {
+            val fixture = Fixtures.conformance.getValue("widgetManifest").jsonObject
+            val content = Json.parseToJsonElement(fixture.getValue("bytes").string).jsonObject
+            val edited = JsonObject(content + mapOf("publicationId" to JsonPrimitive(id), "companyId" to JsonPrimitive(server.companyId), "generation" to JsonPrimitive(1)))
+            return FakePublication(id, edited.toString().encodeToByteArray(), emptyMap())
+        }
+        val engine = engine(api = api)
+        val enrolled = engine.startEnrollment(report)
+        engine.pollEnrollment(enrolled.enrollmentId)
+        server.desiredProtocol = 3
+        server.publish(widgets("widgets-a"))
+        assertIs<StagingOutcome.Activated>(engine.syncAndStage())
+        assertTrue(engine.refreshWidgets())
+        assertFalse(engine.refreshWidgets())
+        assertEquals(1, requests)
+        assertTrue(PlayerStore(root).record(PlayerStore.Record.WIDGETS) != null)
+        // A restart reads the same atomic cache, without borrowing data from another generation.
+        val restored = assertIs<Plan.Compose>(engine(api = api).plan())
+        assertEquals("24°C", (restored.areas.single { it.area.key == "weather" } as app.teluni.player.core.playback.AreaPlan.Widget).text.primary)
+        server.publish(widgets("widgets-b"))
+        assertIs<StagingOutcome.Activated>(engine.syncAndStage())
+        assertTrue(engine.refreshWidgets())
+        assertEquals(2, requests)
+        unavailable = true
+        server.publish(widgets("widgets-c"))
+        engine.syncAndStage()
+        assertTrue(engine.refreshWidgets())
+        clock.advance(59_999)
+        assertFalse(engine.refreshWidgets())
+        clock.advance(1)
+        assertTrue(engine.refreshWidgets())
+        assertEquals(4, requests)
+        server.status = "unlinked"
+        engine.sync()
+        assertEquals(null, PlayerStore(root).record(PlayerStore.Record.WIDGETS))
+    }
+
+    @Test
     fun `refuses a publication of an unsupported protocol without downloading it`() {
         val engine = paired()
         server.publish(publication("pub-a"))
         engine.syncAndStage()
         server.publish(publication("pub-b", seed = 2))
-        server.desiredProtocol = 3
+        server.desiredProtocol = 4
         val requests = server.manifestRequests
         val failed = assertIs<StagingOutcome.Failed>(engine.syncAndStage())
         assertEquals(StagingFailureCode.INCOMPATIBLE, failed.code)

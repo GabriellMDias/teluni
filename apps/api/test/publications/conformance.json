@@ -1,6 +1,6 @@
 {
   "description": "Player protocol conformance fixtures (docs/project/player-design.md#server-additions), written by apps/api/scripts/conformance.ts from the API's serializer, signer and zone rules and verified by apps/api/test/publications/conformance.test.ts. The keys are throwaway test keys whose private halves were discarded. Do not edit by hand.",
-  "version": 2,
+  "version": 3,
   "manifest": {
     "header": {
       "publicationId": "2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e",
@@ -99,6 +99,10 @@
     },
     "bytes": "{\"format\":\"teluni.publication\",\"protocol\":1,\"publicationId\":\"2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e\",\"companyId\":\"0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c\",\"programId\":\"1c8e0b63-69b5-4b46-8a64-7d2f3a4b5c6d\",\"generation\":3,\"publishedAt\":\"2026-10-19T12:00:00.000Z\",\"outputs\":[{\"key\":\"screen\",\"defaultPlaylistId\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"rules\":[{\"id\":\"r1\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[1,2,3,4,5],\"allDay\":false,\"startTime\":\"08:00\",\"endTime\":\"18:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":null},{\"id\":\"r2\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[5],\"allDay\":false,\"startTime\":\"22:00\",\"endTime\":\"02:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":\"2026-12-31\"},{\"id\":\"r3\",\"playlistId\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"weekdays\":[6,7],\"allDay\":true,\"startsOn\":\"2026-10-24\",\"endsOn\":null}]}],\"playlists\":[{\"id\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":10000},{\"mediaId\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"durationMs\":null}]},{\"id\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":15000}]}],\"media\":[{\"id\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"kind\":\"IMAGE\",\"contentType\":\"image/jpeg\",\"size\":482113,\"sha256\":\"8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4\",\"width\":1920,\"height\":1080,\"durationMs\":null,\"hasAudio\":false},{\"id\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"kind\":\"VIDEO\",\"contentType\":\"video/mp4\",\"size\":18734002,\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"width\":1920,\"height\":1080,\"durationMs\":31500,\"hasAudio\":true}]}",
     "sha256": "34526633a97cb0df97ef25b71a2413f4c29df3d00e7415b3ecf5f3cf0223ef52"
+  },
+  "widgetManifest": {
+    "bytes": "{\"format\":\"teluni.publication\",\"protocol\":3,\"publicationId\":\"b3c4d5e6-f7a8-49b0-8123-456789abcdef\",\"companyId\":\"0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c\",\"programId\":\"72e461c9-cf1b-41ac-80ca-d38f90011223\",\"generation\":1,\"publishedAt\":\"2026-10-20T12:00:00.000Z\",\"layout\":{\"orientation\":\"landscape\",\"width\":1920,\"height\":1080,\"audioMixConfirmed\":false,\"areas\":[{\"key\":\"clock\",\"x\":0,\"y\":0,\"width\":640,\"height\":540,\"z\":0,\"background\":\"#102131\",\"fit\":\"contain\",\"muted\":true,\"volume\":0,\"kind\":\"widget\",\"widget\":{\"version\":1,\"locale\":\"pt-BR\",\"textSize\":48,\"foreground\":\"#FFFFFF\",\"type\":\"clock\",\"showTime\":true,\"showDate\":true,\"seconds\":true,\"hour12\":false,\"dateStyle\":\"long\"},\"pageControlled\":false,\"view\":null},{\"key\":\"qr\",\"x\":640,\"y\":0,\"width\":640,\"height\":540,\"z\":1,\"background\":\"#102131\",\"fit\":\"contain\",\"muted\":true,\"volume\":0,\"kind\":\"widget\",\"widget\":{\"version\":1,\"locale\":\"pt-BR\",\"textSize\":48,\"foreground\":\"#FFFFFF\",\"type\":\"qr\",\"targetUrl\":\"https://example.org/menu\",\"caption\":\"Open menu\",\"layoutId\":\"00112233-4455-4677-8899-aabbccddeeff\",\"linkId\":\"562e79310edf6e7eb31189d1388648e0\",\"qrUrl\":\"https://display.example.org/q/562e79310edf6e7eb31189d1388648e0\",\"modules\":[\"111111100011110000111101001111111\",\"100000100001001110000010101000001\",\"101110101111000100100110001011101\",\"101110101110000100100011001011101\",\"101110101110110111011101101011101\",\"100000101100011110001100001000001\",\"111111101010101010101010101111111\",\"000000001100101100100110000000000\",\"101111100001110011011010101111100\",\"011001010110101010111111001101101\",\"101100111000100110101110100010110\",\"011111011000000010101110100011101\",\"010100100101100010111010110011000\",\"001101001010110100010001001101111\",\"110000110111000000000100111001110\",\"010100001101001100000111011100100\",\"011000100101011101110000010111001\",\"111110010010111001111101001101111\",\"101100101110110110001000010110100\",\"011100000100111011100101110111101\",\"110110111101100100101000010011010\",\"111000001000010101110011101101101\",\"101011101011001111001010110011010\",\"101111001110010100100101000100110\",\"100101101100111101000010111111010\",\"000000001110010011111101100010111\",\"111111100100110101100001101010100\",\"100000101001010001100111100011110\",\"101110101101110100011000111111010\",\"101110101110001001010111110010011\",\"101110101110010101001110001101100\",\"100000100010001100000110010010100\",\"111111101111010011001011100101010\"]},\"pageControlled\":false,\"view\":null},{\"key\":\"ticker\",\"x\":1280,\"y\":0,\"width\":640,\"height\":540,\"z\":2,\"background\":\"#102131\",\"fit\":\"contain\",\"muted\":true,\"volume\":0,\"kind\":\"widget\",\"widget\":{\"version\":1,\"locale\":\"pt-BR\",\"textSize\":48,\"foreground\":\"#FFFFFF\",\"type\":\"ticker\",\"text\":\"Welcome to Teluni\",\"speed\":60},\"pageControlled\":false,\"view\":null},{\"key\":\"weather\",\"x\":0,\"y\":540,\"width\":640,\"height\":540,\"z\":3,\"background\":\"#102131\",\"fit\":\"contain\",\"muted\":true,\"volume\":0,\"kind\":\"widget\",\"widget\":{\"version\":1,\"locale\":\"pt-BR\",\"textSize\":48,\"foreground\":\"#FFFFFF\",\"type\":\"weather\",\"latitude\":-23.5505,\"longitude\":-46.6333,\"label\":\"São Paulo\",\"units\":\"celsius\"},\"pageControlled\":false,\"view\":null},{\"key\":\"rss\",\"x\":640,\"y\":540,\"width\":640,\"height\":540,\"z\":4,\"background\":\"#102131\",\"fit\":\"contain\",\"muted\":true,\"volume\":0,\"kind\":\"widget\",\"widget\":{\"version\":1,\"locale\":\"pt-BR\",\"textSize\":48,\"foreground\":\"#FFFFFF\",\"type\":\"rss\",\"feedUrl\":\"https://example.org/feed.xml\",\"title\":\"News\",\"itemSeconds\":10,\"maxItems\":5},\"pageControlled\":false,\"view\":null}],\"pages\":[]},\"outputs\":[{\"key\":\"clock\",\"default\":{\"view\":true},\"rules\":[]},{\"key\":\"qr\",\"default\":{\"view\":true},\"rules\":[]},{\"key\":\"ticker\",\"default\":{\"view\":true},\"rules\":[]},{\"key\":\"weather\",\"default\":{\"view\":true},\"rules\":[]},{\"key\":\"rss\",\"default\":{\"view\":true},\"rules\":[]}],\"catalogs\":[],\"playlists\":[],\"media\":[]}",
+    "sha256": "b0226a198ed2904395ea396fcb13c20c3eec33e16055cfdbe3325c18d501f53d"
   },
   "layoutManifest": {
     "header": {
@@ -638,8 +642,8 @@
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "O1uYr9Lo-hPidas50TOVUNczuwaKjfebMcxe1c0oHX0",
-        "y": "Axnu6yAfey0vyGjqxSIiFy32z26vUR0eMpP3gOwMVxc",
+        "x": "DcE9PM4ESNtH3Qc30ToYhgjlYtOqMRWeqOb55odYMDg",
+        "y": "MO-UL6mGPIVD6Npot9xOgNCt3k5T7DKOj6tihfPL15c",
         "kid": "conformance-2",
         "use": "sig",
         "alg": "ES256"
@@ -647,8 +651,8 @@
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "t77vCFvUtC6dnn03__XqpYcu6h4OJRWyP6w35lUbGZc",
-        "y": "9cUIWfoF1dA2ix7c2xpZN-HxdvnuzuEX7C3BkDpV0vA",
+        "x": "r3CEML70OoUalQa5OS3hyJPJdW6KnbJNfH6yjKcMswM",
+        "y": "AN9sRW6QsEC2fChccxSE3NbF-GbhRE1R-S8KHoP80kw",
         "kid": "conformance-1",
         "use": "sig",
         "alg": "ES256"
@@ -660,7 +664,7 @@
       "id": "current-key",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
-      "signature": "B-Y_xZXXxJV_pzGnaYNGAZpIDPqM3MLlou6vX39FC9BUxaRqr8uD3gSwjC9Cqm8qAIJE_AZE48JLDxy49cR3aA",
+      "signature": "iEAOb1O75MVwY72T5OPmb2fw3yuajQ9X3yo0Dre3p7bruUBJLiOSJyF94eStneRSea5O86RppZEzGoMpI1bOHg",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -679,7 +683,7 @@
       "id": "rotated-key",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTEiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
-      "signature": "d0zGVjFVYuy6f7HHqR8FvR4cxf8JheNeWDDaovwzzp___i3CptPpTQRWwzV_hIrPZDGUdsLE4snpgNZsaiJotg",
+      "signature": "Z9RrMaL-eLWPeKNwO6G2i8aol8yIx_NJ_Q1gEEgDM2OBGLTu74DgkQ1sQNezbAsiEtitB4Kdg_xwOuycTKt6JQ",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -698,7 +702,7 @@
       "id": "unpublished-source",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W119",
-      "signature": "RUPc6qkMcJ9TUySk1JO2XHcfeUa6v306vOIK41XA2vNYxDlRceGgf4wB1PGW1O3mmi3HlLWtwkvIn3n1ZOGrvQ",
+      "signature": "-YkwkcqFeHCcW4YBzGJwbzgsYWpmD1SxOVtj_Mw5wkRhTLnJNMRLZPJN87BC_gE8ngD9b8u62jnU-UtmxfKe2w",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -712,7 +716,7 @@
       "id": "tampered-payload",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxODg4MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
-      "signature": "B-Y_xZXXxJV_pzGnaYNGAZpIDPqM3MLlou6vX39FC9BUxaRqr8uD3gSwjC9Cqm8qAIJE_AZE48JLDxy49cR3aA",
+      "signature": "iEAOb1O75MVwY72T5OPmb2fw3yuajQ9X3yo0Dre3p7bruUBJLiOSJyF94eStneRSea5O86RppZEzGoMpI1bOHg",
       "valid": false,
       "claims": null
     }

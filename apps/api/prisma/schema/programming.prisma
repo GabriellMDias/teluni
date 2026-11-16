@@ -177,6 +177,7 @@ enum LayoutOrientation {
 enum LayoutAreaKind {
   MEDIA
   CATALOG
+  WIDGET
 }
 
 // Layouts: reusable canvases with freeform areas, catalog views and
@@ -197,6 +198,7 @@ model Layout {
   areas             LayoutArea[]
   pages             LayoutPage[]
   programs          Program[]
+  qrLinks           LayoutQrLink[]
 
   @@unique([companyId, id], map: "layouts_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "layouts_company_created_idx")
@@ -219,6 +221,7 @@ model LayoutArea {
   muted           Boolean
   volume          Int
   kind            LayoutAreaKind
+  widget          Json?               @db.JsonB
   pageControlled  Boolean             @map("page_controlled")
   catalogId       String?             @map("catalog_id") @db.Uuid
   presentation    String?             @db.VarChar(8)
@@ -279,4 +282,20 @@ model LayoutPageContent {
   @@index([companyId, areaId], map: "layout_page_contents_area_idx")
   @@index([companyId, mediaAssetId], map: "layout_page_contents_media_idx")
   @@map("layout_page_contents")
+}
+
+
+// Public QR destinations become live only through authorized publication.
+model LayoutQrLink {
+  id        String   @id @db.VarChar(32)
+  companyId String   @map("company_id") @db.Uuid
+  layoutId  String   @map("layout_id") @db.Uuid
+  areaKey   String   @map("area_key") @db.VarChar(16)
+  targetUrl String   @map("target_url") @db.VarChar(2048)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  layout    Layout   @relation(fields: [companyId, layoutId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict, map: "layout_qr_links_layout_fkey")
+
+  @@unique([companyId, id], map: "layout_qr_links_company_id_id_key")
+  @@unique([companyId, layoutId, areaKey], map: "layout_qr_links_area_key")
+  @@map("layout_qr_links")
 }

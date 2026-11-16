@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0037-publish-widget-configuration-and-proxy-live-public-data.md",
+  "title": "ADR-0037: Publish Widget Configuration and Proxy Live Public Data",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-11-16</p>\n<h2 id=\"context\">Context</h2>\n<p>The owner explicitly requested clock/date, dynamic QR codes, scrolling text, weather and RSS components, followed by local example layouts. These extend the freeform authoring model beyond media and catalog areas. Installed players strictly parse immutable publication protocols; accepting additional area kinds under protocol 2 would break that boundary. Weather and RSS also introduce untrusted outbound sources and data that change independently of the published presentation.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Add a Programming-owned widget area with five versioned configuration variants. Publish widget layouts as protocol 3, while preserving protocol 1/2 bytes and readers. Layout documents containing widgets use schema 2; existing schema 1 documents remain supported. Configuration, source selection, geometry and QR modules belong to the immutable manifest. The existing area-view default covers a widget's own presentation; regional playlist rules may still override it. Widgets are independent of coordinated pages and cannot produce audio.</p>\n<p>Fetch weather and RSS on the API, never from a screen or browser directly. MET Norway Locationforecast is the initial weather adapter, with attribution, an identifying User-Agent, bounded coordinates and provider-compliant caching. RSS/Atom access accepts only public HTTPS sources, with DNS/IP validation, pinned connections, redirect revalidation, size/time/concurrency limits and XML without DTD/entities. Render only bounded plain-text headlines, source credit and validated links. Authenticated preview requires programming edit authority. Device data requests resolve only the current desired publication and its approved widget sources, under existing device admission and rate limits.</p>\n<p>Treat live data as a bounded sidecar to an authorized protocol 3 generation, rather than rewriting immutable manifests or creating a publication for every forecast/headline update. The player validates it, writes it atomically and retains bounded generation-specific caches. Source failures preserve explicitly stale data for at most 24 hours; absent/expired data show an unavailable state. Protected output still requires the existing generation authorization and trusted clock. Clock/date use the screen's server-provided zone offsets; animation uses monotonic presentation time.</p>\n<p>A dynamic QR uses a stable opaque link derived from the layout identity and area key. Saving remains a draft: the public destination becomes active only when an authorized publication commits. The most recent publication of that layout area sets the destination across its uses; restoring a publication deliberately restores that destination. Layout deletion removes its links. QR destinations are explicitly public HTTPS addresses; links grant no access to tenant APIs. The panel owns the public short-link route and resolves it through the generated API client.</p>\n<p>Accepted on 2026-11-16 after repository review under the owner's explicit component request and the decision delegation recorded in PH-25. The review retains Programming's persistence ownership, Organizations' company-status port, exact protocol 1/2 compatibility and the existing publication authorization boundary. Acceptance selects the direction; implementation and qualification evidence remain in the <a href=\"/docs/repository/docs/project/implementation-plan#layout-information-components\">implementation plan</a>, without claiming hardware or pilot qualification.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>The server is the existing authorization and provider boundary, and shared caches prevent every screen from contacting a news/weather provider. A separate protocol protects installed strict readers. A live-data sidecar preserves authoring/publication boundaries while allowing current information and offline recovery. Stable QR links provide the requested destination changes without forcing a new encoded symbol.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"direct-provider-requests-from-android-and-the-browser\">Direct provider requests from Android and the browser</h3>\n<p>Rejected because it spreads provider behavior, reveals screen addresses to providers, bypasses centralized limits and makes offline/SSRF controls inconsistent.</p>\n<h3 id=\"new-immutable-publications-for-every-live-data-refresh\">New immutable publications for every live-data refresh</h3>\n<p>Rejected because weather/news updates are data refreshes rather than editorial publication decisions, and would consume generation limits and retention/audit capacity.</p>\n<h3 id=\"reuse-catalog-or-media-areas-to-simulate-widgets\">Reuse catalog or media areas to simulate widgets</h3>\n<p>Rejected because a clock, animated ticker or live feed has different configuration and runtime semantics. Mislabeling it would obscure contracts and bypass validation.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Existing media/catalog publications retain their format and behavior.</li>\n<li>Players consume approved configuration and bounded data through their existing trusted API.</li>\n<li>The editor can configure and preview all five components with reusable controls.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Live data need a cache, explicit staleness handling and provider-specific maintenance.</li>\n<li>A stable QR destination is shared by every use of the same layout area; publishing it can affect previously displayed copies of that code.</li>\n<li>QR links need a reachable configured panel origin. Local-only origins remain local test links.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>Use additive SQL for widget configuration and public QR links. Regenerate API/SDK/database/component references and protocol fixtures. A protocol 3 player must be installed before widget layouts can play; old players remain explicitly incompatible with those generations and keep their authorized cached output. Provider access is optional to core signage, needs no API key for the initial adapter, and has no delivery SLA. Existing deployment and hardware acceptance actions remain in force.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/project/catalog-composition-design\">Composition design</a></li>\n<li><a href=\"/docs/repository/docs/project/player-design\">Player design</a></li>\n<li><a href=\"/docs/repository/docs/api/versioning\">API compatibility</a></li>\n<li><a href=\"https://api.met.no/doc/TermsOfService\" rel=\"noreferrer noopener\">MET Norway terms</a>, <a href=\"https://api.met.no/doc/License\" rel=\"noreferrer noopener\">license</a> and <a href=\"https://api.met.no/weatherapi/locationforecast/2.0/documentation\" rel=\"noreferrer noopener\">Locationforecast</a></li>\n<li><a href=\"https://www.rssboard.org/rss-specification\" rel=\"noreferrer noopener\">RSS specification</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0037-publish-widget-configuration-and-proxy-live-public-data",
+      "text": "ADR-0037: Publish Widget Configuration and Proxy Live Public Data",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "direct-provider-requests-from-android-and-the-browser",
+      "text": "Direct provider requests from Android and the browser",
+      "level": 3
+    },
+    {
+      "id": "new-immutable-publications-for-every-live-data-refresh",
+      "text": "New immutable publications for every live-data refresh",
+      "level": 3
+    },
+    {
+      "id": "reuse-catalog-or-media-areas-to-simulate-widgets",
+      "text": "Reuse catalog or media areas to simulate widgets",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

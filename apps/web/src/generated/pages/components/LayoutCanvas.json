@@ -4,8 +4,8 @@
   "category": "Layout",
   "scope": "feature-specific",
   "owner": "Programming",
-  "summary": "Schematic freeform layout canvas with component drop, movement and eight resize handles.",
-  "usage": "Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview.",
+  "summary": "Schematic freeform layout canvas with Media/Catalog and five information components, movement and eight resize handles.",
+  "usage": "Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview. Widget faces are illustrative; authenticated live previews belong to the inspector. Clock playback uses screen offsets rather than the browser preview time.",
   "accessibility": "Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.",
   "props": [
     {

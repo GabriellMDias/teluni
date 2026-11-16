@@ -4,9 +4,10 @@
 // decides how many records fit and which overflow, and the versioned
 // `teluni.layout` text representation. It reads no clock and no database.
 import { ProgrammingFailure, type Issue } from "./domain.js";
+import { parseWidget, type WidgetDefinition } from "./widgets.js";
 
 export type Orientation = "landscape" | "portrait";
-export type AreaKind = "media" | "catalog";
+export type AreaKind = "media" | "catalog" | "widget";
 export type MediaFit = "contain" | "cover";
 export type ViewRole =
   "title" | "subtitle" | "price" | "image" | "detail" | "group";
@@ -71,6 +72,7 @@ export type AreaDefinition = Readonly<{
   muted: boolean;
   volume: number;
   kind: AreaKind;
+  widget?: WidgetDefinition;
   pageControlled: boolean;
   view: ViewDefinition | null;
 }>;
@@ -111,6 +113,7 @@ export type AreaInput = Readonly<{
   muted?: boolean;
   volume?: number;
   kind: AreaKind;
+  widget?: WidgetDefinition;
   pageControlled?: boolean;
   view?: Readonly<{
     catalogId: string;
@@ -205,13 +208,25 @@ export function planLayout(input: LayoutInput, prefix = ""): LayoutDefinition {
     const background = area.background ?? "#000000";
     if (!colorShape.test(background))
       issue(`${path}/background`, "COLOR_INVALID");
-    const volume = area.volume ?? 100;
+    const volume = area.volume ?? (area.kind === "widget" ? 0 : 100);
     if (!integerIn(volume, 0, 100)) issue(`${path}/volume`, "VOLUME_INVALID");
     const pageControlled = area.pageControlled ?? false;
     if (pageControlled && pages.length === 0)
       issue(`${path}/pageControlled`, "NO_PAGES");
+    const widget = area.kind === "widget" ? parseWidget(area.widget) : null;
+    if (widget?.type === "qr" && (area.width < 240 || area.height < 240))
+      issue(path, "WIDGET_QR_TOO_SMALL");
+    if (area.kind === "widget" && !widget)
+      issue(`${path}/widget`, "WIDGET_INVALID");
+    if (area.kind !== "widget" && area.widget !== undefined)
+      issue(`${path}/widget`, "WIDGET_NOT_APPLICABLE");
+    if (
+      area.kind === "widget" &&
+      (pageControlled || area.muted === false || volume !== 0)
+    )
+      issue(path, "WIDGET_SETTINGS_INVALID");
     let view: ViewDefinition | null = null;
-    if (area.kind === "media") {
+    if (area.kind !== "catalog") {
       if (area.view) issue(`${path}/view`, "VIEW_NOT_APPLICABLE");
     } else if (!area.view) issue(`${path}/view`, "VIEW_REQUIRED");
     else {
@@ -231,6 +246,7 @@ export function planLayout(input: LayoutInput, prefix = ""): LayoutDefinition {
       muted: area.muted ?? true,
       volume,
       kind: area.kind,
+      ...(widget ? { widget } : {}),
       pageControlled,
       view,
     };
@@ -666,7 +682,7 @@ export const layoutSchemaVersion = 1;
 
 export type LayoutDocument = Readonly<{
   format: typeof layoutFormat;
-  schema: typeof layoutSchemaVersion;
+  schema: 1 | 2;
   name: string;
   orientation: Orientation;
   audioMixConfirmed: boolean;
@@ -681,7 +697,9 @@ export function layoutDocument(
 ): LayoutDocument {
   return {
     format: layoutFormat,
-    schema: layoutSchemaVersion,
+    schema: definition.areas.some((area) => area.kind === "widget")
+      ? 2
+      : layoutSchemaVersion,
     name,
     orientation: definition.orientation,
     audioMixConfirmed: definition.audioMixConfirmed,

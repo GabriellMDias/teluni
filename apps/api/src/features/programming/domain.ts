@@ -36,6 +36,7 @@ export const programmingPolicy = Object.freeze({
 });
 
 export type ProgrammingFailureCode =
+  | "SERVICE_UNAVAILABLE"
   | "RESOURCE_NOT_FOUND"
   | "VALIDATION_FAILED"
   | "RESOURCE_VERSION_CONFLICT"

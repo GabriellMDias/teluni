@@ -688,7 +688,7 @@ Usage: Use for sections of the same resource. Initial content mounts on demand; 
 
 ## LayoutCanvas
 
-Schematic freeform layout canvas with component drop, movement and eight resize handles.
+Schematic freeform layout canvas with Media/Catalog and five information components, movement and eight resize handles.
 
 Category: Layout. Scope: feature-specific. Owner: Programming.
 
@@ -714,7 +714,7 @@ Source: [apps/web/src/programming/layout-canvas.tsx](../../../apps/web/src/progr
 
 Accessibility: Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.
 
-Usage: Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview.
+Usage: Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview. Widget faces are illustrative; authenticated live previews belong to the inspector. Clock playback uses screen offsets rather than the browser preview time.
 
 ### Examples
 
@@ -722,4 +722,73 @@ Usage: Compose inside the authorized Layout editor, or omit callbacks for a read
 
 ```tsx
 <LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />
+```
+
+
+## WidgetSettings
+
+Feature-owned configuration and explicit source previews for the five layout widgets.
+
+Category: Forms. Scope: feature-specific. Owner: Programming.
+
+Source: [apps/web/src/programming/widget-settings.tsx](../../../apps/web/src/programming/widget-settings.tsx) (export `WidgetSettings`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `companyId, layout, areaKey` | `string; Layout; string` | Authorized layout context. | Yes | — |
+| `widget, background` | `Widget; string` | Current draft configuration and area background. | Yes | — |
+| `onChange` | `(widget: Widget) => void` | Draft update, guarded by the owning editor. | Yes | — |
+
+### States
+
+- Clock, QR, ticker, weather and RSS variants
+- Preview pending, ready, stale, unavailable or denied
+- Unsaved changes invalidate previous preview
+
+Accessibility: Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.
+
+Usage: Use only inside an authorized layout draft. Reuses TextField/Button and branch choices; the API remains authoritative for scope, validation, provider access and publish-only QR activation.
+
+### Examples
+
+- **WidgetSettings composition** (`widgetsettings-composition`): Feature-owned composition without live authenticated requests.
+
+```tsx
+<WidgetSettings companyId={companyId} layout={layout} areaKey={area.key} widget={area.widget} background={area.background} onChange={updateWidget} />
+```
+
+
+## WidgetFace
+
+Illustrative text and QR face for the layout canvas and explicit inspector preview.
+
+Category: Data Display. Scope: feature-specific. Owner: Programming.
+
+Source: [apps/web/src/programming/widget-settings.tsx](../../../apps/web/src/programming/widget-settings.tsx) (export `WidgetFace`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `widget, width` | `Widget; number` | Draft configuration and logical area width. | Yes | — |
+| `live, modules` | `WidgetLive?; string[]?` | Optional explicitly loaded API preview. | No | — |
+
+### States
+
+- Illustrative clock/ticker and configuration-only weather/RSS
+- Actual QR matrix and cached source preview
+- Reduced-motion preference
+
+Accessibility: Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.
+
+Usage: Use with a validated draft, optional server live data and QR modules. It has no provider networking, publication authority or interactive descendants; real playback is Android-owned.
+
+### Examples
+
+- **WidgetFace composition** (`widgetface-composition`): Feature-owned composition without live authenticated requests.
+
+```tsx
+<WidgetFace widget={widget} width={area.width} />
 ```

@@ -32,6 +32,15 @@ import {
 import { Button, DataSet, TextField } from "../components.js";
 import type { DataSetColumn } from "../dataset.js";
 import { UiIcon } from "../ui-icon.js";
+import { WidgetSettings } from "./widget-settings.js";
+import { widgetMessages } from "./widget-messages.js";
+import {
+  defaultWidget,
+  layoutComponents,
+  widgetTypes,
+  type LayoutComponent,
+  type Widget,
+} from "./widgets.js";
 import { LayoutCanvas, layoutComponentType } from "./layout-canvas.js";
 import {
   minSize,
@@ -653,6 +662,7 @@ type DraftArea = {
   muted: boolean;
   volume: number;
   kind: Kind;
+  widget?: Widget;
   pageControlled: boolean;
   view: DraftView | null;
 };
@@ -697,6 +707,7 @@ function toDraft(layout: Layout): Draft {
     muted: area.muted,
     volume: area.volume,
     kind: area.kind,
+    ...(area.widget ? { widget: area.widget } : {}),
     pageControlled: area.pageControlled,
     view: area.view
       ? {
@@ -768,6 +779,7 @@ function toDefinition(layout: Layout, draft: Draft): LayoutDefinition {
       muted: area.muted,
       volume: area.volume,
       kind: area.kind,
+      ...(area.kind === "widget" && area.widget ? { widget: area.widget } : {}),
       pageControlled: area.pageControlled,
       view:
         area.kind === "catalog" && area.view
@@ -1122,7 +1134,8 @@ function AreaSettings({
   onRemove: () => void;
   removable: boolean;
 }) {
-  const { t } = useProgrammingMessages();
+  const { t, locale } = useProgrammingMessages();
+  const w = widgetMessages[locale];
   const l = t.layouts;
   const id = `area-${area.uid}`;
   const set = (patch: Partial<DraftArea>) => onChange({ ...area, ...patch });
@@ -1145,14 +1158,33 @@ function AreaSettings({
       <label htmlFor={`${id}-kind`}>{l.areaKind}</label>
       <select
         id={`${id}-kind`}
-        value={area.kind}
+        value={area.widget?.type ?? area.kind}
         onChange={(event) => {
-          const kind = event.target.value as Kind;
-          set({ kind, view: kind === "media" ? null : area.view });
+          const component = event.target.value as LayoutComponent;
+          const kind: Kind =
+            component === "media" || component === "catalog"
+              ? component
+              : "widget";
+          set({
+            kind,
+            view: kind === "catalog" ? area.view : null,
+            widget:
+              kind === "widget"
+                ? defaultWidget(component as Widget["type"], locale)
+                : undefined,
+            ...(kind === "widget"
+              ? { muted: true, volume: 0, pageControlled: false }
+              : { volume: 100 }),
+          });
         }}
       >
         <option value="media">{l.kinds.media}</option>
         <option value="catalog">{l.kinds.catalog}</option>
+        {widgetTypes.map((type) => (
+          <option key={type} value={type}>
+            {w.names[type]}
+          </option>
+        ))}
       </select>
       <fieldset className="layout-geometry">
         <legend>{l.geometry}</legend>
@@ -1259,14 +1291,27 @@ function AreaSettings({
           <p className="hint">{l.areaKeyHint}</p>
         </div>
       </details>
-      <label className="checkbox-row">
-        <input
-          type="checkbox"
-          checked={area.pageControlled}
-          onChange={(event) => set({ pageControlled: event.target.checked })}
+      {area.kind !== "widget" && (
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={area.pageControlled}
+            onChange={(event) => set({ pageControlled: event.target.checked })}
+          />
+          {l.pageControlled}
+        </label>
+      )}
+      {area.kind === "widget" && area.widget && (
+        <WidgetSettings
+          key={`${area.uid}-${area.widget.type}`}
+          companyId={companyId}
+          layout={layout}
+          areaKey={area.key}
+          widget={area.widget}
+          background={area.background}
+          onChange={(widget) => set({ widget })}
         />
-        {l.pageControlled}
-      </label>
+      )}
       {area.kind === "catalog" && (
         <ViewEditor
           companyId={companyId}
@@ -1711,7 +1756,8 @@ function LayoutEditor({
   catalogsVisible: boolean;
   onChanged: (changed: Layout | null, notice?: string) => Promise<void>;
 }) {
-  const { t } = useProgrammingMessages();
+  const { t, locale } = useProgrammingMessages();
+  const w = widgetMessages[locale];
   const l = t.layouts;
   const [draft, setDraft] = useState<Draft>(() => toDraft(layout));
   const [selected, setSelected] = useState<string | null>(
@@ -1723,7 +1769,7 @@ function LayoutEditor({
   const gesture = useRef<Draft | null>(null);
   const latest = useRef(draft);
   latest.current = draft;
-  const [dragging, setDragging] = useState<Kind | null>(null);
+  const [dragging, setDragging] = useState<LayoutComponent | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const change = (next: Draft) => {
     if (!gesture.current) setPast((entries) => [...entries.slice(-49), draft]);
@@ -1767,7 +1813,12 @@ function LayoutEditor({
   const removalPending =
     save.error instanceof ApiFailure &&
     save.error.code === "LAYOUT_CHANGE_CONFIRMATION_REQUIRED";
-  const makeArea = (kind: Kind, geometry: Geometry): DraftArea => {
+  const makeArea = (
+    component: LayoutComponent,
+    geometry: Geometry,
+  ): DraftArea => {
+    const kind: Kind =
+      component === "media" || component === "catalog" ? component : "widget";
     const keys = new Set(draft.areas.map((area) => area.key));
     let number = draft.areas.length + 1;
     while (keys.has(`area-${number}`)) number += 1;
@@ -1791,20 +1842,30 @@ function LayoutEditor({
       background: "#000000",
       fit: "contain",
       muted: true,
-      volume: 100,
+      volume: kind === "widget" ? 0 : 100,
       kind,
+      ...(kind === "widget"
+        ? { widget: defaultWidget(component as Widget["type"], locale) }
+        : {}),
       pageControlled: false,
       view: null,
     };
   };
-  const addArea = (kind: Kind, geometry = insertionGeometry(layout.canvas)) => {
+  const addArea = (
+    kind: LayoutComponent,
+    geometry = insertionGeometry(layout.canvas),
+  ) => {
     if (draft.areas.length >= 12 || save.isPending || mustReload(save.error))
       return;
     const area = makeArea(kind, geometry);
     change({ ...draft, areas: [...draft.areas, area] });
     setSelected(area.uid);
     setDragging(null);
-    setAnnouncement(l.componentAdded(l.kinds[kind]));
+    setAnnouncement(
+      l.componentAdded(
+        kind === "media" || kind === "catalog" ? l.kinds[kind] : w.names[kind],
+      ),
+    );
   };
   const split = (direction: SplitDirection) => {
     if (!current || draft.areas.length >= 12) return;
@@ -1918,14 +1979,18 @@ function LayoutEditor({
             <aside className="layout-library" aria-label={l.componentsTitle}>
               <h3>{l.componentsTitle}</h3>
               <p className="hint">{l.componentsHint}</p>
-              {(["media", "catalog"] as const).map((kind) => (
+              {layoutComponents.map((kind) => (
                 <Button
                   key={kind}
                   className="layout-component"
                   draggable={draft.areas.length < 12}
                   disabled={draft.areas.length >= 12}
                   aria-label={
-                    kind === "media" ? l.addMediaArea : l.addCatalogArea
+                    kind === "media"
+                      ? l.addMediaArea
+                      : kind === "catalog"
+                        ? l.addCatalogArea
+                        : w.add(w.names[kind])
                   }
                   onClick={() => addArea(kind)}
                   onDragStart={(event) => {
@@ -1936,14 +2001,30 @@ function LayoutEditor({
                   onDragEnd={() => setDragging(null)}
                 >
                   <span className="layout-component-icon" aria-hidden="true">
-                    <UiIcon name={kind === "media" ? "image" : "grid"} />
+                    <UiIcon
+                      name={
+                        kind === "media"
+                          ? "image"
+                          : kind === "catalog"
+                            ? "grid"
+                            : kind === "ticker"
+                              ? "text"
+                              : kind
+                      }
+                    />
                   </span>
                   <span>
-                    <strong>{l.kinds[kind]}</strong>
+                    <strong>
+                      {kind === "media" || kind === "catalog"
+                        ? l.kinds[kind]
+                        : w.names[kind]}
+                    </strong>
                     <small>
                       {kind === "media"
                         ? l.mediaDescription
-                        : l.catalogDescription}
+                        : kind === "catalog"
+                          ? l.catalogDescription
+                          : w.descriptions[kind]}
                     </small>
                   </span>
                   <span aria-hidden="true">＋</span>
@@ -1971,7 +2052,10 @@ function LayoutEditor({
                         <span>
                           {area.name}
                           <small>
-                            {l.kinds[area.kind]} · {area.width} × {area.height}
+                            {area.widget
+                              ? w.names[area.widget.type]
+                              : l.kinds[area.kind]}{" "}
+                            · {area.width} × {area.height}
                           </small>
                         </span>
                       </Button>
@@ -2127,7 +2211,8 @@ function LayoutEditor({
 }
 
 function ReadOnlyLayout({ layout }: { layout: Layout }) {
-  const { t } = useProgrammingMessages();
+  const { t, locale } = useProgrammingMessages();
+  const w = widgetMessages[locale];
   const l = t.layouts;
   return (
     <section aria-labelledby="layout-areas-title">
@@ -2142,7 +2227,8 @@ function ReadOnlyLayout({ layout }: { layout: Layout }) {
           <li key={area.key}>
             <span className="programming-item-name">{area.name}</span>
             <span className="hint">
-              {l.kinds[area.kind]} · {area.width} × {area.height}
+              {area.widget ? w.names[area.widget.type] : l.kinds[area.kind]} ·{" "}
+              {area.width} × {area.height}
               {area.view ? ` · ${l.viewOf(area.view.catalog.name)}` : ""}
             </span>
           </li>

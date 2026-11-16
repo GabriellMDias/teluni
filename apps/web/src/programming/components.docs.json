@@ -120,8 +120,8 @@
       "category": "Layout",
       "scope": "feature-specific",
       "owner": "Programming",
-      "summary": "Schematic freeform layout canvas with component drop, movement and eight resize handles.",
-      "usage": "Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview.",
+      "summary": "Schematic freeform layout canvas with Media/Catalog and five information components, movement and eight resize handles.",
+      "usage": "Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview. Widget faces are illustrative; authenticated live previews belong to the inspector. Clock playback uses screen offsets rather than the browser preview time.",
       "accessibility": "Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.",
       "props": [
         {
@@ -164,6 +164,88 @@
           "label": "Layout editor canvas",
           "description": "Feature-owned schematic composition; no live authenticated requests.",
           "code": "<LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />",
+          "live": false
+        }
+      ]
+    },
+    {
+      "name": "WidgetSettings",
+      "source": "apps/web/src/programming/widget-settings.tsx",
+      "category": "Forms",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "summary": "Feature-owned configuration and explicit source previews for the five layout widgets.",
+      "usage": "Use only inside an authorized layout draft. Reuses TextField/Button and branch choices; the API remains authoritative for scope, validation, provider access and publish-only QR activation.",
+      "accessibility": "Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.",
+      "props": [
+        {
+          "name": "companyId, layout, areaKey",
+          "type": "string; Layout; string",
+          "meaning": "Authorized layout context.",
+          "required": true
+        },
+        {
+          "name": "widget, background",
+          "type": "Widget; string",
+          "meaning": "Current draft configuration and area background.",
+          "required": true
+        },
+        {
+          "name": "onChange",
+          "type": "(widget: Widget) => void",
+          "meaning": "Draft update, guarded by the owning editor.",
+          "required": true
+        }
+      ],
+      "states": [
+        "Clock, QR, ticker, weather and RSS variants",
+        "Preview pending, ready, stale, unavailable or denied",
+        "Unsaved changes invalidate previous preview"
+      ],
+      "examples": [
+        {
+          "id": "widgetsettings-composition",
+          "label": "WidgetSettings composition",
+          "description": "Feature-owned composition without live authenticated requests.",
+          "code": "<WidgetSettings companyId={companyId} layout={layout} areaKey={area.key} widget={area.widget} background={area.background} onChange={updateWidget} />",
+          "live": false
+        }
+      ]
+    },
+    {
+      "name": "WidgetFace",
+      "source": "apps/web/src/programming/widget-settings.tsx",
+      "category": "Data Display",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "summary": "Illustrative text and QR face for the layout canvas and explicit inspector preview.",
+      "usage": "Use with a validated draft, optional server live data and QR modules. It has no provider networking, publication authority or interactive descendants; real playback is Android-owned.",
+      "accessibility": "Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.",
+      "props": [
+        {
+          "name": "widget, width",
+          "type": "Widget; number",
+          "meaning": "Draft configuration and logical area width.",
+          "required": true
+        },
+        {
+          "name": "live, modules",
+          "type": "WidgetLive?; string[]?",
+          "meaning": "Optional explicitly loaded API preview.",
+          "required": false
+        }
+      ],
+      "states": [
+        "Illustrative clock/ticker and configuration-only weather/RSS",
+        "Actual QR matrix and cached source preview",
+        "Reduced-motion preference"
+      ],
+      "examples": [
+        {
+          "id": "widgetface-composition",
+          "label": "WidgetFace composition",
+          "description": "Feature-owned composition without live authenticated requests.",
+          "code": "<WidgetFace widget={widget} width={area.width} />",
           "live": false
         }
       ]

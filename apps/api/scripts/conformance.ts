@@ -14,6 +14,7 @@ import { resolve } from "node:path";
 import prettier from "prettier";
 import { Temporal } from "temporal-polyfill";
 import {
+  conformanceWidgetManifest,
   conformanceLayoutManifest,
   conformanceManifest,
   conformancePageCycles,
@@ -109,15 +110,24 @@ const layout = layoutManifestBytes(
   conformanceLayoutManifest.content,
 );
 
+const widgets = layoutManifestBytes(
+  conformanceWidgetManifest.header,
+  conformanceWidgetManifest.content,
+);
+
 const fixtures = {
   description:
     "Player protocol conformance fixtures (docs/project/player-design.md#server-additions), written by apps/api/scripts/conformance.ts from the API's serializer, signer and zone rules and verified by apps/api/test/publications/conformance.test.ts. The keys are throwaway test keys whose private halves were discarded. Do not edit by hand.",
-  version: 2,
+  version: 3,
   manifest: {
     header: { ...header, publishedAt: header.publishedAt.toISOString() },
     content,
     bytes: manifest.bytes.toString("utf8"),
     sha256,
+  },
+  widgetManifest: {
+    bytes: widgets.bytes.toString("utf8"),
+    sha256: widgets.sha256.toString("hex"),
   },
   layoutManifest: {
     header: {

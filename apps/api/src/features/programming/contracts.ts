@@ -31,6 +31,7 @@ const outputKind = Type.Union([
   Type.Literal("screen"),
   Type.Literal("media"),
   Type.Literal("catalog"),
+  Type.Literal("widget"),
 ]);
 const outputOutline = {
   key: outputKey,

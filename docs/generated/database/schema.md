@@ -1564,6 +1564,7 @@ Lifecycle: Replaced with the whole definition on every save, keeping each area's
 | `text_size` | `integer` | yes | — | INTERNAL | View text size, 24 to 200; text never shrinks below it. | The area is a media area. | canvas units |
 | `show_unavailable` | `boolean` | yes | — | INTERNAL | Whether the view shows unavailable records as unavailable instead of hiding them. | The area is a media area. | — |
 | `page_seconds` | `integer` | yes | — | INTERNAL | Seconds each view page shows when the area is not page-controlled, 5 to 120. | The area is a media area. | seconds |
+| `widget` | `jsonb` | yes | — | CONFIDENTIAL | Version 1 clock/date, stable QR, scrolling text, weather or RSS configuration, validated by Programming before persistence and publication. Public feed/target URLs are never logged. Protocol 3 carries the approved configuration. | The area is media or catalog, without a widget. | — |
 
 ### Constraints and indexes
 
@@ -1580,6 +1581,7 @@ Lifecycle: Replaced with the whole definition on every save, keeping each area's
 | `layout_areas_stack_range` | `CHECK (((z >= 0) AND (z <= 99)))` | Stacking orders are 0 to 99. |
 | `layout_areas_view` | `CHECK ((((kind = 'CATALOG'::"LayoutAreaKind") = (catalog_id IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (presentation IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (text_size IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (show_unavailable IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (page_seconds IS NOT NULL)) AND ((presentation IS NULL) OR ((presentation)::text = ANY ((ARRAY['list'::character varying, 'table'::character varying, 'menu'::character varying, 'agenda'::character varying])::text[]))) AND ((text_size IS NULL) OR ((text_size >= 24) AND (text_size <= 200))) AND ((page_seconds IS NULL) OR ((page_seconds >= 5) AND (page_seconds <= 120)))))` | Catalog areas, and only they, carry a complete view with a known presentation and bounded text size and paging. |
 | `layout_areas_volume_range` | `CHECK (((volume >= 0) AND (volume <= 100)))` | Volumes are 0 to 100. |
+| `layout_areas_widget` | `CHECK (((((kind)::text = 'WIDGET'::text) = (widget IS NOT NULL)) AND ((widget IS NULL) OR ((jsonb_typeof(widget) = 'object'::text) AND (widget ?& ARRAY['version'::text, 'type'::text]) AND COALESCE(((widget -> 'version'::text) = '1'::jsonb), false) AND COALESCE(((widget ->> 'type'::text) = ANY (ARRAY['clock'::text, 'qr'::text, 'ticker'::text, 'weather'::text, 'rss'::text])), false) AND (octet_length((widget)::text) <= 16384) AND (NOT page_controlled) AND muted AND (volume = 0)))))` | Only widget areas carry bounded versioned configuration and they cannot be page-controlled or audible. |
 | `layout_areas_catalog_idx` | `CREATE INDEX layout_areas_catalog_idx ON public.layout_areas USING btree (company_id, catalog_id)` | Finds the layouts that show a catalog. |
 | `layout_areas_company_id_id_key` | `CREATE UNIQUE INDEX layout_areas_company_id_id_key ON public.layout_areas USING btree (company_id, id)` | Tenant key that view fields and page contents reference. |
 | `layout_areas_key_key` | `CREATE UNIQUE INDEX layout_areas_key_key ON public.layout_areas USING btree (company_id, layout_id, key)` | Area keys are unique within a layout. |
@@ -1667,6 +1669,35 @@ Lifecycle: Replaced with the whole definition on every save; deleted with its pa
 | `layout_page_contents_area_idx` | `CREATE INDEX layout_page_contents_area_idx ON public.layout_page_contents USING btree (company_id, area_id)` | Finds an area's page contents. |
 | `layout_page_contents_media_idx` | `CREATE INDEX layout_page_contents_media_idx ON public.layout_page_contents USING btree (company_id, media_asset_id)` | Answers the media reference guard. |
 
+## layout_qr_links
+
+Stable public QR link of one layout area. The last authorized publication sets its public HTTPS destination; saving a draft does not activate it.
+
+Owner: Programming. Classification: CONFIDENTIAL.
+
+Lifecycle: Created or updated in the publication transaction through the Programming port. Identity and tenant remain immutable. Deleting the layout cascades its public links.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `character varying(32)` | no | — | PUBLIC | Opaque stable 128-bit identifier derived from the layout identity and area key; public short-link identity, not API authorization. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company owning the layout and link; immutable tenant key. | — | — |
+| `layout_id` | `uuid` | no | — | INTERNAL | Owning layout UUID; immutable, with a tenant-safe composite foreign key. | — | — |
+| `area_key` | `character varying(16)` | no | — | INTERNAL | Stable area key; immutable. | — | — |
+| `target_url` | `character varying(2048)` | no | — | PUBLIC | Public HTTPS destination approved by the most recent publication of this layout area; no URL credentials. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant at which publication last advanced the destination. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `layout_qr_links_area_key` | `UNIQUE (company_id, layout_id, area_key)` | One stable link per company, layout and area key. |
+| `layout_qr_links_company_id_id_key` | `UNIQUE (company_id, id)` | Tenant-safe identity key, consistent with every company-owned table. |
+| `layout_qr_links_id_shape` | `CHECK (((id)::text ~ '^[0-9a-f]{32}$'::text))` | A lowercase 128-bit hexadecimal identity. |
+| `layout_qr_links_key_shape` | `CHECK (((area_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))` | The same short lowercase area identifier used by layouts. |
+| `layout_qr_links_layout_fkey` | `FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | Tenant-safe owning layout; deletion cascades its links. |
+| `layout_qr_links_pkey` | `PRIMARY KEY (id)` | Opaque public link identity. |
+| `layout_qr_links_target_shape` | `CHECK ((((target_url)::text ~~ 'https://%'::text) AND (char_length((target_url)::text) <= 2048)))` | Public HTTPS destination; application validation also refuses credentials and nonstandard ports. |
+
 ## publications
 
 One immutable generation of a program (a group's or a screen's): its exact manifest bytes, their SHA-256, a digest of its content and counts, its publisher and time.
@@ -1682,7 +1713,7 @@ Lifecycle: Inserted when a person publishes or restores; never edited. Supersede
 | `program_id` | `uuid` | no | — | INTERNAL | Program this publication is a generation of; immutable. | — | — |
 | `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the program concerned when it was published (a group's explicit span or the screen's branch), so the media guard discloses only references the caller may see; empty for a whole-company group. | Never null; an empty array means the program reached the whole company. | — |
 | `generation` | `integer` | no | — | INTERNAL | Generation number within the program, from 1, increasing. | — | — |
-| `protocol` | `smallint` | no | — | INTERNAL | Synchronization protocol the manifest is serialized in: 1 for a program without a layout, 2 for a program with one. | — | — |
+| `protocol` | `smallint` | no | — | INTERNAL | Manifest protocol: 1 without a layout, 2 with media/catalog layout, 3 with one or more versioned widgets. | — | — |
 | `content_sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the canonical outputs, playlists and media, equal for equal content; republishing unchanged content returns the latest publication. | — | — |
 | `manifest` | `bytea` | yes | — | CONFIDENTIAL | Exact UTF-8 JSON bytes served to screens, with schedules and media identifiers. | The publication was pruned and can no longer be delivered or restored. | — |
 | `manifest_sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the manifest bytes, which authorization statements name. | — | — |
@@ -1716,7 +1747,7 @@ Lifecycle: Inserted when a person publishes or restores; never edited. Supersede
 | `publications_origin_known` | `CHECK (((origin)::text = ANY ((ARRAY['MANUAL'::character varying, 'RESTORE'::character varying, 'PRICE'::character varying])::text[])))` | Only the three origins exist. |
 | `publications_origin_restore` | `CHECK ((((origin)::text = 'RESTORE'::text) = (restored_from_generation IS NOT NULL)))` | A restore, and only a restore, names the generation it restores. |
 | `publications_pkey` | `PRIMARY KEY (id)` | Unique publication identity. |
-| `publications_protocol_known` | `CHECK ((protocol = ANY (ARRAY[1, 2])))` | Only protocols 1 and 2 exist. |
+| `publications_protocol_known` | `CHECK ((protocol = ANY (ARRAY[1, 2, 3])))` | Only protocols 1 (single output), 2 (layout/catalogs) and 3 (layout/widgets) exist. |
 | `publications_pruned_after_superseded` | `CHECK (((pruned_at IS NULL) OR (superseded_at IS NOT NULL)))` | Only a superseded publication can be pruned. |
 | `publications_published_by_principal_id_fkey` | `FOREIGN KEY (published_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The publisher is a known principal. |
 | `publications_restored_from` | `CHECK (((restored_from_generation IS NULL) OR ((restored_from_generation >= 1) AND (restored_from_generation <= (generation - 1)))))` | A restore names an earlier generation. |
@@ -1974,7 +2005,7 @@ Lifecycle: Inserted or coalesced by a price change; claimed, retried and finishe
 | `GrantScope` | COMPANY, BRANCHES | Grant scope: COMPANY or explicit BRANCHES. |
 | `HumanSessionState` | PENDING_LIMIT, ACTIVE, REVOKED | Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED. |
 | `InvitationStatus` | PENDING, ACCEPTED, REVOKED, REPLACED, EXPIRED | Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED. |
-| `LayoutAreaKind` | MEDIA, CATALOG | Layout area kinds: MEDIA or CATALOG. |
+| `LayoutAreaKind` | MEDIA, CATALOG, WIDGET | Layout area kinds: MEDIA, CATALOG or WIDGET (versioned clock, QR, ticker, weather or RSS configuration). |
 | `LayoutOrientation` | LANDSCAPE, PORTRAIT | Layout canvas orientation: LANDSCAPE or PORTRAIT. |
 | `MediaKind` | IMAGE, VIDEO | Kind of media item: IMAGE or VIDEO. |
 | `MediaStatus` | UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED, PURGED | Lifecycle state of a media item: UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED or PURGED. |

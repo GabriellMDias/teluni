@@ -142,6 +142,7 @@ public class PlayerStore(
         SYNC("sync.json"),
         CLOCK("clock.json"),
         DIAGNOSTICS("diagnostics.json"),
+        WIDGETS("widgets.json"),
     }
 
     /**

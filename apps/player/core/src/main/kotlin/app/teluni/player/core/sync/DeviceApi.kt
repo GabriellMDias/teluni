@@ -1,5 +1,6 @@
 package app.teluni.player.core.sync
 
+import app.teluni.player.core.protocol.WidgetBatch
 import java.io.IOException
 import java.io.InputStream
 import java.time.Duration
@@ -135,6 +136,8 @@ public interface DeviceApi {
 
     public fun keys(credential: String): String
 
+    public fun widgets(credential: String, publicationId: String): WidgetBatch = throw IOException("Widget transport unavailable")
+
     public fun manifest(credential: String, publicationId: String): ByteArray
 
     /**
@@ -240,6 +243,25 @@ public class HttpDeviceApi(
         calls.newCall(request(url("device", "keys"), credential).get().build()).execute().use { response ->
             if (!response.isSuccessful) throw failure(response)
             response.body.string()
+        }
+
+    override fun widgets(credential: String, publicationId: String): WidgetBatch =
+        calls.newCall(request(url("device", "publications", publicationId, "widgets"), credential).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw failure(response)
+            val bytes = response.body.byteStream().use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    if (output.size() + count > 256 * 1024) throw IOException("Widget answer exceeds limit")
+                    output.write(buffer, 0, count)
+                }
+                output.toByteArray()
+            }
+            if (bytes.size > 256 * 1024) throw IOException("Widget answer exceeds limit")
+            try { json.decodeFromString(WidgetBatch.serializer(), bytes.decodeToString()) }
+            catch (error: SerializationException) { throw IOException("Invalid widget answer", error) }
         }
 
     override fun manifest(credential: String, publicationId: String): ByteArray =

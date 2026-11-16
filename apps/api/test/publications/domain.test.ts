@@ -284,6 +284,7 @@ describe("synchronization rules", () => {
     expect(agreedProtocol([1])).toBe(1);
     expect(agreedProtocol([1, 2])).toBe(2);
     expect(agreedProtocol([2])).toBe(2);
-    expect(agreedProtocol([3])).toBeNull();
+    expect(agreedProtocol([1, 2, 3])).toBe(3);
+    expect(agreedProtocol([4])).toBeNull();
   });
 });

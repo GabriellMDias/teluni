@@ -909,6 +909,23 @@
       "file": "pages/api/getDeviceTimeline.json"
     },
     {
+      "id": "api/getDeviceWidgetData",
+      "kind": "api",
+      "title": "getDeviceWidgetData",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /device/publications/{publicationId}/widgets",
+      "method": "GET",
+      "path": "/device/publications/{publicationId}/widgets",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceWidgetData.json"
+    },
+    {
       "id": "api/getGroupProgram",
       "kind": "api",
       "title": "getGroupProgram",
@@ -1060,6 +1077,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getProgrammingGroup.json"
+    },
+    {
+      "id": "api/getPublishedQrDestination",
+      "kind": "api",
+      "title": "getPublishedQrDestination",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /q/{linkId}",
+      "method": "GET",
+      "path": "/q/{linkId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getPublishedQrDestination.json"
     },
     {
       "id": "api/getReadiness",
@@ -1610,6 +1644,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/previewInvitation.json"
+    },
+    {
+      "id": "api/previewLayoutWidget",
+      "kind": "api",
+      "title": "previewLayoutWidget",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/widgets/preview",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/widgets/preview",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/previewLayoutWidget.json"
     },
     {
       "id": "api/publishDevice",
@@ -2626,6 +2678,16 @@
       "file": "pages/database/layout_pages.json"
     },
     {
+      "id": "database/layout_qr_links",
+      "kind": "database",
+      "title": "layout_qr_links",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Stable public QR link of one layout area. The last authorized publication sets its public HTTPS destination; saving a draft does not activate it.",
+      "headings": [],
+      "file": "pages/database/layout_qr_links.json"
+    },
+    {
       "id": "database/layout_view_fields",
       "kind": "database",
       "title": "layout_view_fields",
@@ -3035,7 +3097,7 @@
       "owner": "Programming",
       "metadataSource": "apps/web/src/programming/components.docs.json",
       "source": "apps/web/src/programming/layout-canvas.tsx",
-      "summary": "Schematic freeform layout canvas with component drop, movement and eight resize handles.",
+      "summary": "Schematic freeform layout canvas with Media/Catalog and five information components, movement and eight resize handles.",
       "headings": [],
       "file": "pages/components/LayoutCanvas.json"
     },
@@ -3206,6 +3268,34 @@
       "summary": "A labeled native input with linked hints and validation messages.",
       "headings": [],
       "file": "pages/components/TextField.json"
+    },
+    {
+      "id": "components/WidgetFace",
+      "kind": "component",
+      "title": "WidgetFace",
+      "group": "Data Display",
+      "category": "Data Display",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "metadataSource": "apps/web/src/programming/components.docs.json",
+      "source": "apps/web/src/programming/widget-settings.tsx",
+      "summary": "Illustrative text and QR face for the layout canvas and explicit inspector preview.",
+      "headings": [],
+      "file": "pages/components/WidgetFace.json"
+    },
+    {
+      "id": "components/WidgetSettings",
+      "kind": "component",
+      "title": "WidgetSettings",
+      "group": "Forms",
+      "category": "Forms",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "metadataSource": "apps/web/src/programming/components.docs.json",
+      "source": "apps/web/src/programming/widget-settings.tsx",
+      "summary": "Feature-owned configuration and explicit source previews for the five layout widgets.",
+      "headings": [],
+      "file": "pages/components/WidgetSettings.json"
     },
     {
       "id": "repository/AGENTS",
@@ -3718,6 +3808,16 @@
       "file": "pages/repository/docs/adr/0036-resolve-branch-time-zones-locally-from-confirmed-map-coordinates.json"
     },
     {
+      "id": "repository/docs/adr/0037-publish-widget-configuration-and-proxy-live-public-data",
+      "kind": "repository",
+      "title": "ADR-0037: Publish Widget Configuration and Proxy Live Public Data",
+      "group": "Decisions",
+      "source": "docs/adr/0037-publish-widget-configuration-and-proxy-live-public-data.md",
+      "summary": "The owner explicitly requested clock/date, dynamic QR codes, scrolling text, weather and RSS components, followed by local example layouts. These extend the freeform authoring…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0037-publish-widget-configuration-and-proxy-live-public-data.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -4218,6 +4318,16 @@
       "file": "pages/repository/docs/project/invitation-delivery-design.json"
     },
     {
+      "id": "repository/docs/project/layout-widgets",
+      "kind": "repository",
+      "title": "Layout Information Components",
+      "group": "Project guides",
+      "source": "docs/project/layout-widgets.md",
+      "summary": "The Programming layout editor offers Media, Catalog, Clock/date, Dynamic QR, Scrolling text, Weather and RSS news. All retain the existing rectangle/stacking model, click/drag…",
+      "headings": [],
+      "file": "pages/repository/docs/project/layout-widgets.json"
+    },
+    {
       "id": "repository/docs/project/media-library-design",
       "kind": "repository",
       "title": "Teluni Media Library Design",
@@ -4645,60 +4755,62 @@
       { "file": "search/0002.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0003.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0004.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0006.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0007.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0008.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0008.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0009.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0010.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0011.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0012.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0013.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0014.json", "count": 15, "kinds": ["api"] },
+      { "file": "search/0014.json", "count": 16, "kinds": ["api"] },
       { "file": "search/0015.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0016.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0017.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0018.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0019.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0020.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0021.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0016.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0017.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0018.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0019.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0020.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0021.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0022.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0023.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0023.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0024.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0025.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0026.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0027.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0028.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0029.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0030.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0031.json", "count": 14, "kinds": ["api", "database"] },
-      { "file": "search/0032.json", "count": 24, "kinds": ["database"] },
-      { "file": "search/0033.json", "count": 26, "kinds": ["database"] },
+      { "file": "search/0028.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0029.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0030.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0031.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0032.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0033.json", "count": 24, "kinds": ["api", "database"] },
+      { "file": "search/0034.json", "count": 27, "kinds": ["database"] },
       {
-        "file": "search/0034.json",
-        "count": 47,
+        "file": "search/0035.json",
+        "count": 43,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0035.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 174, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 162, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 115, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 80, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 71, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 52, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 37, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0051.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0052.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0053.json", "count": 78, "kinds": ["repository"] }
+      { "file": "search/0036.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 111, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 169, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 169, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 119, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 124, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 114, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 60, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 53, "kinds": ["repository"] },
+      { "file": "search/0049.json", "count": 38, "kinds": ["repository"] },
+      { "file": "search/0050.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0051.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0052.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0053.json", "count": 97, "kinds": ["repository"] },
+      { "file": "search/0054.json", "count": 95, "kinds": ["repository"] },
+      { "file": "search/0055.json", "count": 20, "kinds": ["repository"] }
     ],
-    "count": 2177
+    "count": 2224
   }
 }

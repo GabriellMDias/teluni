@@ -158,10 +158,10 @@ export type SyncAnswer = Readonly<{
  */
 type Payload =
   | Readonly<{ protocol: 1; content: PublicationContent }>
-  | Readonly<{ protocol: 2; content: LayoutPublicationContent }>;
+  | Readonly<{ protocol: 2 | 3; content: LayoutPublicationContent }>;
 
 const digestOf = (payload: Payload) =>
-  payload.protocol === 2
+  payload.protocol !== 1
     ? layoutContentDigest(payload.content)
     : contentDigest(payload.content);
 
@@ -395,14 +395,14 @@ export class PublicationService {
         const stored = JSON.parse(manifest.toString("utf8")) as Partial<
           LayoutPublicationContent & PublicationContent
         > & {
-          protocol: 1 | 2;
+          protocol: 1 | 2 | 3;
           playlists: ManifestPlaylist[];
           media: ManifestMedia[];
         };
         // Protocol 2 prices and catalogs were limited to the reach of the
         // time: a copy may serve no branch beyond it.
         if (
-          stored.protocol === 2 &&
+          stored.protocol !== 1 &&
           !withinReach(target.reach, earlier.branchIds)
         )
           throw new PublicationFailure("PUBLICATION_INVALID");
@@ -433,9 +433,9 @@ export class PublicationService {
         )
           throw new PublicationFailure("PUBLICATION_INVALID");
         const payload: Payload =
-          stored.protocol === 2
+          stored.protocol !== 1
             ? {
-                protocol: 2,
+                protocol: stored.protocol,
                 content: {
                   layout: stored.layout!,
                   outputs:
@@ -590,7 +590,12 @@ export class PublicationService {
         ) as Partial<LayoutPublicationContent> & { protocol: number })
       : null;
     const published = stored?.catalogs?.find((item) => item.id === catalogId);
-    if (!stored || stored.protocol !== 2 || !stored.layout || !published)
+    if (
+      !stored ||
+      (stored.protocol !== 2 && stored.protocol !== 3) ||
+      !stored.layout ||
+      !published
+    )
       return gone("NOT_PUBLISHED");
     const repriced = await this.#programming.repriceCatalog(
       companyId,
@@ -655,7 +660,10 @@ export class PublicationService {
       {
         programId,
         branchIds: target.branchIds,
-        payload: { protocol: 2, content: canonicalLayoutContent(content) },
+        payload: {
+          protocol: stored.protocol,
+          content: canonicalLayoutContent(content),
+        },
         digest: layoutContentDigest(content),
         counts: latest.counts,
         playlists,
@@ -922,7 +930,7 @@ export class PublicationService {
     );
     const payload: Payload = layout
       ? {
-          protocol: 2,
+          protocol: layout.areas.some((area) => area.kind === "widget") ? 3 : 2,
           content: canonicalLayoutContent({
             layout: {
               orientation: layout.orientation,
@@ -938,7 +946,7 @@ export class PublicationService {
               return {
                 key: area.key,
                 default:
-                  area.kind === "catalog"
+                  area.kind !== "media"
                     ? { view: true }
                     : output?.defaultPlaylistId
                       ? { playlistId: output.defaultPlaylistId }
@@ -1051,9 +1059,20 @@ export class PublicationService {
       publishedAt,
     };
     const manifest =
-      input.payload.protocol === 2
+      input.payload.protocol !== 1
         ? layoutManifestBytes(header, input.payload.content)
         : manifestBytes(header, input.payload.content);
+    if (
+      input.payload.protocol === 3 &&
+      input.origin !== "PRICE" &&
+      !(await this.#programming.activateWidgetLinks(
+        tx,
+        companyId,
+        input.payload.content.layout.areas,
+        input.origin === "RESTORE" ? "restore" : "publish",
+      ))
+    )
+      throw new PublicationFailure("PUBLICATION_INVALID");
     const publication = await this.#repository.insert(
       tx,
       actor,
@@ -1422,6 +1441,32 @@ export class PublicationService {
       deviceId: screen.deviceId,
       publication: desired,
     };
+  }
+
+  async widgets(authorization: string | undefined, publicationId: string) {
+    const { bytes } = await this.manifest(authorization, publicationId);
+    const stored = JSON.parse(bytes.toString("utf8")) as {
+      protocol: number;
+      layout?: LayoutPublicationContent["layout"];
+    };
+    const areas = (stored.layout?.areas ?? []).filter(
+      (area) =>
+        area.widget &&
+        (area.widget.type === "weather" || area.widget.type === "rss"),
+    );
+    const items = [];
+    // Four at a time: twelve cold sources finish within the device transport budget.
+    for (let index = 0; index < areas.length; index += 4) {
+      items.push(
+        ...(await Promise.all(
+          areas.slice(index, index + 4).map(async (area) => ({
+            areaKey: area.key,
+            live: await this.#programming.widgetData(area.widget!),
+          })),
+        )),
+      );
+    }
+    return { publicationId, items };
   }
 
   async manifest(

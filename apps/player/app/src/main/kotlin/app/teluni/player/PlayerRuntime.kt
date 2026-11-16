@@ -140,6 +140,7 @@ internal class PlayerRuntime(private val context: Context) {
                 when (val result = player.sync()) {
                     is SyncOutcome.Synced -> {
                         exchangeStatus = "CONNECTED"
+                        player.refreshWidgets()
                         nextExchange = now + result.next.toMillis()
                         if (result.stagingNeeded && staging.compareAndSet(false, true)) {
                             downloads.execute {
@@ -147,7 +148,7 @@ internal class PlayerRuntime(private val context: Context) {
                                     when (player.stage()) {
                                         StagingOutcome.Superseded -> nextExchange = 0
                                         is StagingOutcome.Failed -> exchangeStatus = "STAGING_FAILED"
-                                        else -> Unit
+                                        else -> player.refreshWidgets()
                                     }
                                 } catch (_: Exception) {
                                     Log.e("TeluniPlayer", "STAGING_FAILED")

@@ -19,6 +19,7 @@ import {
   type StatementClaims,
 } from "../../src/features/publications/statements.js";
 import {
+  conformanceWidgetManifest,
   conformanceLayoutManifest,
   conformanceManifest,
   conformancePageCycles,
@@ -33,6 +34,7 @@ import {
 type Fixtures = {
   manifest: { bytes: string; sha256: string };
   layoutManifest: { bytes: string; sha256: string };
+  widgetManifest: { bytes: string; sha256: string };
   pageCycles: { id: string; position: unknown }[];
   prices: { id: string; price: unknown }[];
   keys: PublicKeySet;
@@ -205,4 +207,19 @@ describe("zone offsets", () => {
       ).periods,
     ).toEqual([{ from: "2027-03-01T00:00:00.000Z", offsetSeconds: 0 }]);
   });
+});
+
+it("preserves the API's protocol 3 widget bytes", () => {
+  const manifest = layoutManifestBytes(
+    conformanceWidgetManifest.header,
+    conformanceWidgetManifest.content,
+  );
+  expect(fixtures.widgetManifest).toEqual({
+    bytes: manifest.bytes.toString("utf8"),
+    sha256: manifest.sha256.toString("hex"),
+  });
+  expect(
+    (JSON.parse(fixtures.widgetManifest.bytes) as { protocol: number })
+      .protocol,
+  ).toBe(3);
 });

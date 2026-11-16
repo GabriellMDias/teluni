@@ -1,5 +1,7 @@
 package app.teluni.player.core.sync
 
+import app.teluni.player.core.protocol.WidgetBatch
+import app.teluni.player.core.protocol.WidgetLive
 import app.teluni.player.core.Fixtures
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -85,6 +87,15 @@ class ContractTest {
     }
 
     @Test
+    fun `widget data matches its generation-bound API contract`() {
+        val schema = response("/device/publications/{publicationId}/widgets", "get", "200")
+        assertFields(schema, WidgetBatch.serializer(), "widget batch")
+        val item = property(schema, "items").jsonObject.getValue("items")
+        assertFields(item, WidgetBatch.Item.serializer(), "widget item")
+        assertFields(property(item, "live"), WidgetLive.serializer(), "widget live data")
+    }
+
+    @Test
     fun `the player uses only operations the API declares`() {
         val used = mapOf(
             "/device-enrollments" to "post",
@@ -94,6 +105,7 @@ class ContractTest {
             "/device/sync" to "post",
             "/device/keys" to "get",
             "/device/publications/{publicationId}/manifest" to "get",
+            "/device/publications/{publicationId}/widgets" to "get",
             "/device/media/{mediaId}" to "get",
         )
         for ((path, method) in used) operation(path, method)

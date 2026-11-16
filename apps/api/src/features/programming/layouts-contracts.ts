@@ -1,4 +1,5 @@
 import { Type } from "typebox";
+import { widgetSchema } from "./widgets-contracts.js";
 import { errorEnvelopeSchema } from "../../errors.js";
 import type { ApiOperation } from "../../module.js";
 
@@ -23,7 +24,11 @@ const orientation = Type.Union([
   Type.Literal("landscape"),
   Type.Literal("portrait"),
 ]);
-const kind = Type.Union([Type.Literal("media"), Type.Literal("catalog")]);
+const kind = Type.Union([
+  Type.Literal("media"),
+  Type.Literal("catalog"),
+  Type.Literal("widget"),
+]);
 const fit = Type.Union([Type.Literal("contain"), Type.Literal("cover")]);
 const role = Type.Union([
   Type.Literal("title"),
@@ -102,6 +107,7 @@ const areaInput = Type.Object(
     muted: Type.Optional(Type.Boolean()),
     volume: Type.Optional(Type.Integer({ minimum: 0, maximum: 100 })),
     kind,
+    widget: Type.Optional(widgetSchema),
     pageControlled: Type.Optional(Type.Boolean()),
     view: Type.Optional(Type.Union([viewInput, Type.Null()])),
   },
@@ -151,7 +157,7 @@ export const layoutDefinitionSchema = Type.Object(definitionFields, {
 export const layoutDocumentSchema = Type.Object(
   {
     format: Type.Literal("teluni.layout"),
-    schema: Type.Literal(1),
+    schema: Type.Union([Type.Literal(1), Type.Literal(2)]),
     name: layoutName,
     orientation,
     audioMixConfirmed: Type.Boolean(),
@@ -224,6 +230,7 @@ export const layoutSchema = Type.Object(
           muted: Type.Boolean(),
           volume: Type.Integer({ minimum: 0, maximum: 100 }),
           kind,
+          widget: Type.Optional(widgetSchema),
           pageControlled: Type.Boolean(),
           view: Type.Union([
             Type.Object(
@@ -318,9 +325,9 @@ const layoutParams = Type.Object(
 );
 
 const reasons =
-  "Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED.";
+  "Issue reasons: WIDGET_INVALID, WIDGET_NOT_APPLICABLE, WIDGET_SETTINGS_INVALID, WIDGET_QR_TOO_SMALL, AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED.";
 const rules =
-  'A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout\'s branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout\'s scope no longer than the page, or a view page or group (a selection choice ID, or an agenda\'s weekday from "1" for Monday to "7").';
+  'A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout\'s branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A widget area carries version 1 clock, qr, ticker, weather or rss configuration; it is muted at zero volume and is independent of coordinated pages. QR areas need at least 240×240 units. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout\'s scope no longer than the page, or a view page or group (a selection choice ID, or an agenda\'s weekday from "1" for Monday to "7").';
 
 export const layoutOperations = [
   {
@@ -387,7 +394,7 @@ export const layoutOperations = [
     url: "/companies/:companyId/programming/layouts/import",
     operationId: "importLayout",
     access: "session",
-    description: `Create a layout from its exported \`teluni.layout\` JSON (schema 1) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. ${reasons}`,
+    description: `Create a layout from its exported \`teluni.layout\` JSON (schema 1 or 2) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. ${reasons}`,
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -423,7 +430,7 @@ export const layoutOperations = [
     url: "/companies/:companyId/programming/layouts/:layoutId",
     operationId: "updateLayout",
     access: "session",
-    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
+    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog or widget areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
     schema: {
       params: layoutParams,
       body: Type.Object(
@@ -466,7 +473,7 @@ export const layoutOperations = [
     operationId: "exportLayout",
     access: "session",
     description:
-      "The layout as versioned `teluni.layout` JSON (schema 1), which import accepts. Catalogs, fields and media are named by their IDs.",
+      "The layout as versioned `teluni.layout` JSON (schema 1 or 2), which import accepts. Catalogs, fields and media are named by their IDs.",
     schema: {
       params: layoutParams,
       response: { 200: layoutDocumentSchema, ...common },

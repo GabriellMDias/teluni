@@ -461,7 +461,7 @@
           "classification": "CONFIDENTIAL"
         },
         "orientation": {
-          "description": "LANDSCAPE (1920×1080 canvas units) or PORTRAIT (1080×1920).",
+          "description": "LANDSCAPE (1920\u00d71080 canvas units) or PORTRAIT (1080\u00d71920).",
           "classification": "INTERNAL"
         },
         "audio_mix_confirmed": {
@@ -593,6 +593,11 @@
           "classification": "INTERNAL",
           "unit": "seconds",
           "nullMeaning": "The area is a media area."
+        },
+        "widget": {
+          "description": "Version 1 clock/date, stable QR, scrolling text, weather or RSS configuration, validated by Programming before persistence and publication. Public feed/target URLs are never logged. Protocol 3 carries the approved configuration.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The area is media or catalog, without a widget."
         }
       },
       "objects": {
@@ -609,7 +614,8 @@
         "layout_areas_background": "Backgrounds are uppercase #RRGGBB colors.",
         "layout_areas_fit": "Media fit is contain or cover.",
         "layout_areas_volume_range": "Volumes are 0 to 100.",
-        "layout_areas_view": "Catalog areas, and only they, carry a complete view with a known presentation and bounded text size and paging."
+        "layout_areas_view": "Catalog areas, and only they, carry a complete view with a known presentation and bounded text size and paging.",
+        "layout_areas_widget": "Only widget areas carry bounded versioned configuration and they cannot be page-controlled or audible."
       }
     },
     "layout_view_fields": {
@@ -728,11 +734,53 @@
         "layout_page_contents_media_idx": "Answers the media reference guard.",
         "layout_page_contents_one_choice": "Each content names exactly one media item, view page or group, with view pages from 1."
       }
+    },
+    "layout_qr_links": {
+      "owner": "Programming",
+      "classification": "CONFIDENTIAL",
+      "description": "Stable public QR link of one layout area. The last authorized publication sets its public HTTPS destination; saving a draft does not activate it.",
+      "lifecycle": "Created or updated in the publication transaction through the Programming port. Identity and tenant remain immutable. Deleting the layout cascades its public links.",
+      "columns": {
+        "id": {
+          "description": "Opaque stable 128-bit identifier derived from the layout identity and area key; public short-link identity, not API authorization.",
+          "classification": "PUBLIC"
+        },
+        "company_id": {
+          "description": "Company owning the layout and link; immutable tenant key.",
+          "classification": "INTERNAL"
+        },
+        "layout_id": {
+          "description": "Owning layout UUID; immutable, with a tenant-safe composite foreign key.",
+          "classification": "INTERNAL"
+        },
+        "area_key": {
+          "description": "Stable area key; immutable.",
+          "classification": "INTERNAL"
+        },
+        "target_url": {
+          "description": "Public HTTPS destination approved by the most recent publication of this layout area; no URL credentials.",
+          "classification": "PUBLIC"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant at which publication last advanced the destination.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "layout_qr_links_pkey": "Opaque public link identity.",
+        "layout_qr_links_area_key": "One stable link per company, layout and area key.",
+        "layout_qr_links_layout_fkey": "Tenant-safe owning layout; deletion cascades its links.",
+        "layout_qr_links_id_shape": "A lowercase 128-bit hexadecimal identity.",
+        "layout_qr_links_key_shape": "The same short lowercase area identifier used by layouts.",
+        "layout_qr_links_target_shape": "Public HTTPS destination; application validation also refuses credentials and nonstandard ports.",
+        "layout_qr_links_company_id_id_key": "Tenant-safe identity key, consistent with every company-owned table."
+      }
     }
   },
   "enums": {
     "PlaylistTransition": "Transition between playlist items: CUT or FADE.",
     "LayoutOrientation": "Layout canvas orientation: LANDSCAPE or PORTRAIT.",
-    "LayoutAreaKind": "Layout area kinds: MEDIA or CATALOG."
+    "LayoutAreaKind": "Layout area kinds: MEDIA, CATALOG or WIDGET (versioned clock, QR, ticker, weather or RSS configuration)."
   }
 }

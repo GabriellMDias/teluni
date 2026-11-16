@@ -10,6 +10,7 @@ import type {
   ViewRole,
 } from "./layouts.js";
 import type { Actor } from "./prisma-repository.js";
+import { parseWidget } from "./widgets.js";
 
 export type LayoutRecord = Readonly<{
   id: string;
@@ -171,9 +172,11 @@ export class PrismaLayoutRepository {
     companyId: string,
     layoutId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{ key: string; name: string; kind: "media" | "catalog" }[]> {
+  ): Promise<
+    { key: string; name: string; kind: "media" | "catalog" | "widget" }[]
+  > {
     const rows = await (tx ?? this.#db).$queryRaw<
-      { key: string; name: string; kind: "MEDIA" | "CATALOG" }[]
+      { key: string; name: string; kind: "MEDIA" | "CATALOG" | "WIDGET" }[]
     >`
       SELECT key, name, kind::text AS kind FROM layout_areas
       WHERE company_id = ${companyId}::uuid AND layout_id = ${layoutId}::uuid
@@ -181,7 +184,7 @@ export class PrismaLayoutRepository {
     return rows.map((row) => ({
       key: row.key,
       name: row.name,
-      kind: row.kind === "MEDIA" ? "media" : "catalog",
+      kind: row.kind.toLowerCase() as AreaDefinition["kind"],
     }));
   }
 
@@ -245,18 +248,19 @@ export class PrismaLayoutRepository {
         fit: "contain" | "cover";
         muted: boolean;
         volume: number;
-        kind: "MEDIA" | "CATALOG";
+        kind: "MEDIA" | "CATALOG" | "WIDGET";
         page_controlled: boolean;
         catalog_id: string | null;
         presentation: Presentation | null;
         text_size: number | null;
         show_unavailable: boolean | null;
         page_seconds: number | null;
+        widget: unknown;
       }[]
     >`
       SELECT id, key, name, x, y, width, height, z, background, fit, muted,
         volume, kind::text AS kind, page_controlled, catalog_id, presentation,
-        text_size, show_unavailable, page_seconds
+        text_size, show_unavailable, page_seconds, widget
       FROM layout_areas
       WHERE company_id = ${companyId}::uuid AND layout_id = ${id}::uuid
       ORDER BY z`;
@@ -300,7 +304,16 @@ export class PrismaLayoutRepository {
       fit: row.fit,
       muted: row.muted,
       volume: row.volume,
-      kind: row.kind === "MEDIA" ? "media" : "catalog",
+      kind: row.kind.toLowerCase() as AreaDefinition["kind"],
+      ...(row.widget
+        ? {
+            widget:
+              parseWidget(row.widget) ??
+              (() => {
+                throw new Error("Invalid stored widget configuration");
+              })(),
+          }
+        : {}),
       pageControlled: row.page_controlled,
       view:
         row.catalog_id === null
@@ -388,7 +401,7 @@ export class PrismaLayoutRepository {
         INSERT INTO layout_areas (id, company_id, layout_id, key, name, x, y,
           width, height, z, background, fit, muted, volume, kind,
           page_controlled, catalog_id, presentation, text_size,
-          show_unavailable, page_seconds)
+          show_unavailable, page_seconds, widget)
         VALUES (${areaId}::uuid, ${companyId}::uuid, ${current.id}::uuid,
           ${area.key}, ${area.name}, ${area.x}::int, ${area.y}::int,
           ${area.width}::int, ${area.height}::int, ${area.z}::int,
@@ -397,7 +410,8 @@ export class PrismaLayoutRepository {
           ${view?.catalogId ?? null}::uuid, ${view?.presentation ?? null},
           ${view?.textSize ?? null}::int,
           ${view ? view.unavailable === "show" : null}::boolean,
-          ${view?.pageSeconds ?? null}::int)`;
+          ${view?.pageSeconds ?? null}::int,
+          ${area.widget ? JSON.stringify(area.widget) : null}::jsonb)`;
       for (const [position, field] of (view?.fields ?? []).entries())
         await tx.$executeRaw`
           INSERT INTO layout_view_fields (company_id, area_id, position,
@@ -427,9 +441,58 @@ export class PrismaLayoutRepository {
     tx: Prisma.TransactionClient,
     current: LayoutRecord,
   ): Promise<void> {
+    // Restoring a QR publication locks its public link rows in the same order.
+    await tx.$queryRaw`SELECT id FROM layout_qr_links
+      WHERE company_id = ${current.companyId}::uuid AND layout_id = ${current.id}::uuid
+      ORDER BY id COLLATE "C" FOR UPDATE`;
     await tx.$executeRaw`
       DELETE FROM layouts
       WHERE company_id = ${current.companyId}::uuid AND id = ${current.id}::uuid`;
+  }
+
+  /** The source layout is already share-locked for a manual publication. */
+  async activateQrLinks(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    links: readonly {
+      id: string;
+      layoutId: string;
+      areaKey: string;
+      targetUrl: string;
+    }[],
+    mode: "publish" | "restore",
+  ): Promise<boolean> {
+    // Deletion takes these same child-row locks in identifier order.
+    const ordered = [...links].sort((a, b) =>
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+    );
+    for (const link of ordered) {
+      if (mode === "restore") {
+        // Updating existing identities avoids old-layout FK locks after program/publication locks.
+        const changed =
+          await tx.$executeRaw`UPDATE layout_qr_links SET target_url = ${link.targetUrl}, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ${link.id} AND company_id = ${companyId}::uuid AND layout_id = ${link.layoutId}::uuid AND area_key = ${link.areaKey}`;
+        if (changed !== 1) return false;
+      } else {
+        const changed =
+          await tx.$executeRaw`INSERT INTO layout_qr_links (id, company_id, layout_id, area_key, target_url)
+          VALUES (${link.id}, ${companyId}::uuid, ${link.layoutId}::uuid, ${link.areaKey}, ${link.targetUrl})
+          ON CONFLICT (id) DO UPDATE SET target_url = EXCLUDED.target_url, updated_at = CURRENT_TIMESTAMP
+          WHERE layout_qr_links.company_id = EXCLUDED.company_id AND layout_qr_links.layout_id = EXCLUDED.layout_id AND layout_qr_links.area_key = EXCLUDED.area_key`;
+        if (changed !== 1) return false;
+      }
+    }
+    return true;
+  }
+
+  /** Public capability lookup only; the service checks company liveness through Organizations. */
+  async findQrDestination(
+    linkId: string,
+  ): Promise<{ companyId: string; url: string } | null> {
+    const [row] = await this.#db.$queryRaw<
+      { company_id: string; target_url: string }[]
+    >`SELECT company_id, target_url FROM layout_qr_links WHERE id = ${linkId}`;
+    return row ? { companyId: row.company_id, url: row.target_url } : null;
   }
 
   /** Layouts binding a catalog, and each field, for the catalogs guard. */

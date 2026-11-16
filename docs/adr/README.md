@@ -46,3 +46,4 @@ Teluni's decision identifiers remain stable. The [imported Orion decision index]
 | [ADR-0034](0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md) | Build Data Grids on TanStack Table and TanStack Virtual |
 | [ADR-0035](0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md) | Export Grid Data in the Browser to XLSX, CSV and PDF |
 | [ADR-0036](0036-resolve-branch-time-zones-locally-from-confirmed-map-coordinates.md) | Resolve Branch Time Zones Locally from Confirmed Map Coordinates |
+| [ADR-0037](0037-publish-widget-configuration-and-proxy-live-public-data.md) | Publish Widget Configuration and Proxy Live Public Data |

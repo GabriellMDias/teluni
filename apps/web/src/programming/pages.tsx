@@ -1666,7 +1666,7 @@ function ScheduleForm({
   const [rules, setRules] = useState<DraftRule[]>(() => toDraftRules(output));
   const [fallback, setFallback] = useState(output.defaultPlaylistId ?? "");
   // A catalog area's default is its view, so it takes no playlist.
-  const viewDefault = output.kind === "catalog";
+  const viewDefault = output.kind === "catalog" || output.kind === "widget";
   const hidden = program.outputs.some(
     (output) =>
       (output.defaultPlaylistId !== null && !output.defaultPlaylist) ||
@@ -1731,7 +1731,9 @@ function ScheduleForm({
           <p className="hint">{t.workspace.continuousLead}</p>
         )}{" "}
         {viewDefault ? (
-          <p className="hint">{t.viewDefault}</p>
+          <p className="hint">
+            {output.kind === "widget" ? t.widgetDefault : t.viewDefault}
+          </p>
         ) : (
           <>
             <label htmlFor="default-playlist">{t.defaultPlaylist}</label>
@@ -1981,7 +1983,9 @@ function TimelinePreview({
     queryFn: () => getTimeline(companyId, source, range, zone, output),
   });
   const outputs = timeline.data?.outputs ?? [];
-  const view = timeline.data?.output.kind === "catalog";
+  const view =
+    timeline.data?.output.kind === "catalog" ||
+    timeline.data?.output.kind === "widget";
   const shown = timeline.data?.timeZone ?? zone;
   const format = (instant: string) =>
     new Intl.DateTimeFormat(locale, {
@@ -2062,7 +2066,9 @@ function TimelinePreview({
                   <td>
                     {segment.source === "none"
                       ? view
-                        ? t.segmentView
+                        ? timeline.data?.output.kind === "widget"
+                          ? t.segmentWidget
+                          : t.segmentView
                         : t.segmentNone
                       : !segment.playlist
                         ? t.hiddenPlaylist

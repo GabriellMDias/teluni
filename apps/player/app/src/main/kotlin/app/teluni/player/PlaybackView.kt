@@ -110,7 +110,12 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
                     val ids = when (areaPlan) {
                         is AreaPlan.Play -> areaPlan.playlist.items.map { it.mediaId }
                         is AreaPlan.Still -> listOf(areaPlan.media.id)
-                        is AreaPlan.Catalog, is AreaPlan.Empty -> emptyList()
+                        is AreaPlan.Catalog, is AreaPlan.Widget, is AreaPlan.Empty -> emptyList()
+                    }
+                    if (areaPlan is AreaPlan.Widget && kept?.plan is AreaPlan.Widget && kept.plan.area == areaPlan.area) {
+                        (kept.view.getChildAt(0) as WidgetView).update(areaPlan)
+                        areaViews[key] = kept.copy(plan = areaPlan)
+                        continue
                     }
                     if (kept?.plan == areaPlan && !mediaChanged(old, plan, plan.publication, ids)) {
                         if (areaPlan is AreaPlan.Catalog) {
@@ -137,6 +142,7 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
                             if (area.muted) 0f else area.volume / 100f)
                         is AreaPlan.Catalog -> container.addView(CatalogView(context, runtime, plan.publication, areaPlan, plan.mediaVersions),
                             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+                        is AreaPlan.Widget -> container.addView(WidgetView(context, areaPlan), LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
                         is AreaPlan.Empty -> Unit
                     }
                     areaViews[key] = AreaOutput(areaPlan, container, media.filter { it !in before })

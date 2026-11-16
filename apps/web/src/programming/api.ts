@@ -705,3 +705,28 @@ export async function exportLayout(companyId: string, layoutId: string) {
     layoutErrorCodes,
   );
 }
+
+export type WidgetPreview = Json<
+  paths["/companies/{companyId}/programming/widgets/preview"]["post"]
+>;
+export type WidgetLive = WidgetPreview["live"];
+export async function previewWidget(
+  companyId: string,
+  body: NonNullable<
+    paths["/companies/{companyId}/programming/widgets/preview"]["post"]["requestBody"]
+  >["content"]["application/json"],
+): Promise<WidgetPreview> {
+  return unwrap(
+    await client().POST("/companies/{companyId}/programming/widgets/preview", {
+      params: { path: { companyId } },
+      body,
+    }),
+    layoutErrorCodes,
+  );
+}
+export async function qrDestination(linkId: string): Promise<{ url: string }> {
+  return unwrap(
+    await client().GET("/q/{linkId}", { params: { path: { linkId } } }),
+    layoutErrorCodes,
+  );
+}

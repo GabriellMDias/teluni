@@ -147,6 +147,16 @@ beforeAll(async () => {
       ],
       {
         database,
+        humanIdentity: {
+          environment: "test",
+          issuer: "https://issuer.example.test/realms/teluni",
+          publicOrigin: "https://display.example.test",
+          clientId: "unused",
+          clientSecret: "unused",
+          provisionerClientId: "unused",
+          provisionerClientSecret: "unused",
+          sessionKeys: [{ id: "test", key: randomBytes(32) }],
+        },
         deviceEnrollment: {
           codeKeys: [{ id: "current", key: randomBytes(32) }],
         },
@@ -881,6 +891,219 @@ describe("publications: publishing, synchronization and retention", () => {
     expect((await check(`groups/${somewhere.id}`)).body.problems).toEqual([
       { code: "MEDIA_UNAVAILABLE", mediaId: gone },
     ]);
+  });
+
+  it("publishes widget protocol 3 and advances a stable public QR only at publication", async () => {
+    const style = {
+      version: 1,
+      locale: "pt-BR",
+      textSize: 48,
+      foreground: "#FFFFFF",
+    };
+    const definition = {
+      orientation: "landscape",
+      areas: [
+        {
+          key: "clock",
+          name: "Clock",
+          x: 0,
+          y: 0,
+          width: 1280,
+          height: 1080,
+          z: 0,
+          kind: "widget",
+          widget: {
+            ...style,
+            type: "clock",
+            showTime: true,
+            showDate: true,
+            seconds: false,
+            hour12: false,
+            dateStyle: "long",
+          },
+        },
+        {
+          key: "qr",
+          name: "Menu link",
+          x: 1280,
+          y: 0,
+          width: 640,
+          height: 1080,
+          z: 1,
+          kind: "widget",
+          widget: {
+            ...style,
+            type: "qr",
+            targetUrl: "https://example.org/menu-v1",
+            caption: "Scan",
+          },
+        },
+      ],
+    };
+    const created = await call("aAdmin", "POST", `${base}/layouts`, {
+      body: { name: "Widget publication", branchId: null, definition },
+    });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const layoutPath = `${base}/layouts/${created.body.id}`;
+    const preview = await call("aAdmin", "POST", `${base}/widgets/preview`, {
+      body: {
+        layoutId: created.body.id,
+        areaKey: "qr",
+        branchId: null,
+        widget: definition.areas[1].widget,
+      },
+    });
+    expect(preview.status, JSON.stringify(preview.body)).toBe(200);
+    const qr = preview.body.widget as {
+      linkId: string;
+      modules: string[];
+      qrUrl: string;
+    };
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).status).toBe(404);
+    expect(
+      (
+        await call("bAdmin", "POST", `${base}/widgets/preview`, {
+          body: {
+            layoutId: created.body.id,
+            areaKey: "qr",
+            branchId: null,
+            widget: definition.areas[1].widget,
+          },
+        })
+      ).status,
+    ).toBe(404);
+    const exported = await call("aAdmin", "GET", `${layoutPath}/export`);
+    expect(exported.body.schema).toBe(2);
+    expect(
+      (
+        await call("aAdmin", "POST", `${base}/layouts/import`, {
+          body: { branchId: null, document: { ...exported.body, schema: 1 } },
+        })
+      ).body.error?.code,
+    ).toBe("LAYOUT_INVALID");
+    const info = await group("Widget group", [a1.id]);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PUT",
+          `${base}/groups/${info.id}/program/layout`,
+          { body: { expectedVersion: 1, layoutId: created.body.id } },
+        )
+      ).status,
+    ).toBe(200);
+    const first = await publish(`groups/${info.id}`);
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    const publication = first.body.publication as Body;
+    expect(publication.protocol).toBe(3);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).body).toEqual({
+      url: "https://example.org/menu-v1",
+    });
+    const tv = await screen(companyA, a1.id, "Widget screen");
+    expect(
+      (await assign(tv, { groupId: info.id, individual: false }, false)).status,
+    ).toBe(200);
+    expect((await sync(tv, { protocols: [1, 2, 3] })).body).toMatchObject({
+      protocol: 3,
+      desired: { protocol: 3 },
+    });
+    const delivered = await tv.call(
+      "GET",
+      `/device/publications/${publication.id}/manifest`,
+    );
+    expect(delivered.status).toBe(200);
+    const manifest = JSON.parse(delivered.raw.toString()) as {
+      layout: { areas: { widget: { modules: string[]; targetUrl: string } }[] };
+      outputs: unknown[];
+    };
+    expect(manifest.layout.areas[1].widget.modules).toEqual(qr.modules);
+    expect(manifest.outputs).toEqual([
+      { key: "clock", default: { view: true }, rules: [] },
+      { key: "qr", default: { view: true }, rules: [] },
+    ]);
+    expect(
+      (
+        await tv.call("GET", `/device/publications/${publication.id}/widgets`)
+      ).json(),
+    ).toEqual({ publicationId: publication.id, items: [] });
+    expect(
+      (await tv.call("GET", `/device/publications/${randomUUID()}/widgets`))
+        .status,
+    ).toBe(404);
+    expect(
+      (
+        await call(
+          null,
+          "GET",
+          `/device/publications/${publication.id}/widgets`,
+        )
+      ).status,
+    ).toBe(401);
+    Object.assign(definition.areas[1].widget, {
+      targetUrl: "https://example.org/menu-v2",
+    });
+    const saved = await call("aAdmin", "PATCH", layoutPath, {
+      body: { expectedVersion: created.body.version, definition },
+    });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).body).toEqual({
+      url: "https://example.org/menu-v1",
+    });
+    const second = await publish(`groups/${info.id}`);
+    expect(second.status, JSON.stringify(second.body)).toBe(201);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).body).toEqual({
+      url: "https://example.org/menu-v2",
+    });
+    expect(
+      (await tv.call("GET", `/device/publications/${publication.id}/widgets`))
+        .status,
+    ).toBe(404);
+    expect(manifest.layout.areas[1].widget.targetUrl).toBe(
+      "https://example.org/menu-v1",
+    );
+    const restore = await call(
+      "aAdmin",
+      "POST",
+      `${base}/groups/${info.id}/publications/${publication.id}/restore`,
+    );
+    expect(restore.status, JSON.stringify(restore.body)).toBe(201);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).body).toEqual({
+      url: "https://example.org/menu-v1",
+    });
+    const currentProgram = await call(
+      "aAdmin",
+      "GET",
+      `${base}/groups/${info.id}/program`,
+    );
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PUT",
+          `${base}/groups/${info.id}/program/layout`,
+          {
+            body: {
+              expectedVersion: currentProgram.body.version,
+              layoutId: null,
+            },
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call("aAdmin", "DELETE", layoutPath, {
+          body: { expectedVersion: saved.body.version },
+        })
+      ).status,
+    ).toBe(204);
+    expect((await call(null, "GET", `/q/${qr.linkId}`)).status).toBe(404);
+    const cannotRestore = await call(
+      "aAdmin",
+      "POST",
+      `${base}/groups/${info.id}/publications/${(second.body.publication as Body).id}/restore`,
+    );
+    expect(cannotRestore.body.error?.code).toBe("PUBLICATION_INVALID");
   });
 
   it("publishes a program with a layout as protocol 2 with its catalog", async () => {
@@ -1898,7 +2121,7 @@ describe("publications: publishing, synchronization and retention", () => {
         status: 0,
         body: (
           await tv.call("POST", "/device/sync", {
-            body: { ...idle, protocols: [3] },
+            body: { ...idle, protocols: [4] },
           })
         ).json(),
       }),
@@ -2131,6 +2354,8 @@ describe("publications: publishing, synchronization and retention", () => {
         describePrograms: unmounted,
         programSource: unmounted,
         repriceCatalog: unmounted,
+        widgetData: unmounted,
+        activateWidgetLinks: unmounted,
       },
       catalogs: {
         registerUsageGuard: unmounted,

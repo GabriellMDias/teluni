@@ -875,3 +875,132 @@ test("retains a blocked draft after a failed authoritative reload, then recovers
     .toBeEnabled();
   expect(sentCount("PATCH", `/layouts/${layoutId}`)).toBe(1);
 });
+
+test("configures all five information components and saves their distinct settings", async () => {
+  const w = (await import("../src/programming/widget-messages.js"))
+    .widgetMessages[locale];
+  const { layoutComponents } = await import("../src/programming/widgets.js");
+  let current = layout();
+  respond(editor, (url, request) => {
+    if (url.pathname.endsWith(`/layouts/${layoutId}`)) {
+      if (request.method === "PATCH") current = layout({ version: 2 });
+      return { body: current };
+    }
+    return undefined;
+  });
+  const { screen } = await open(`${base}/layouts/${layoutId}`);
+  for (const kind of layoutComponents.filter(
+    (kind) => kind !== "media" && kind !== "catalog",
+  )) {
+    await screen
+      .getByRole("button", { name: w.add(w.names[kind]), exact: true })
+      .click();
+    if (kind === "clock")
+      await screen.getByLabelText(w.seconds, { exact: true }).click();
+    if (kind === "qr")
+      await screen
+        .getByLabelText(w.target, { exact: true })
+        .fill("https://example.org/menu");
+    if (kind === "ticker")
+      await screen
+        .getByLabelText(w.text, { exact: true })
+        .fill("Fresh coffee every morning");
+    if (kind === "weather") {
+      await screen
+        .getByLabelText(w.location, { exact: true })
+        .fill("São Paulo");
+      await screen.getByLabelText(w.latitude, { exact: true }).fill("-23.5505");
+      await screen
+        .getByLabelText(w.longitude, { exact: true })
+        .fill("-46.6333");
+    }
+    if (kind === "rss")
+      await screen
+        .getByLabelText(w.feed, { exact: true })
+        .fill("https://example.org/feed.xml");
+  }
+  await screen.getByRole("button", { name: l.saveLayout }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(l.layoutSaved);
+  const body = (await sent("PATCH", `/layouts/${layoutId}`)) as {
+    definition: { areas: Layout["areas"] };
+  };
+  const widgets = body.definition.areas.filter(
+    (area) => area.kind === "widget",
+  );
+  expect(widgets.map((area) => area.widget?.type)).toEqual([
+    "clock",
+    "qr",
+    "ticker",
+    "weather",
+    "rss",
+  ]);
+  expect(
+    widgets.every(
+      (area) => area.muted && area.volume === 0 && !area.pageControlled,
+    ),
+  ).toBe(true);
+  expect(widgets[0].widget).toMatchObject({ seconds: true });
+  expect(widgets[1].widget).toMatchObject({
+    targetUrl: "https://example.org/menu",
+  });
+  expect(widgets[2].widget).toMatchObject({
+    text: "Fresh coffee every morning",
+  });
+  expect(widgets[3].widget).toMatchObject({
+    latitude: -23.5505,
+    longitude: -46.6333,
+  });
+  expect(widgets[4].widget).toMatchObject({
+    feedUrl: "https://example.org/feed.xml",
+  });
+});
+
+test("shows an unavailable source without losing the unsaved widget configuration", async () => {
+  const w = (await import("../src/programming/widget-messages.js"))
+    .widgetMessages[locale];
+  const { defaultWidget } = await import("../src/programming/widgets.js");
+  const widget = {
+    ...defaultWidget("rss", locale),
+    type: "rss" as const,
+    feedUrl: "https://example.org/feed.xml",
+    title: "Science",
+    itemSeconds: 10,
+    maxItems: 5,
+  };
+  respond(editor, (url) => {
+    if (url.pathname.endsWith(`/layouts/${layoutId}`))
+      return {
+        body: layout({
+          areas: [{ ...mainArea, kind: "widget", volume: 0, widget }],
+        }),
+      };
+    if (url.pathname.endsWith("/widgets/preview"))
+      return {
+        body: {
+          widget,
+          live: {
+            status: "unavailable",
+            fetchedAt: null,
+            validUntil: null,
+            data: null,
+          },
+        },
+      };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/layouts/${layoutId}`);
+  await screen.getByRole("button", { name: w.preview, exact: true }).click();
+  await expect
+    .element(screen.getByText(w.unavailable, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByLabelText(w.feed, { exact: true }))
+    .toHaveValue("https://example.org/feed.xml");
+  expect(await sent("POST", "/widgets/preview")).toMatchObject({
+    layoutId,
+    areaKey: "main",
+    widget: { type: "rss" },
+  });
+});
