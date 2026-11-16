@@ -4,6 +4,9 @@ import type { DevicePort } from "../devices/public.js";
 import type { HumanSessionPort } from "../identity/public.js";
 import type { MediaPort } from "../media/public.js";
 import type { CompanyAccessPort } from "../organizations/public.js";
+import { WidgetService } from "./widgets-service.js";
+import { widgetOperations } from "./widgets-contracts.js";
+import { registerWidgetRoutes } from "./widgets-routes.js";
 import { programmingOperations } from "./contracts.js";
 import { programmingErrors } from "./errors.js";
 import { layoutOperations } from "./layouts-contracts.js";
@@ -38,12 +41,21 @@ export function createProgrammingModule(options: {
 }): { module: ApiModule; programming: ProgrammingPort } {
   let service: ProgrammingService | undefined;
   let layouts: LayoutService | undefined;
+  let widgets: WidgetService | undefined;
   let publicationFacts: PublicationFacts | undefined;
   const require = () => {
     if (!service) throw new Error("The programming module is not active");
     return service;
   };
   const programming: ProgrammingPort = {
+    widgetData: (widget) => {
+      if (!widgets) throw new Error("The programming module is not active");
+      return widgets.data(widget);
+    },
+    activateWidgetLinks: (tx, companyId, areas) => {
+      if (!widgets) throw new Error("The programming module is not active");
+      return widgets.activate(tx, companyId, areas);
+    },
     onPublicationFacts(facts) {
       publicationFacts = facts;
       service?.onPublicationFacts(facts);
@@ -94,9 +106,19 @@ export function createProgrammingModule(options: {
       "media",
       "catalogs",
     ],
-    operations: [...programmingOperations, ...layoutOperations],
+    operations: [
+      ...programmingOperations,
+      ...layoutOperations,
+      ...widgetOperations,
+    ],
     errors: programmingErrors,
-    activate: ({ database }) => {
+    activate: ({ database, humanIdentity }) => {
+      const widgetService = new WidgetService({
+        database: database!,
+        companies: options.companies,
+        ...(humanIdentity ? { publicOrigin: humanIdentity.publicOrigin } : {}),
+      });
+      widgets = widgetService;
       // Activation guarantees the database and the required modules.
       const layoutRepository = new PrismaLayoutRepository(database!);
       const active: ProgrammingService = new ProgrammingService({
@@ -117,11 +139,13 @@ export function createProgrammingModule(options: {
         catalogs: options.catalogs,
         media: options.media,
         programs: active,
+        widgets: widgetService,
       });
       layouts = layoutService;
       return {
         name: "programming",
         register: (app) => {
+          registerWidgetRoutes(app, widgetService, options.sessions);
           registerProgrammingRoutes(
             app,
             active,

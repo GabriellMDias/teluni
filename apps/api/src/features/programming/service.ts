@@ -105,7 +105,7 @@ export type PlaylistSummary = Readonly<{
 /** One output of a program: the screen, or an area of its layout. */
 export type OutputOutline = Readonly<{
   key: OutputKey;
-  kind: "screen" | "media" | "catalog";
+  kind: "screen" | "media" | "catalog" | "widget";
   /** The area's name; null for the screen output. */
   name: string | null;
 }>;
@@ -313,7 +313,10 @@ function lostOutputs(
           reason: "OUTPUT_REMOVED",
           count: output.rules.length,
         });
-    } else if (kind === "catalog" && output.defaultPlaylistId !== null) {
+    } else if (
+      (kind === "catalog" || kind === "widget") &&
+      output.defaultPlaylistId !== null
+    ) {
       cleared.push(key);
       issues.push({
         path: `/outputs/${key}/defaultPlaylistId`,
@@ -977,7 +980,10 @@ export class ProgrammingService {
       const output = outputs.find((entry) => entry.key === outputKey);
       if (!output) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
       // A catalog area's default is its view.
-      if (output.kind === "catalog" && input.defaultPlaylistId !== null)
+      if (
+        (output.kind === "catalog" || output.kind === "widget") &&
+        input.defaultPlaylistId !== null
+      )
         throw new ProgrammingFailure("VALIDATION_FAILED");
       if (!current) {
         const counts = await this.#repository.counts(tx, companyId);
@@ -1175,7 +1181,7 @@ export class ProgrammingService {
     actor: Actor,
     companyId: string,
     layoutId: string,
-    areas: readonly { key: string; kind: "media" | "catalog" }[],
+    areas: readonly { key: string; kind: "media" | "catalog" | "widget" }[],
     confirmed: boolean,
   ): Promise<void> => {
     const programs = await this.#repository.lockProgramsUsing(

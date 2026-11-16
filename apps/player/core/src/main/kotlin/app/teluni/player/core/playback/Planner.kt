@@ -2,6 +2,7 @@ package app.teluni.player.core.playback
 
 import app.teluni.player.core.catalog.EffectivePrice
 import app.teluni.player.core.catalog.Prices
+import app.teluni.player.core.protocol.WidgetLive
 import app.teluni.player.core.protocol.Area
 import app.teluni.player.core.protocol.AreaKind
 import app.teluni.player.core.protocol.Layout
@@ -75,6 +76,8 @@ public sealed interface AreaPlan {
     /** A page of a catalog view, with the prices in effect for the screen's branch. */
     public data class Catalog(override val area: Area, val view: View, val records: List<ShownRecord>) : AreaPlan
 
+    public data class Widget(override val area: Area, val text: WidgetText) : AreaPlan
+
     public data class Empty(override val area: Area) : AreaPlan
 }
 
@@ -109,6 +112,7 @@ public object PlaybackPlanner {
         branchId: String? = null,
         unavailableMedia: Set<String> = emptySet(),
         mediaVersions: Map<String, Long> = emptyMap(),
+        widgets: Map<String, WidgetLive> = emptyMap(),
     ): Plan {
         val now = time.instantOrNull ?: return Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
         if (statement == null || now >= statement.expiresAt) {
@@ -122,7 +126,7 @@ public object PlaybackPlanner {
         if (horizon <= now) return Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
         val layout = active.layout
         val plan = if (layout == null) single(active, zone, now, horizon) else
-            compose(active, layout, zone, now, horizon, branchId)
+            compose(active, layout, zone, now, horizon, branchId, widgets)
                 ?: Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
         val versions = mediaVersions.filterKeys { hash -> active.media.values.any { it.sha256 == hash } }
         val versioned = when (plan) {
@@ -151,7 +155,7 @@ public object PlaybackPlanner {
                         if (it.items.isEmpty()) AreaPlan.Empty(area.area) else area.copy(playlist = it)
                     }
                     is AreaPlan.Still -> if (area.media.sha256 in unavailable) AreaPlan.Empty(area.area) else area
-                    is AreaPlan.Catalog, is AreaPlan.Empty -> area
+                    is AreaPlan.Catalog, is AreaPlan.Widget, is AreaPlan.Empty -> area
                 }
             })
             is Plan.Neutral -> plan
@@ -194,6 +198,7 @@ public object PlaybackPlanner {
         now: Instant,
         horizon: Instant,
         branchId: String?,
+        widgets: Map<String, WidgetLive>,
     ): Plan? {
         val local = now.epochSecond + (zone.offsetAt(now) ?: return null)
         val secondOfDay = Math.floorMod(local, PageCycle.DAY_SECONDS.toLong()).toInt()
@@ -241,6 +246,10 @@ public object PlaybackPlanner {
                     shown(area, view, view.pages[content.index].map { it.recordId to it.group })
                 content is PageContent.Group && view != null ->
                     shown(area, view, view.groups.getValue(content.group).map { it to content.group })
+                area.kind == AreaKind.WIDGET && area.widget != null -> {
+                    changes += now.plusSeconds(1)
+                    AreaPlan.Widget(area, WidgetPresentation.text(area.widget, widgets[area.key], now, LocalDateTime.ofEpochSecond(local, 0, ZoneOffset.UTC)))
+                }
                 area.kind == AreaKind.CATALOG && view != null && active.outputs[area.key]?.default == OutputDefault.View -> {
                     val page = PageCycle.pageAt(List(view.pages.size) { view.pageSeconds }, secondOfDay)
                     if (page == null) {
@@ -255,7 +264,7 @@ public object PlaybackPlanner {
                         ?.let { AreaPlan.Play(area, it) } ?: AreaPlan.Empty(area)
             }
         }
-        return Plan.Compose(active, areas, changes.min())
+        return Plan.Compose(active, areas, changes.min(), degraded = areas.any { it is AreaPlan.Widget && it.text.unavailable })
     }
 
     /** Local epoch seconds of a local minute `YYYY-MM-DDTHH:MM`. */

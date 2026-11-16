@@ -1,3 +1,5 @@
+import { snapshotWidget } from "../../src/features/programming/widgets-service.js";
+import type { WidgetDefinition } from "../../src/features/programming/widgets.js";
 // Inputs of the player protocol conformance fixtures, shared by the writer
 // (scripts/conformance.ts) and the test that verifies the committed file.
 import type { PriceFacts } from "../../src/features/catalogs/domain.js";
@@ -488,3 +490,89 @@ export function scheduleFixtureOffsets(
     ]),
   );
 }
+
+/** Protocol 3 fixture: all five types, including the actual QR matrix. */
+const widgetStyle = {
+  version: 1 as const,
+  locale: "pt-BR" as const,
+  textSize: 48,
+  foreground: "#FFFFFF",
+};
+const widgetDefinitions: readonly WidgetDefinition[] = [
+  {
+    ...widgetStyle,
+    type: "clock",
+    showTime: true,
+    showDate: true,
+    seconds: true,
+    hour12: false,
+    dateStyle: "long",
+  },
+  {
+    ...widgetStyle,
+    type: "qr",
+    targetUrl: "https://example.org/menu",
+    caption: "Open menu",
+  },
+  { ...widgetStyle, type: "ticker", text: "Welcome to Teluni", speed: 60 },
+  {
+    ...widgetStyle,
+    type: "weather",
+    latitude: -23.5505,
+    longitude: -46.6333,
+    label: "São Paulo",
+    units: "celsius",
+  },
+  {
+    ...widgetStyle,
+    type: "rss",
+    feedUrl: "https://example.org/feed.xml",
+    title: "News",
+    itemSeconds: 10,
+    maxItems: 5,
+  },
+];
+export const conformanceWidgetManifest = {
+  header: {
+    ...conformanceLayoutManifest.header,
+    publicationId: "b3c4d5e6-f7a8-49b0-8123-456789abcdef",
+  },
+  content: {
+    layout: {
+      orientation: "landscape",
+      width: 1920,
+      height: 1080,
+      audioMixConfirmed: false,
+      areas: widgetDefinitions.map((widget, index) => ({
+        key: widget.type,
+        x: (index % 3) * 640,
+        y: Math.floor(index / 3) * 540,
+        width: 640,
+        height: 540,
+        z: index,
+        background: "#102131",
+        fit: "contain",
+        muted: true,
+        volume: 0,
+        kind: "widget",
+        pageControlled: false,
+        view: null,
+        widget: snapshotWidget(
+          widget,
+          "00112233-4455-4677-8899-aabbccddeeff",
+          widget.type,
+          "https://display.example.org",
+        ),
+      })),
+      pages: [],
+    },
+    outputs: widgetDefinitions.map((widget) => ({
+      key: widget.type,
+      default: { view: true },
+      rules: [],
+    })),
+    catalogs: [],
+    playlists: [],
+    media: [],
+  } satisfies LayoutPublicationContent,
+};

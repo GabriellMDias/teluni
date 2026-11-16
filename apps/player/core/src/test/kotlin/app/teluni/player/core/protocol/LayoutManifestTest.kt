@@ -129,6 +129,6 @@ class LayoutManifestTest {
     fun `reports what this player cannot show as incompatible`() {
         val fade = JsonObject(mapOf("kind" to JsonPrimitive("FADE"), "durationMs" to JsonPrimitive(500)))
         assertFailure(StagingFailureCode.INCOMPATIBLE) { set("playlists", 0, "transition", value = fade) }
-        assertFailure(StagingFailureCode.INCOMPATIBLE) { set("protocol", value = JsonPrimitive(3)) }
+        assertFailure(StagingFailureCode.INCOMPATIBLE) { set("protocol", value = JsonPrimitive(4)) }
     }
 }

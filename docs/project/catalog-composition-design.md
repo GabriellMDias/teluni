@@ -142,6 +142,7 @@ Every price change (base, override or promotion) is a **price save** under the a
 - **Kind.**
   - A **media** area plays playlists that its program output selects.
   - A **catalog** area shows a catalog view.
+  - A **widget** area shows one of the five [information components](layout-widgets.md), under ADR-0037.
 
 **Catalog views:**
 
@@ -177,9 +178,11 @@ Every price change (base, override or promotion) is a **price save** under the a
 - **Scope.** The program's reach must fit inside the scopes of the layout and of every catalog its views use, as playlists do.
 - **Evaluation.** The evaluator is unchanged and runs per output. Coordinated pages are a pure function of the page durations and a cycle anchored at local midnight. Every screen of a group therefore shows the same page at the same local time, and the preview can show it.
 
+Widget configuration, dynamic QR activation, live-source bounds, protocol 3 and offline behavior are owned by [Layout Information Components](layout-widgets.md). The existing schema 1 and protocol 2 descriptions below remain applicable to non-widget layouts.
+
 ## Publication protocol 2
 
-A program without a layout keeps publishing protocol 1, byte for byte, so current screens are unaffected. A program with a layout publishes **protocol 2**, which adds the following to the manifest:
+A program without a layout keeps publishing protocol 1, byte for byte, so current screens are unaffected. A program with a media/catalog layout publishes **protocol 2**, which adds the following to the manifest:
 
 - **`layout`.** The canvas, the areas (geometry, stacking order, appearance, audio, kind), the catalog views and the pages, copied from the layout's draft at publication.
 - **`outputs` per area.** Rules and defaults, with the catalog-view default marked as `{"view": true}`.

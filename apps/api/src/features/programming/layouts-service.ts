@@ -1,3 +1,4 @@
+import type { WidgetService } from "./widgets-service.js";
 import type { Prisma } from "../../generated/prisma/client.js";
 import type {
   BindableCatalog,
@@ -208,7 +209,7 @@ export type LayoutPrograms = Readonly<{
     actor: Actor,
     companyId: string,
     layoutId: string,
-    areas: readonly { key: string; kind: "media" | "catalog" }[],
+    areas: readonly { key: string; kind: "media" | "catalog" | "widget" }[],
     confirmed: boolean,
   ): Promise<void>;
 }>;
@@ -227,6 +228,7 @@ export class LayoutService {
   readonly #catalogs: CatalogPort;
   readonly #media: MediaPort;
   readonly #programs: LayoutPrograms;
+  readonly #widgets: WidgetService;
 
   constructor(options: {
     repository: PrismaLayoutRepository;
@@ -234,12 +236,14 @@ export class LayoutService {
     catalogs: CatalogPort;
     media: MediaPort;
     programs: LayoutPrograms;
+    widgets: WidgetService;
   }) {
     this.#repository = options.repository;
     this.#companies = options.companies;
     this.#catalogs = options.catalogs;
     this.#media = options.media;
     this.#programs = options.programs;
+    this.#widgets = options.widgets;
   }
 
   async createLayout(
@@ -315,7 +319,14 @@ export class LayoutService {
     const document = input.document;
     if (
       document.format !== layoutFormat ||
-      document.schema !== layoutSchemaVersion
+      (document.schema !== layoutSchemaVersion && document.schema !== 2)
+    )
+      throw new ProgrammingFailure("LAYOUT_INVALID", [
+        { path: "/document/schema", reason: "FORMAT_UNSUPPORTED" },
+      ]);
+    if (
+      document.schema === 1 &&
+      document.areas.some((area) => area.kind === "widget")
     )
       throw new ProgrammingFailure("LAYOUT_INVALID", [
         { path: "/document/schema", reason: "FORMAT_UNSUPPORTED" },
@@ -570,6 +581,9 @@ export class LayoutService {
         muted: area.muted,
         volume: area.volume,
         kind: area.kind,
+        ...(area.widget
+          ? { widget: this.#widgets.snapshot(area.widget, layoutId, area.key) }
+          : {}),
         pageControlled: area.pageControlled,
       };
       const view = area.view;

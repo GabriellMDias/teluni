@@ -27,3 +27,7 @@ GRANT SELECT, INSERT, DELETE ON layout_areas TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON layout_view_fields TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON layout_pages TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON layout_page_contents TO orion_runtime;
+
+-- Stable public QR identities are immutable; publication advances only the destination.
+GRANT SELECT, INSERT ON layout_qr_links TO orion_runtime;
+GRANT UPDATE (target_url, updated_at) ON layout_qr_links TO orion_runtime;

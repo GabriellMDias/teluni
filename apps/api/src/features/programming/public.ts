@@ -1,3 +1,13 @@
+import type {
+  WidgetData,
+  WidgetDefinition,
+  WidgetSnapshot,
+} from "./widgets.js";
+export type {
+  WidgetDefinition,
+  WidgetSnapshot,
+  WidgetData,
+} from "./widgets.js";
 // The programming module's public capability surface. The publications
 // module imports only this file: it snapshots the program a person publishes
 // and asks which program a screen follows, and it tells assignments whether
@@ -6,6 +16,8 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import type { Capability, CompanyAccess } from "../organizations/public.js";
 
 export { ProgrammingFailure } from "./domain.js";
+export { canonicalWidget } from "./widgets.js";
+export { widgetDataSchema } from "./widgets-contracts.js";
 export { programmingErrors } from "./errors.js";
 export { zoneOffsets, type ZoneOffsets } from "./schedule.js";
 
@@ -115,7 +127,8 @@ export type LayoutSnapshot = Readonly<{
     fit: "contain" | "cover";
     muted: boolean;
     volume: number;
-    kind: "media" | "catalog";
+    kind: "media" | "catalog" | "widget";
+    widget?: WidgetSnapshot;
     pageControlled: boolean;
     view: Readonly<{
       catalogId: string;
@@ -222,6 +235,14 @@ export type PublicationFacts = (
 ) => Promise<boolean>;
 
 export type ProgrammingPort = Readonly<{
+  /** Live data for a published configuration; callers enforce publication access. */
+  widgetData(widget: WidgetDefinition): Promise<WidgetData>;
+  /** Called only in the successful publication transaction. */
+  activateWidgetLinks(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    areas: readonly { key: string; widget?: WidgetSnapshot }[],
+  ): Promise<boolean>;
   /** Registers the publication facts; register before activation. */
   onPublicationFacts(facts: PublicationFacts): void;
   /**

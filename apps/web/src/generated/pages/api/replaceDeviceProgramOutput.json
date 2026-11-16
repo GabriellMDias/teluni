@@ -295,7 +295,8 @@
                       "anyOf": [
                         { "type": "string", "const": "screen" },
                         { "type": "string", "const": "media" },
-                        { "type": "string", "const": "catalog" }
+                        { "type": "string", "const": "catalog" },
+                        { "type": "string", "const": "widget" }
                       ]
                     },
                     "name": {
@@ -487,7 +488,8 @@
                   "anyOf": [
                     { "type": "string", "const": "screen" },
                     { "type": "string", "const": "media" },
-                    { "type": "string", "const": "catalog" }
+                    { "type": "string", "const": "catalog" },
+                    { "type": "string", "const": "widget" }
                   ]
                 },
                 "name": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
@@ -629,7 +631,7 @@
         },
         {
           "name": "outputs[].kind",
-          "type": "\"screen\" | \"media\" | \"catalog\"",
+          "type": "\"screen\" | \"media\" | \"catalog\" | \"widget\"",
           "required": true
         },
         { "name": "outputs[].name", "type": "string | null", "required": true },

@@ -133,7 +133,8 @@
                     "anyOf": [
                       { "type": "string", "const": "screen" },
                       { "type": "string", "const": "media" },
-                      { "type": "string", "const": "catalog" }
+                      { "type": "string", "const": "catalog" },
+                      { "type": "string", "const": "widget" }
                     ]
                   },
                   "name": {
@@ -156,7 +157,8 @@
                       "anyOf": [
                         { "type": "string", "const": "screen" },
                         { "type": "string", "const": "media" },
-                        { "type": "string", "const": "catalog" }
+                        { "type": "string", "const": "catalog" },
+                        { "type": "string", "const": "widget" }
                       ]
                     },
                     "name": {
@@ -320,7 +322,8 @@
                 "anyOf": [
                   { "type": "string", "const": "screen" },
                   { "type": "string", "const": "media" },
-                  { "type": "string", "const": "catalog" }
+                  { "type": "string", "const": "catalog" },
+                  { "type": "string", "const": "widget" }
                 ]
               },
               "name": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
@@ -341,7 +344,8 @@
                   "anyOf": [
                     { "type": "string", "const": "screen" },
                     { "type": "string", "const": "media" },
-                    { "type": "string", "const": "catalog" }
+                    { "type": "string", "const": "catalog" },
+                    { "type": "string", "const": "widget" }
                   ]
                 },
                 "name": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
@@ -454,7 +458,7 @@
         },
         {
           "name": "output.kind",
-          "type": "\"screen\" | \"media\" | \"catalog\"",
+          "type": "\"screen\" | \"media\" | \"catalog\" | \"widget\"",
           "required": true
         },
         { "name": "output.name", "type": "string | null", "required": true },
@@ -466,7 +470,7 @@
         },
         {
           "name": "outputs[].kind",
-          "type": "\"screen\" | \"media\" | \"catalog\"",
+          "type": "\"screen\" | \"media\" | \"catalog\" | \"widget\"",
           "required": true
         },
         { "name": "outputs[].name", "type": "string | null", "required": true },

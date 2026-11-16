@@ -52,6 +52,7 @@ public data class LayoutManifest(
         val kind: String,
         val pageControlled: Boolean,
         val view: View?,
+        val widget: Widget? = null,
     )
 
     @Serializable
@@ -141,7 +142,7 @@ public data class LayoutManifest(
 
 // The checked form a planner uses
 
-public enum class AreaKind { MEDIA, CATALOG }
+public enum class AreaKind { MEDIA, CATALOG, WIDGET }
 
 /** A checked protocol 2 layout with its catalog snapshots. */
 public data class Layout(
@@ -170,6 +171,7 @@ public data class Area(
     val kind: AreaKind,
     val pageControlled: Boolean,
     val view: View?,
+    val widget: Widget? = null,
 )
 
 public data class View(
@@ -224,6 +226,8 @@ internal object LayoutManifestChecks {
     private fun invalid(message: String) = ManifestParser.invalid(message)
 
     fun check(manifest: LayoutManifest, sha256: String): Publication {
+        if (manifest.protocol !in setOf(2, 3)) throw invalid("Unsupported layout protocol")
+        if (manifest.protocol == 2 && manifest.layout.areas.any { it.widget != null || it.kind == "widget" }) throw invalid("Widgets require protocol 3")
         val header = ManifestParser.header(
             manifest.format,
             PublicationHeader(
@@ -234,7 +238,7 @@ internal object LayoutManifestChecks {
                 manifest.generation,
                 manifest.publishedAt,
             ),
-            PROTOCOL,
+            manifest.protocol,
         )
         val media = ManifestParser.media(manifest.media)
         val playlists = ManifestParser.playlists(manifest.playlists, media)
@@ -249,7 +253,7 @@ internal object LayoutManifestChecks {
             val area = areas.getValue(output.key)
             val default = output.default
             val checked = when {
-                area.kind == AreaKind.CATALOG ->
+                area.kind != AreaKind.MEDIA ->
                     if (default == LayoutManifest.Default(view = true)) {
                         OutputDefault.View
                     } else {
@@ -317,13 +321,18 @@ internal object LayoutManifestChecks {
         val kind = when (area.kind) {
             "media" -> AreaKind.MEDIA
             "catalog" -> AreaKind.CATALOG
+            "widget" -> AreaKind.WIDGET
             else -> throw invalid("Unknown area kind ${area.kind}")
         }
         if ((kind == AreaKind.CATALOG) != (area.view != null)) throw invalid("Only catalog areas have a view")
+        if ((kind == AreaKind.WIDGET) != (area.widget != null)) throw invalid("Only widget areas have widgets")
+        if (kind == AreaKind.WIDGET && (area.pageControlled || !area.muted || area.volume != 0)) throw invalid("Widget areas cannot page or play audio")
+        if (area.widget is Widget.Qr && (area.width < 240 || area.height < 240)) throw invalid("QR areas need at least 240 by 240 units")
+        area.widget?.let { WidgetChecks.check(it, area.key) }
         return Area(
             area.key, area.x, area.y, area.width, area.height, area.z, area.background, area.fit,
             area.muted, area.volume, kind, area.pageControlled,
-            area.view?.let { view(it, catalogs) },
+            area.view?.let { view(it, catalogs) }, area.widget,
         )
     }
 

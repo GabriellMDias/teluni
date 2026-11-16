@@ -4,12 +4,12 @@ The screen application of the [player design](../../docs/project/player-design.m
 
 ## Current state
 
-`core` holds the portable rules. The Android `app` adds a TV activity, code-based enrollment, an AES-256-GCM Android Keystore vault, a foreground synchronization service, Media3 image/video rendering, protocol 2 areas and catalog views, rotation, neutral output and device-owner HOME/lock-task integration. Debug and unsigned release APKs can be built. Local emulator verification is recorded in the [implementation status](../../docs/project/player-design.md#implementation-status); it does not qualify physical hardware or the release/update channel.
+`core` holds the portable rules. The Android `app` adds a TV activity, code-based enrollment, an AES-256-GCM Android Keystore vault, a foreground synchronization service, Media3 image/video rendering, protocol 2 areas and catalog views, protocol 3 clock/date, QR, ticker, weather and RSS components, rotation, neutral output and device-owner HOME/lock-task integration. Debug and unsigned release APKs can be built. Local emulator verification is recorded in the [implementation status](../../docs/project/player-design.md#implementation-status); it does not qualify physical hardware or the release/update channel.
 
 | Package in `core/src/main/kotlin/app/teluni/player/core/` | Responsibility |
 | --- | --- |
 | `schedule/` | The schedule evaluator ported from the API, rule validation, and resolution of local times against the zone offsets the server sends |
-| `protocol/` | Strict parsing and checks of protocol 1 manifests and of protocol 2 manifests with layouts and catalog snapshots (another protocol is refused as incompatible), and ES256 statement verification with Nimbus JOSE + JWT |
+| `protocol/` | Strict parsing and checks of protocols 1/2 and protocol 3 with versioned information components (another protocol is refused as incompatible), and ES256 statement verification with Nimbus JOSE + JWT |
 | `catalog/` | Effective prices of protocol 2 catalogs, ported from the API |
 | `time/` | Trusted time: a monotonic anchor from each sync, a persisted lower bound, and the system clock after a reboot only when it is plausible |
 | `store/` | App-private storage: atomically replaced records, exact manifests and write-once media named by SHA-256 |
@@ -21,6 +21,8 @@ The running app re-hashes one referenced media file at a time on a background-pr
 Player health reports include the clock reference, signed system skew against an anchor and the number of uncaught crashes recorded during this pairing. Unknown values remain unknown. Crash messages, causes, filenames and foreign frames are excluded; the latest bounded player code frames stay in app-private storage and only the count is sent. Enrollment/erasure delete the evidence. Earlier versions' unrecorded failures are not reconstructed. The panel's screen detail labels these as reported facts and highlights system skew above 60 seconds; playback and signed authorization still use trusted time. Apply the [diagnostic migration and API before updating players](../../docs/project/player-design.md#diagnostics-and-privacy).
 
 Credential rotation uses the existing hash-only API after the first active sync, then every 30 anchored days when staging is idle. The encrypted atomic vault retains both secrets during an ambiguous handover and recovers the candidate before resuming downloads after a restart; playback still follows the signed authorization. Version code 2 (`0.1.1`) reads the earlier vault and writes its forward version 2 format. APK downgrades are unsupported. No new dependency or release signing key is needed for local development; see [rotation and recovery](../../docs/project/player-design.md#credential-rotation).
+
+Version code 3 (`0.1.2`) adds [information components](../../docs/project/layout-widgets.md). Apply its additive migration/runtime grants and API before updating players. Existing credentials and state remain readable; source caches are independent atomic records.
 
 ## Build and checks
 

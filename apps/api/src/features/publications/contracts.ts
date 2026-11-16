@@ -1,3 +1,4 @@
+import { widgetDataSchema } from "../programming/public.js";
 import { Type } from "typebox";
 import { errorEnvelopeSchema } from "../../errors.js";
 import type { ApiOperation } from "../../module.js";
@@ -646,12 +647,43 @@ export const publicationOperations: readonly ApiOperation[] = [
     operationId: "syncDevice",
     access: "device",
     description:
-      "Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (2 for players that support it), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
+      "Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (3 for players that support widgets, otherwise 2 or 1), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
     schema: {
       body: reportSchema,
       response: { 200: syncSchema, ...common },
     },
     expectedErrors: [...device, "PROTOCOL_UNSUPPORTED"],
+  },
+  {
+    method: "GET",
+    url: "/device/publications/:publicationId/widgets",
+    operationId: "getDeviceWidgetData",
+    access: "device",
+    description:
+      "Live weather and RSS headline data for the screen's current desired publication only. Sources come from its immutable manifest, never from caller input. Bounded server caches protect providers; stale data is usable for at most 24 hours from fetchedAt. Clock, ticker and QR render from the manifest without this endpoint.",
+    schema: {
+      params: Type.Object(
+        { publicationId: uuid },
+        { additionalProperties: false },
+      ),
+      response: {
+        200: Type.Object(
+          {
+            publicationId: uuid,
+            items: Type.Array(
+              Type.Object(
+                { areaKey: Type.String(), live: widgetDataSchema },
+                { additionalProperties: false },
+              ),
+              { maxItems: 12 },
+            ),
+          },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [...device, "RESOURCE_NOT_FOUND"],
   },
   {
     method: "GET",

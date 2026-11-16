@@ -1471,7 +1471,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Create a layout from its exported `teluni.layout` JSON (schema 1) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED. */
+        /** @description Create a layout from its exported `teluni.layout` JSON (schema 1 or 2) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED. */
         post: operations["importLayout"];
         delete?: never;
         options?: never;
@@ -1494,7 +1494,7 @@ export interface paths {
         delete: operations["deleteLayout"];
         options?: never;
         head?: never;
-        /** @description Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout's branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout's scope no longer than the page, or a view page or group (a selection choice ID, or an agenda's weekday from "1" for Monday to "7"). Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED. */
+        /** @description Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog or widget areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout's branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout's scope no longer than the page, or a view page or group (a selection choice ID, or an agenda's weekday from "1" for Monday to "7"). Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED. */
         patch: operations["updateLayout"];
         trace?: never;
     };
@@ -1505,8 +1505,42 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The layout as versioned `teluni.layout` JSON (schema 1), which import accepts. Catalogs, fields and media are named by their IDs. */
+        /** @description The layout as versioned `teluni.layout` JSON (schema 1 or 2), which import accepts. Catalogs, fields and media are named by their IDs. */
         get: operations["exportLayout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/programming/widgets/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Preview a validated widget configuration. Requires programming.edit over the selected branch (company-wide when null). Weather (MET Norway, CC BY 4.0) and public HTTPS RSS/Atom headlines are fetched by the server with bounded caching and safe outbound networking. A QR preview does not activate its destination; publishing does. */
+        post: operations["previewLayoutWidget"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/q/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Resolve an opaque published QR link to its current HTTPS destination. Public by design; returns no company, layout or membership information. Draft saves never change this destination. Deleting the layout or suspending its company makes the link unavailable. */
+        get: operations["getPublishedQrDestination"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1696,8 +1730,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (2 for players that support it), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself. */
+        /** @description Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (3 for players that support widgets, otherwise 2 or 1), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself. */
         post: operations["syncDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device/publications/{publicationId}/widgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Live weather and RSS headline data for the screen's current desired publication only. Sources come from its immutable manifest, never from caller input. Bounded server caches protect providers; stale data is usable for at most 24 hours from fetchedAt. Clock, ticker and QR render from the manifest without this endpoint. */
+        get: operations["getDeviceWidgetData"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -23968,7 +24019,7 @@ export interface operations {
                         } | null;
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
@@ -24229,7 +24280,7 @@ export interface operations {
                         } | null;
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
@@ -24481,7 +24532,7 @@ export interface operations {
                         } | null;
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
@@ -25188,7 +25239,7 @@ export interface operations {
                         } | null;
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
@@ -25449,7 +25500,7 @@ export interface operations {
                         } | null;
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
@@ -25701,7 +25752,7 @@ export interface operations {
                         } | null;
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
@@ -26187,12 +26238,12 @@ export interface operations {
                         };
                         output: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                         };
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                         }[];
                         timeZone: string;
@@ -26448,12 +26499,12 @@ export interface operations {
                         };
                         output: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                         };
                         outputs: {
                             key: string;
-                            kind: "screen" | "media" | "catalog";
+                            kind: "screen" | "media" | "catalog" | "widget";
                             name: string | null;
                         }[];
                         timeZone: string;
@@ -26932,7 +26983,65 @@ export interface operations {
                             fit?: "contain" | "cover";
                             muted?: boolean;
                             volume?: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled?: boolean;
                             view?: {
                                 catalogId: string;
@@ -26991,7 +27100,65 @@ export interface operations {
                             fit: "contain" | "cover";
                             muted: boolean;
                             volume: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled: boolean;
                             view: {
                                 catalog: {
@@ -27264,7 +27431,65 @@ export interface operations {
                             fit?: "contain" | "cover";
                             muted?: boolean;
                             volume?: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled?: boolean;
                             view?: {
                                 catalogId: string;
@@ -27323,7 +27548,65 @@ export interface operations {
                             fit: "contain" | "cover";
                             muted: boolean;
                             volume: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled: boolean;
                             view: {
                                 catalog: {
@@ -27608,7 +27891,65 @@ export interface operations {
                             fit: "contain" | "cover";
                             muted: boolean;
                             volume: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled: boolean;
                             view: {
                                 catalog: {
@@ -28093,7 +28434,65 @@ export interface operations {
                             fit?: "contain" | "cover";
                             muted?: boolean;
                             volume?: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled?: boolean;
                             view?: {
                                 catalogId: string;
@@ -28153,7 +28552,65 @@ export interface operations {
                             fit: "contain" | "cover";
                             muted: boolean;
                             volume: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled: boolean;
                             view: {
                                 catalog: {
@@ -28416,8 +28873,7 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         format: "teluni.layout";
-                        /** @constant */
-                        schema: 1;
+                        schema: 1 | 2;
                         name: string;
                         orientation: "landscape" | "portrait";
                         audioMixConfirmed: boolean;
@@ -28433,7 +28889,65 @@ export interface operations {
                             fit?: "contain" | "cover";
                             muted?: boolean;
                             volume?: number;
-                            kind: "media" | "catalog";
+                            kind: "media" | "catalog" | "widget";
+                            widget?: {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "clock";
+                                showTime: boolean;
+                                showDate: boolean;
+                                seconds: boolean;
+                                hour12: boolean;
+                                dateStyle: "short" | "long";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "qr";
+                                targetUrl: string;
+                                caption: string;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "ticker";
+                                text: string;
+                                speed: number;
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "weather";
+                                latitude: number;
+                                longitude: number;
+                                label: string;
+                                units: "celsius" | "fahrenheit";
+                            } | {
+                                /** @constant */
+                                version: 1;
+                                locale: "pt-BR" | "en-US";
+                                textSize: number;
+                                foreground: string;
+                                /** @constant */
+                                type: "rss";
+                                feedUrl: string;
+                                title: string;
+                                itemSeconds: number;
+                                maxItems: number;
+                            };
                             pageControlled?: boolean;
                             view?: {
                                 catalogId: string;
@@ -28624,6 +29138,528 @@ export interface operations {
             };
             /** @description Response */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    previewLayoutWidget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    widget: {
+                        /** @constant */
+                        version: 1;
+                        locale: "pt-BR" | "en-US";
+                        textSize: number;
+                        foreground: string;
+                        /** @constant */
+                        type: "clock";
+                        showTime: boolean;
+                        showDate: boolean;
+                        seconds: boolean;
+                        hour12: boolean;
+                        dateStyle: "short" | "long";
+                    } | {
+                        /** @constant */
+                        version: 1;
+                        locale: "pt-BR" | "en-US";
+                        textSize: number;
+                        foreground: string;
+                        /** @constant */
+                        type: "qr";
+                        targetUrl: string;
+                        caption: string;
+                    } | {
+                        /** @constant */
+                        version: 1;
+                        locale: "pt-BR" | "en-US";
+                        textSize: number;
+                        foreground: string;
+                        /** @constant */
+                        type: "ticker";
+                        text: string;
+                        speed: number;
+                    } | {
+                        /** @constant */
+                        version: 1;
+                        locale: "pt-BR" | "en-US";
+                        textSize: number;
+                        foreground: string;
+                        /** @constant */
+                        type: "weather";
+                        latitude: number;
+                        longitude: number;
+                        label: string;
+                        units: "celsius" | "fahrenheit";
+                    } | {
+                        /** @constant */
+                        version: 1;
+                        locale: "pt-BR" | "en-US";
+                        textSize: number;
+                        foreground: string;
+                        /** @constant */
+                        type: "rss";
+                        feedUrl: string;
+                        title: string;
+                        itemSeconds: number;
+                        maxItems: number;
+                    };
+                    /** Format: uuid */
+                    layoutId: string;
+                    areaKey: string;
+                    branchId: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        widget: {
+                            /** @constant */
+                            version: 1;
+                            locale: "pt-BR" | "en-US";
+                            textSize: number;
+                            foreground: string;
+                            /** @constant */
+                            type: "clock";
+                            showTime: boolean;
+                            showDate: boolean;
+                            seconds: boolean;
+                            hour12: boolean;
+                            dateStyle: "short" | "long";
+                            /** Format: uuid */
+                            layoutId?: string;
+                            linkId?: string;
+                            qrUrl?: string;
+                            modules?: string[];
+                        } | {
+                            /** @constant */
+                            version: 1;
+                            locale: "pt-BR" | "en-US";
+                            textSize: number;
+                            foreground: string;
+                            /** @constant */
+                            type: "qr";
+                            targetUrl: string;
+                            caption: string;
+                            /** Format: uuid */
+                            layoutId?: string;
+                            linkId?: string;
+                            qrUrl?: string;
+                            modules?: string[];
+                        } | {
+                            /** @constant */
+                            version: 1;
+                            locale: "pt-BR" | "en-US";
+                            textSize: number;
+                            foreground: string;
+                            /** @constant */
+                            type: "ticker";
+                            text: string;
+                            speed: number;
+                            /** Format: uuid */
+                            layoutId?: string;
+                            linkId?: string;
+                            qrUrl?: string;
+                            modules?: string[];
+                        } | {
+                            /** @constant */
+                            version: 1;
+                            locale: "pt-BR" | "en-US";
+                            textSize: number;
+                            foreground: string;
+                            /** @constant */
+                            type: "weather";
+                            latitude: number;
+                            longitude: number;
+                            label: string;
+                            units: "celsius" | "fahrenheit";
+                            /** Format: uuid */
+                            layoutId?: string;
+                            linkId?: string;
+                            qrUrl?: string;
+                            modules?: string[];
+                        } | {
+                            /** @constant */
+                            version: 1;
+                            locale: "pt-BR" | "en-US";
+                            textSize: number;
+                            foreground: string;
+                            /** @constant */
+                            type: "rss";
+                            feedUrl: string;
+                            title: string;
+                            itemSeconds: number;
+                            maxItems: number;
+                            /** Format: uuid */
+                            layoutId?: string;
+                            linkId?: string;
+                            qrUrl?: string;
+                            modules?: string[];
+                        };
+                        live: {
+                            status: "ready" | "stale" | "unavailable";
+                            fetchedAt: string | null;
+                            validUntil: string | null;
+                            data: {
+                                /** @constant */
+                                type: "weather";
+                                temperatureC: number;
+                                humidity: number;
+                                symbol: string;
+                                /** Format: date-time */
+                                forecastAt: string;
+                            } | {
+                                /** @constant */
+                                type: "rss";
+                                source: string;
+                                items: {
+                                    title: string;
+                                    url: string | null;
+                                }[];
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getPublishedQrDestination: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31750,6 +32786,241 @@ export interface operations {
                         } | null;
                         authorization: string | null;
                         nextSyncSeconds: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getDeviceWidgetData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                publicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        publicationId: string;
+                        items: {
+                            areaKey: string;
+                            live: {
+                                status: "ready" | "stale" | "unavailable";
+                                fetchedAt: string | null;
+                                validUntil: string | null;
+                                data: {
+                                    /** @constant */
+                                    type: "weather";
+                                    temperatureC: number;
+                                    humidity: number;
+                                    symbol: string;
+                                    /** Format: date-time */
+                                    forecastAt: string;
+                                } | {
+                                    /** @constant */
+                                    type: "rss";
+                                    source: string;
+                                    items: {
+                                        title: string;
+                                        url: string | null;
+                                    }[];
+                                } | null;
+                            };
+                        }[];
                     };
                 };
             };

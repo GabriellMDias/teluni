@@ -10,6 +10,7 @@ import type {
   ViewRole,
 } from "./layouts.js";
 import type { Actor } from "./prisma-repository.js";
+import { parseWidget } from "./widgets.js";
 
 export type LayoutRecord = Readonly<{
   id: string;
@@ -171,9 +172,11 @@ export class PrismaLayoutRepository {
     companyId: string,
     layoutId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{ key: string; name: string; kind: "media" | "catalog" }[]> {
+  ): Promise<
+    { key: string; name: string; kind: "media" | "catalog" | "widget" }[]
+  > {
     const rows = await (tx ?? this.#db).$queryRaw<
-      { key: string; name: string; kind: "MEDIA" | "CATALOG" }[]
+      { key: string; name: string; kind: "MEDIA" | "CATALOG" | "WIDGET" }[]
     >`
       SELECT key, name, kind::text AS kind FROM layout_areas
       WHERE company_id = ${companyId}::uuid AND layout_id = ${layoutId}::uuid
@@ -181,7 +184,7 @@ export class PrismaLayoutRepository {
     return rows.map((row) => ({
       key: row.key,
       name: row.name,
-      kind: row.kind === "MEDIA" ? "media" : "catalog",
+      kind: row.kind.toLowerCase() as AreaDefinition["kind"],
     }));
   }
 
@@ -245,18 +248,19 @@ export class PrismaLayoutRepository {
         fit: "contain" | "cover";
         muted: boolean;
         volume: number;
-        kind: "MEDIA" | "CATALOG";
+        kind: "MEDIA" | "CATALOG" | "WIDGET";
         page_controlled: boolean;
         catalog_id: string | null;
         presentation: Presentation | null;
         text_size: number | null;
         show_unavailable: boolean | null;
         page_seconds: number | null;
+        widget: unknown;
       }[]
     >`
       SELECT id, key, name, x, y, width, height, z, background, fit, muted,
         volume, kind::text AS kind, page_controlled, catalog_id, presentation,
-        text_size, show_unavailable, page_seconds
+        text_size, show_unavailable, page_seconds, widget
       FROM layout_areas
       WHERE company_id = ${companyId}::uuid AND layout_id = ${id}::uuid
       ORDER BY z`;
@@ -300,7 +304,16 @@ export class PrismaLayoutRepository {
       fit: row.fit,
       muted: row.muted,
       volume: row.volume,
-      kind: row.kind === "MEDIA" ? "media" : "catalog",
+      kind: row.kind.toLowerCase() as AreaDefinition["kind"],
+      ...(row.widget
+        ? {
+            widget:
+              parseWidget(row.widget) ??
+              (() => {
+                throw new Error("Invalid stored widget configuration");
+              })(),
+          }
+        : {}),
       pageControlled: row.page_controlled,
       view:
         row.catalog_id === null
@@ -388,7 +401,7 @@ export class PrismaLayoutRepository {
         INSERT INTO layout_areas (id, company_id, layout_id, key, name, x, y,
           width, height, z, background, fit, muted, volume, kind,
           page_controlled, catalog_id, presentation, text_size,
-          show_unavailable, page_seconds)
+          show_unavailable, page_seconds, widget)
         VALUES (${areaId}::uuid, ${companyId}::uuid, ${current.id}::uuid,
           ${area.key}, ${area.name}, ${area.x}::int, ${area.y}::int,
           ${area.width}::int, ${area.height}::int, ${area.z}::int,
@@ -397,7 +410,8 @@ export class PrismaLayoutRepository {
           ${view?.catalogId ?? null}::uuid, ${view?.presentation ?? null},
           ${view?.textSize ?? null}::int,
           ${view ? view.unavailable === "show" : null}::boolean,
-          ${view?.pageSeconds ?? null}::int)`;
+          ${view?.pageSeconds ?? null}::int,
+          ${area.widget ? JSON.stringify(area.widget) : null}::jsonb)`;
       for (const [position, field] of (view?.fields ?? []).entries())
         await tx.$executeRaw`
           INSERT INTO layout_view_fields (company_id, area_id, position,

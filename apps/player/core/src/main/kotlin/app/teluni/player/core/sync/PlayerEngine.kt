@@ -1,5 +1,7 @@
 package app.teluni.player.core.sync
 
+import app.teluni.player.core.playback.WidgetCache
+import app.teluni.player.core.playback.WidgetCacheRecord
 import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.PlaybackCondition
 import app.teluni.player.core.playback.PlaybackPlanner
@@ -137,6 +139,8 @@ public class PlayerEngine(
     private val unavailableMedia = mutableSetOf<String>()
     private val mediaVersions = mutableMapOf<String, Long>()
     private var lastScrubbed: String? = null
+    @Volatile private var widgetCache: WidgetCacheRecord = readRecord(PlayerStore.Record.WIDGETS, WidgetCacheRecord.serializer()) ?: WidgetCacheRecord()
+    private var nextWidgets: Long = Long.MIN_VALUE
 
     @Volatile
     private var progress: SyncReport.Staging? = null
@@ -177,6 +181,7 @@ public class PlayerEngine(
 
     private fun <T> readRecord(name: PlayerStore.Record, serializer: KSerializer<T>): T? {
         val bytes = store.record(name) ?: return null
+        if (name == PlayerStore.Record.WIDGETS && bytes.size > 768 * 1024) return null
         return try {
             json.decodeFromString(serializer, bytes.decodeToString())
         } catch (_: SerializationException) {
@@ -216,6 +221,8 @@ public class PlayerEngine(
             unavailableMedia.clear()
             mediaVersions.clear()
             lastScrubbed = null
+            widgetCache = WidgetCacheRecord()
+            nextWidgets = Long.MIN_VALUE
             progress = null
         }
     }
@@ -897,7 +904,7 @@ public class PlayerEngine(
         val record = syncRecord()
         val zone = record?.zoneOffsets?.let(::zoneOffsets)
         return PlaybackPlanner.plan(snapshot.active, snapshot.statement, clock.now(), zone, record?.branchId,
-            snapshot.unavailable, snapshot.versions)
+            snapshot.unavailable, snapshot.versions, snapshot.active?.let { active -> clock.now().instantOrNull?.let { WidgetCache.data(widgetCache, active, it) } }.orEmpty())
     }
 
     /**
@@ -908,6 +915,31 @@ public class PlayerEngine(
      * Returns true only when a missing, unreadable or mismatched file was removed
      * from usable output; decoder failures with intact bytes need no download.
      */
+    public fun refreshWidgets(): Boolean {
+        if (!staging.tryLock()) return false
+        try {
+            return synchronized(syncing) {
+                val now = clock.now().instantOrNull ?: return@synchronized false
+                if (erasing || clearingCredential != null || clockSource.monotonicMillis() < nextWidgets) return@synchronized false
+                val state = store.state()
+                val active = state.active?.let(::parsed) ?: return@synchronized false
+                if (active.header.protocol != 3 || syncRecord()?.desired?.publicationId != active.header.publicationId || latestStatement()?.authorizes(active.header.publicationId, active.sha256) != true) return@synchronized false
+                val secret = credential() ?: return@synchronized false
+                nextWidgets = clockSource.monotonicMillis() + 60_000
+                try {
+                    val batch = api.widgets(secret, active.header.publicationId)
+                    if (batch.publicationId != active.header.publicationId || erasing) return@synchronized false
+                    val keep = listOfNotNull(state.active, state.recovery, state.staging).map { it.publicationId }.toSet()
+                    val updated = WidgetCache.merge(widgetCache, batch, active, now, keep)
+                    saveRecord(PlayerStore.Record.WIDGETS, WidgetCacheRecord.serializer(), updated)
+                    widgetCache = updated
+                    nextWidgets = clockSource.monotonicMillis() + 15 * 60_000
+                    true
+                } catch (_: IOException) { false }
+            }
+        } finally { staging.unlock() }
+    }
+
     public fun scrubMedia(failedSha256: String? = null): Boolean = staging.withLock {
         if (erasing || clearingCredential != null) return false
         val candidate = synchronized(lock) {
@@ -978,6 +1010,8 @@ public class PlayerEngine(
                         unavailableMedia.clear()
                         mediaVersions.clear()
                         lastScrubbed = null
+                        widgetCache = WidgetCacheRecord()
+                        nextWidgets = Long.MIN_VALUE
                         progress = null
                     }
                     if (credential == null) return false

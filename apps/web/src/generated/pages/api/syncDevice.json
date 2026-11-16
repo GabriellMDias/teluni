@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "syncDevice",
   "summary": "",
-  "description": "Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (2 for players that support it), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
+  "description": "Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (3 for players that support widgets, otherwise 2 or 1), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
   "security": [{ "deviceCredential": [] }],
   "components": {
     "securitySchemes": {

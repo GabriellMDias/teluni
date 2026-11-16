@@ -578,7 +578,7 @@ class PlayerEngineTest {
         server.publish(publication("pub-a"))
         engine.syncAndStage()
         server.publish(publication("pub-b", seed = 2))
-        server.desiredProtocol = 3
+        server.desiredProtocol = 4
         val requests = server.manifestRequests
         val failed = assertIs<StagingOutcome.Failed>(engine.syncAndStage())
         assertEquals(StagingFailureCode.INCOMPATIBLE, failed.code)

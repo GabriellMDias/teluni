@@ -215,6 +215,16 @@
       "Meaning": "Seconds each view page shows when the area is not page-controlled, 5 to 120.",
       "Null meaning": "The area is a media area.",
       "Unit": "seconds"
+    },
+    {
+      "Column": "widget",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Version 1 clock/date, stable QR, scrolling text, weather or RSS configuration, validated by Programming before persistence and publication. Public feed/target URLs are never logged. Protocol 3 carries the approved configuration.",
+      "Null meaning": "The area is media or catalog, without a widget.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -272,6 +282,11 @@
       "Object": "layout_areas_volume_range",
       "Physical definition": "CHECK (((volume >= 0) AND (volume <= 100)))",
       "Purpose": "Volumes are 0 to 100."
+    },
+    {
+      "Object": "layout_areas_widget",
+      "Physical definition": "CHECK (((((kind)::text = 'WIDGET'::text) = (widget IS NOT NULL)) AND ((widget IS NULL) OR ((jsonb_typeof(widget) = 'object'::text) AND (widget ?& ARRAY['version'::text, 'type'::text]) AND COALESCE(((widget -> 'version'::text) = '1'::jsonb), false) AND COALESCE(((widget ->> 'type'::text) = ANY (ARRAY['clock'::text, 'qr'::text, 'ticker'::text, 'weather'::text, 'rss'::text])), false) AND (octet_length((widget)::text) <= 16384) AND (NOT page_controlled) AND muted AND (volume = 0)))))",
+      "Purpose": "Only widget areas carry bounded versioned configuration and they cannot be page-controlled or audible."
     },
     {
       "Object": "layout_areas_catalog_idx",

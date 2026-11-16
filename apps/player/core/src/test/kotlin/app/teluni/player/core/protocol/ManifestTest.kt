@@ -69,7 +69,7 @@ class ManifestTest {
     @Test
     fun `refuses unknown fields, protocols and formats`() {
         assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it["extra"] = JsonPrimitive(1) } }
-        assertFailure(StagingFailureCode.INCOMPATIBLE) { parseEdited { it["protocol"] = JsonPrimitive(3) } }
+        assertFailure(StagingFailureCode.INCOMPATIBLE) { parseEdited { it["protocol"] = JsonPrimitive(4) } }
         // A protocol 1 body that claims protocol 2 does not match protocol 2.
         assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it["protocol"] = JsonPrimitive(2) } }
         assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it["format"] = JsonPrimitive("other") } }

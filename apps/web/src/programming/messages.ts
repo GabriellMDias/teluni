@@ -180,7 +180,10 @@ const ptBR = {
   timelineOutputLabel: "Área na prévia",
   wholeScreen: "Tela inteira",
   areaOutput: (name: string, kind: string) => `${name} (${kind})`,
-  outputKinds: { media: "mídia", catalog: "catálogo" },
+  outputKinds: { media: "mídia", catalog: "catálogo", widget: "componente" },
+  widgetDefault:
+    "O padrão desta área é o componente configurado no layout; os horários podem trocá-lo por playlists.",
+  segmentWidget: "Componente do layout",
   viewDefault:
     "O padrão desta área é a visão do catálogo; os horários podem trocá-la por playlists.",
   schedulesLead:
@@ -363,7 +366,7 @@ const ptBR = {
     canvasHint:
       "Arraste uma área para mover e as alças das bordas para redimensionar. Com a área selecionada, as setas movem 10 unidades e Shift + setas mudam o tamanho.",
     areaButton: (name: string, kind: string) => `${name} (${kind})`,
-    kinds: { media: "Mídia", catalog: "Catálogo" },
+    kinds: { media: "Mídia", catalog: "Catálogo", widget: "Componente" },
     areasTitle: "Áreas",
     builderTitle: "Monte sua tela",
     builderLead: "Adicione componentes, divida o espaço e ajuste cada área.",
@@ -571,6 +574,13 @@ const ptBR = {
       PAGE_SHORTER_THAN_VIDEO:
         "A página dura menos que um vídeo que ela mostra.",
       GROUP_UNKNOWN: "O grupo escolhido não existe no campo de grupo.",
+      WIDGET_QR_TOO_SMALL:
+        "O QR Code precisa de uma área de pelo menos 240 × 240 unidades.",
+      WIDGET_INVALID: "Configuração do componente inválida. Confira os campos.",
+      WIDGET_NOT_APPLICABLE:
+        "Somente áreas de componente aceitam esta configuração.",
+      WIDGET_SETTINGS_INVALID:
+        "Componentes não usam áudio nem páginas coordenadas.",
       FORMAT_UNSUPPORTED:
         "O arquivo não é um layout do Teluni (teluni.layout, versão 1).",
     } as Record<string, string>,
@@ -802,7 +812,10 @@ const enUS: Messages = {
   timelineOutputLabel: "Area in the preview",
   wholeScreen: "Whole screen",
   areaOutput: (name: string, kind: string) => `${name} (${kind})`,
-  outputKinds: { media: "media", catalog: "catalog" },
+  outputKinds: { media: "media", catalog: "catalog", widget: "component" },
+  widgetDefault:
+    "This area defaults to the component configured in the layout; schedules can override it with playlists.",
+  segmentWidget: "Layout component",
   viewDefault:
     "This area's default is its catalog view; schedules can replace it with playlists.",
   schedulesLead:
@@ -985,7 +998,7 @@ const enUS: Messages = {
     canvasHint:
       "Drag an area to move it and its edge handles to resize it. With an area selected, arrow keys move it 10 units and Shift + arrow keys change its size.",
     areaButton: (name: string, kind: string) => `${name} (${kind})`,
-    kinds: { media: "Media", catalog: "Catalog" },
+    kinds: { media: "Media", catalog: "Catalog", widget: "Component" },
     areasTitle: "Areas",
     builderTitle: "Build your screen",
     builderLead: "Add components, divide the space and adjust each area.",
@@ -1189,6 +1202,11 @@ const enUS: Messages = {
         "The media item belongs to a branch this layout does not cover.",
       PAGE_SHORTER_THAN_VIDEO: "The page is shorter than a video it shows.",
       GROUP_UNKNOWN: "The chosen group does not exist in the group field.",
+      WIDGET_QR_TOO_SMALL: "QR codes need an area of at least 240 × 240 units.",
+      WIDGET_INVALID: "Invalid component configuration. Check the fields.",
+      WIDGET_NOT_APPLICABLE: "Only component areas accept this configuration.",
+      WIDGET_SETTINGS_INVALID:
+        "Components cannot use audio or coordinated pages.",
       FORMAT_UNSUPPORTED:
         "The file is not a Teluni layout (teluni.layout, schema 1).",
     },

@@ -5,11 +5,12 @@
 // digests, publication problems, what a statement authorizes and how fresh
 // a screen's contact is.
 import { createHash } from "node:crypto";
+import { canonicalWidget, type WidgetSnapshot } from "../programming/public.js";
 
 /** Engineering defaults; changing one is a reviewed code change. */
 export const publicationPolicy = Object.freeze({
   /** Protocols this server can serialize, newest first. */
-  protocols: [2, 1] as readonly number[],
+  protocols: [3, 2, 1] as readonly number[],
   syncIntervalSeconds: 30,
   /** AT-24: without recent contact after 90 s, offline after 120 s. */
   staleAfterSeconds: 90,
@@ -223,7 +224,8 @@ export type ManifestArea = Readonly<{
   fit: "contain" | "cover";
   muted: boolean;
   volume: number;
-  kind: "media" | "catalog";
+  kind: "media" | "catalog" | "widget";
+  widget?: WidgetSnapshot;
   pageControlled: boolean;
   view: ManifestView | null;
 }>;
@@ -337,6 +339,7 @@ export function canonicalLayoutContent(
         muted: area.muted,
         volume: area.volume,
         kind: area.kind,
+        ...(area.widget ? { widget: canonicalWidget(area.widget) } : {}),
         pageControlled: area.pageControlled,
         view: area.view
           ? {
@@ -450,7 +453,9 @@ export function layoutManifestBytes(
   const bytes = Buffer.from(
     JSON.stringify({
       format: "teluni.publication",
-      protocol: 2,
+      protocol: canonical.layout.areas.some((area) => area.kind === "widget")
+        ? 3
+        : 2,
       publicationId: header.publicationId,
       companyId: header.companyId,
       programId: header.programId,

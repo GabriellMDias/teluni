@@ -121,7 +121,7 @@ public data class Publication(
  */
 public object ManifestParser {
     /** The protocols this player interprets, as its sync report declares them. */
-    public val PROTOCOLS: List<Int> = listOf(1, 2)
+    public val PROTOCOLS: List<Int> = listOf(1, 2, 3)
     public const val OUTPUT: String = "screen"
 
     /** Display rendition types of the media library design that the player plays. */
@@ -151,7 +151,7 @@ public object ManifestParser {
             // an unknown one is incompatible, not an invalid manifest.
             when (val protocol = ((json.parseToJsonElement(text) as? JsonObject)?.get("protocol") as? JsonPrimitive)?.intOrNull) {
                 1, null -> check(json.decodeFromString(Manifest.serializer(), text), actual)
-                2 -> LayoutManifestChecks.check(json.decodeFromString(LayoutManifest.serializer(), text), actual)
+                2, 3 -> LayoutManifestChecks.check(json.decodeFromString(LayoutManifest.serializer(), text), actual)
                 else -> throw incompatible("Protocol $protocol is not supported")
             }
         } catch (error: SerializationException) {

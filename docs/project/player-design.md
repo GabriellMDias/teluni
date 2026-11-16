@@ -239,6 +239,10 @@ Rollout order: apply the additive `20261024010000_player_diagnostics` migration 
 3. Qualification on PH-08 hardware with the measurements above, plus fixes found there.
 4. Update distribution (the API release operations and the installer).
 
+## Information components
+
+[Layout Information Components](layout-widgets.md) owns the five protocol 3 widgets, native rendering, generation-specific atomic live-data cache and provider/QR lifecycle. Protocol 1/2 readers and authorization are retained. Player 0.1.2 (version code 3) adds these capabilities without changing existing credential/state formats. The API-generated widget conformance fixture and JVM parser/planner/cache tests join the existing gate; local emulator evidence is recorded with the implementation plan. This does not qualify physical hardware.
+
 ## Implementation status
 
 Increment 1, started 2026-10-20 in [PJ-12](implementation-plan.md#current-work):

@@ -8,6 +8,7 @@ import {
   type ProgrammingFilter,
 } from "./pages.js";
 import type { ProgrammingDetailFilter } from "./workspace.js";
+import { PublishedQr } from "./widget-qr.js";
 import { LayoutPage } from "./layouts.js";
 import "./programming.css";
 
@@ -127,7 +128,16 @@ const screenRoute = createRoute({
   },
 });
 
+const qrRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/q/$linkId",
+  component: function QrRoute() {
+    return <PublishedQr linkId={qrRoute.useParams().linkId} />;
+  },
+});
+
 export const programmingRoutes = [
+  qrRoute,
   overviewRoute,
   playlistRoute,
   layoutRoute,

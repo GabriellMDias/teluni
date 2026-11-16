@@ -22,7 +22,10 @@ function Shell() {
       (state.location.pathname === "/docs" ||
         state.location.pathname.startsWith("/docs/")),
   });
-  return isDocumentation ? <Outlet /> : <ProductShell />;
+  const isPublicQr = useRouterState({
+    select: (state) => /^\/q\/[a-f0-9]{32}$/.test(state.location.pathname),
+  });
+  return isDocumentation || isPublicQr ? <Outlet /> : <ProductShell />;
 }
 
 function ProductShell() {

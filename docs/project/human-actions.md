@@ -403,3 +403,7 @@ Allocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the block
 **Verification:** Observable checks required before completion.
 **Evidence / blocker:** Dated safe evidence, outstanding limit, or changed applicability.
 ```
+
+## Layout component request of 2026-11-16
+
+The owner authorized [layout information components](implementation-plan.md#layout-information-components): clock/date, dynamic QR, scrolling text, weather and RSS, then local example layouts. The agent is preparing the bounded implementation/review candidate under [ADR-0037](../adr/0037-publish-widget-configuration-and-proxy-live-public-data.md) and the owner's prior decision delegation. MET Norway's initial adapter needs no API key; its credit and cache rules remain implementation requirements. No new account/credential blocker is introduced. Reachability of a deployed public origin, hardware qualification and the existing pilot/production actions retain their normal triggers; local examples do not establish them.

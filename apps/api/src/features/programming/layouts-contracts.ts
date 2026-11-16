@@ -1,4 +1,5 @@
 import { Type } from "typebox";
+import { widgetSchema } from "./widgets-contracts.js";
 import { errorEnvelopeSchema } from "../../errors.js";
 import type { ApiOperation } from "../../module.js";
 
@@ -23,7 +24,11 @@ const orientation = Type.Union([
   Type.Literal("landscape"),
   Type.Literal("portrait"),
 ]);
-const kind = Type.Union([Type.Literal("media"), Type.Literal("catalog")]);
+const kind = Type.Union([
+  Type.Literal("media"),
+  Type.Literal("catalog"),
+  Type.Literal("widget"),
+]);
 const fit = Type.Union([Type.Literal("contain"), Type.Literal("cover")]);
 const role = Type.Union([
   Type.Literal("title"),
@@ -102,6 +107,7 @@ const areaInput = Type.Object(
     muted: Type.Optional(Type.Boolean()),
     volume: Type.Optional(Type.Integer({ minimum: 0, maximum: 100 })),
     kind,
+    widget: Type.Optional(widgetSchema),
     pageControlled: Type.Optional(Type.Boolean()),
     view: Type.Optional(Type.Union([viewInput, Type.Null()])),
   },
@@ -151,7 +157,7 @@ export const layoutDefinitionSchema = Type.Object(definitionFields, {
 export const layoutDocumentSchema = Type.Object(
   {
     format: Type.Literal("teluni.layout"),
-    schema: Type.Literal(1),
+    schema: Type.Union([Type.Literal(1), Type.Literal(2)]),
     name: layoutName,
     orientation,
     audioMixConfirmed: Type.Boolean(),
@@ -224,6 +230,7 @@ export const layoutSchema = Type.Object(
           muted: Type.Boolean(),
           volume: Type.Integer({ minimum: 0, maximum: 100 }),
           kind,
+          widget: Type.Optional(widgetSchema),
           pageControlled: Type.Boolean(),
           view: Type.Union([
             Type.Object(
@@ -387,7 +394,7 @@ export const layoutOperations = [
     url: "/companies/:companyId/programming/layouts/import",
     operationId: "importLayout",
     access: "session",
-    description: `Create a layout from its exported \`teluni.layout\` JSON (schema 1) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. ${reasons}`,
+    description: `Create a layout from its exported \`teluni.layout\` JSON (schema 1 or 2) in the importer's scope. It is validated like any save; catalogs, fields and media the importer cannot use are reported as issues to remap, never kept. ${reasons}`,
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -423,7 +430,7 @@ export const layoutOperations = [
     url: "/companies/:companyId/programming/layouts/:layoutId",
     operationId: "updateLayout",
     access: "session",
-    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
+    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog or widget areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
     schema: {
       params: layoutParams,
       body: Type.Object(
@@ -466,7 +473,7 @@ export const layoutOperations = [
     operationId: "exportLayout",
     access: "session",
     description:
-      "The layout as versioned `teluni.layout` JSON (schema 1), which import accepts. Catalogs, fields and media are named by their IDs.",
+      "The layout as versioned `teluni.layout` JSON (schema 1 or 2), which import accepts. Catalogs, fields and media are named by their IDs.",
     schema: {
       params: layoutParams,
       response: { 200: layoutDocumentSchema, ...common },
