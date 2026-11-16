@@ -408,6 +408,7 @@ test("adds a catalog area with a menu view, moves it by keyboard and saves", asy
     .fill("Vitrine nova");
   await screen.getByRole("button", { name: l.addCatalogArea }).click();
   await screen.getByLabelText(l.areaName, { exact: true }).fill("Cardápio");
+  await screen.getByText(l.identifierTitle, { exact: true }).click();
   await screen.getByLabelText(l.areaKey, { exact: true }).fill("menu");
   await screen
     .getByLabelText(l.catalog, { exact: true })
@@ -543,6 +544,7 @@ test("coordinates pages, confirms the audio mix and names issues by area and pag
   await screen
     .getByRole("button", { name: l.areaButton("Principal", l.kinds.media) })
     .click();
+  await screen.getByText(l.appearanceTitle, { exact: true }).click();
   await screen.getByLabelText(l.muted, { exact: true }).click();
   await expect
     .element(screen.getByText(l.audioAreas("Principal, Música")))
@@ -722,4 +724,154 @@ test("shows viewers the canvas and the fit report, and exports the file", async 
     .element(screen.getByRole("status"))
     .toMatchTextContent(l.exported);
   expect(sentCount("GET", `/layouts/${layoutId}/export`)).toBe(1);
+});
+
+test("splits the selected output without changing its page bindings and supports undo and redo", async () => {
+  const existing = layout({
+    areas: [{ ...mainArea, pageControlled: true }],
+    pages: [1, 2].map(() => ({
+      durationSeconds: 10,
+      suggestedSeconds: null,
+      contents: [
+        {
+          areaKey: "main",
+          mediaAssetId: imageId,
+          media: {
+            name: "Promoção",
+            kind: "IMAGE",
+            status: "READY",
+            durationMs: 10000,
+          },
+          viewPage: null,
+          groupChoiceId: null,
+        },
+      ],
+    })),
+  });
+  respond(editor, (url) =>
+    url.pathname.endsWith(`/layouts/${layoutId}`)
+      ? { body: existing }
+      : undefined,
+  );
+  const { screen } = await open(`${base}/layouts/${layoutId}`);
+  await expect
+    .element(screen.getByRole("button", { name: l.removeArea, exact: true }))
+    .toBeDisabled();
+  await screen
+    .getByRole("button", { name: l.splitDirections.left, exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(l.x, { exact: true }))
+    .toHaveValue(0);
+  await expect
+    .element(screen.getByLabelText(l.width, { exact: true }))
+    .toHaveValue(960);
+  await screen.getByRole("button", { name: l.undo, exact: true }).click();
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: l.selectArea(l.newAreaName(2)),
+        exact: true,
+      }),
+    )
+    .not.toBeInTheDocument();
+  await screen.getByRole("button", { name: l.redo, exact: true }).click();
+  await screen
+    .getByRole("button", { name: l.selectArea("Principal"), exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(l.x, { exact: true }))
+    .toHaveValue(960);
+  await screen.getByRole("button", { name: l.saveLayout, exact: true }).click();
+  const body = (await sent("PATCH", `/layouts/${layoutId}`)) as {
+    definition: { areas: unknown[]; pages: unknown[] };
+  };
+  expect(body.definition.areas).toEqual([
+    { ...mainArea, x: 960, width: 960, pageControlled: true },
+    { ...mainArea, key: "area-2", name: l.newAreaName(2), width: 960, z: 1 },
+  ]);
+  expect(body.definition.pages).toEqual(
+    [1, 2].map(() => ({
+      durationSeconds: 10,
+      contents: [{ areaKey: "main", mediaAssetId: imageId }],
+    })),
+  );
+});
+
+test("disables insertion and partitions at the existing area limit and selects covered layers", async () => {
+  respond(editor, (url) =>
+    url.pathname.endsWith(`/layouts/${layoutId}`)
+      ? {
+          body: layout({
+            areas: Array.from({ length: 12 }, (_, i) => ({
+              ...mainArea,
+              key: `area-${i}`,
+              name: `Layer ${i}`,
+              z: i,
+            })),
+          }),
+        }
+      : undefined,
+  );
+  const { screen } = await open(`${base}/layouts/${layoutId}`);
+  await expect
+    .element(screen.getByRole("button", { name: l.addMediaArea }))
+    .toBeDisabled();
+  await expect
+    .element(screen.getByRole("button", { name: l.addCatalogArea }))
+    .toBeDisabled();
+  await expect
+    .element(screen.getByRole("button", { name: l.splitDirections.below }))
+    .toBeDisabled();
+  await screen
+    .getByRole("button", { name: l.selectArea("Layer 0"), exact: true })
+    .click();
+  await expect
+    .element(screen.getByLabelText(l.areaName, { exact: true }))
+    .toHaveValue("Layer 0");
+});
+
+test("retains a blocked draft after a failed authoritative reload, then recovers at the same version", async () => {
+  let readingFails = false;
+  respond(editor, (url, request) => {
+    if (!url.pathname.endsWith(`/layouts/${layoutId}`)) return undefined;
+    if (request.method === "PATCH")
+      return { status: 500, body: { error: { code: "INTERNAL_ERROR" } } };
+    return readingFails
+      ? { status: 503, body: { error: { code: "SERVICE_UNAVAILABLE" } } }
+      : { body: layout() };
+  });
+  const { screen } = await open(`${base}/layouts/${layoutId}`);
+  await screen
+    .getByLabelText(t.fieldName, { exact: true })
+    .fill("Unsaved draft");
+  await screen.getByRole("button", { name: l.saveLayout, exact: true }).click();
+  await expect
+    .element(screen.getByRole("button", { name: l.addMediaArea }))
+    .toBeDisabled();
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: l.areaButton("Principal", l.kinds.media),
+        exact: true,
+      }),
+    )
+    .not.toBeInTheDocument();
+  readingFails = true;
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect
+    .element(screen.getByLabelText(t.fieldName, { exact: true }))
+    .toHaveValue("Unsaved draft");
+  await expect
+    .element(screen.getByRole("button", { name: l.saveLayout, exact: true }))
+    .toBeDisabled();
+  readingFails = false;
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect
+    .element(screen.getByLabelText(t.fieldName, { exact: true }))
+    .toHaveValue("Vitrine");
+  await expect
+    .element(screen.getByRole("button", { name: l.addMediaArea }))
+    .toBeEnabled();
+  expect(sentCount("PATCH", `/layouts/${layoutId}`)).toBe(1);
 });

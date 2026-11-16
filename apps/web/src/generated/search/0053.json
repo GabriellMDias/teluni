@@ -1,5 +1,77 @@
 [
   {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Non-production and collaboration",
+    "anchor": "non-production-and-collaboration",
+    "text": "Non-production and collaboration\nPreview environments and their storage should expire when their purpose ends. Synthetic isolated test databases need cleanup; CI logs/reports/screenshots/artifacts, development logs, and tool/AI caches need appropriate lifetimes. Retention cannot make secret-bearing artifacts safe.\nGit, documentation, issues, pull requests, and chat are durable surfaces, not stores for production samples, exports, or customer records. Use sanitized references. Incident records can retain useful learning without copying raw sensitive evidence; minimize/redact screenshots. Follow [incident response](incident-response.md) for leaked sensitive data rather than waiting for ordinary expiration.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Holds and exceptions",
+    "anchor": "holds-and-exceptions",
+    "text": "Holds and exceptions\nApplicable legal minimums and maximums must be identified from actual jurisdiction/product requirements; a minimum does not justify indefinite retention. Legal holds suspend deletion only for authorized, scoped records/categories and need authority, start, review, release, and auditability. After release, resume normal retention and remove already-expired data as required.\nSecurity/incident or other exceptions need data scope, purpose, owner, authority, duration/review, affected backups/providers, and disposition at expiry. They must not default to permanence or a system-wide hold. This policy does not select legal-hold tooling or grant authority for operational actions.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New persistent data checklist",
+    "anchor": "new-persistent-data-checklist",
+    "text": "New persistent data checklist\nBefore adding a field, record, file, event, or provider copy, identify purpose, owner, classification, canonical source, trigger/duration/disposition, derived copies, backup/restore effect, deletion propagation, partial-failure detection, and tests. Before soft delete, explain why hard deletion is insufficient and how filtering, uniqueness, restoration, and eventual removal work. Surface unknown product/operational requirements explicitly; do not silently substitute “forever” or promise unavailable deletion/recovery capabilities.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Incident Response",
+    "anchor": "incident-response",
+    "text": "Incident Response\nThis policy owns coordinated response to material reliability, security, and data incidents. It defines requirements, not deployed incident tooling or authority. Paging/escalation channels, concrete roles, severity names, legal notifications, forensic storage, and exercise schedules must follow actual product, organization, jurisdiction, and infrastructure decisions. Real repeatable procedures belong in [runbooks](../runbooks/README.md).\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Declaration and ownership",
+    "anchor": "declaration-and-ownership",
+    "text": "Declaration and ownership\nAn incident requires coordinated action because service behavior, trust, confidentiality, integrity, or data lifecycle may be materially violated. Reliability, security, and data classes can overlap. An isolated transient timeout, recovered job, or replaced replica is not automatically an incident; assess impact, risk, investigation, mitigation, and coordination needs.\nDetection can come from [alerts](../reliability/alerting.md), error reports, support/customers, providers, operators, or integrity checks. Declare serious incidents explicitly without waiting for perfect root cause. Every active incident must have an owner. Significant incidents may divide coordination, technical response, communication, security, and scribing; small teams can combine these responsibilities without inventing organizational roles.\nRecord the observed signal, environment, affected service/operation/data, first known impact, scope, trend, active release, and relevant recent changes. Maintain a useful timeline with consistent absolute timestamps and important decisions/rationale. Use one authoritative status location rather than conflicting chat threads.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Severity",
+    "anchor": "severity",
+    "text": "Severity\nUse a small consistent severity model based on user impact, scope, urgency, data classification, privilege/trust risk, and recovery complexity. Do not confuse technical difficulty or error count with severity. A single signing-key leak can be more urgent than many benign failures. Unknown scope can justify higher urgency until evidence narrows it; change severity explicitly as facts improve.\nA possible future scale distinguishes critical widespread outage/active privileged compromise/severe corruption, major workflow degradation or suspected serious compromise, localized recoverable impact, and minor contained anomalies. These categories are guidance, not a selected `SEV-*` contract or response-time promise.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Triage and containment",
+    "anchor": "triage-and-containment",
+    "text": "Triage and containment\nDetermine what is failing, who is affected, whether impact is increasing, what changed, and whether security or data is at risk. Prefer scoped reversible containment where safe, but broader containment can be justified by high risk and uncertain scope. Stop active harm before perfecting diagnosis or preserving every artifact.\nContainment may disable a capability, remove traffic, pause workers/writes/deletion/exports, revoke access, or isolate affected data. These are conditional options, not authorization to execute them. Establish target scope, needed privilege, data-loss/evidence risks, reversibility, success criteria, and recovery before action where practical. Preserve evidence when safe without delaying urgent containment.\nInspect deployment, migration, configuration, feature-flag, infrastructure, and provider changes as clues. Temporal correlation is not proof. Roll back only when the earlier version remains compatible and reversal is safe; irreversible database changes, data-loss risk, or incompatible old releases may require a forward fix. A temporary freeze on unrelated changes can reduce confusion but must not block necessary mitigation.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Evidence and credentials",
+    "anchor": "evidence-and-credentials",
+    "text": "Evidence and credentials\nUse relevant logs, traces, errors, audit, deployments, configuration, provider, and access records. For important forensic artifacts preserve source, collection time, collector, and scope without unnecessary modification. Copies remain classified production data with restricted access, secure storage, and [retention](data-retention.md). Prefer authorized references over raw records in chat, issues, PRs, email, or documentation. Minimize/redact screenshots.\nDisk images, database exports, memory dumps, and network captures can contain credentials and broad private data. Require scoped, authorized, bounded collection and suitable protection. Incident urgency does not suspend privacy or justify unrestricted exports, secrets in incident channels, or indefinite raw evidence retention. Authorized holds/extensions must remain scoped under retention policy.\nTreat potentially exposed credentials as compromised according to risk; absence of observed abuse is not proof of safety. Follow [secrets management](secrets-management.md#secret-rotation). Depending on active harm, either revoke immediately or introduce replacement, update consumers, verify, then revoke old material. Consider dependent user/admin/service/refresh sessions, signing-key compatibility, and invalidation. Review access, permission changes, affected resources, and attacker persistence. Deleting leaked files or telemetry does not restore credential secrecy.\n"
+  },
+  {
     "id": "repository/docs/security/incident-response",
     "title": "Incident Response",
     "group": "Security",

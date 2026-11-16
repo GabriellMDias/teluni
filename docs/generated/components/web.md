@@ -684,3 +684,42 @@ Usage: Use for sections of the same resource. Initial content mounts on demand; 
 ```tsx
 <ProgrammingPanel active={section === "preview"}>{preview}</ProgrammingPanel>
 ```
+
+
+## LayoutCanvas
+
+Schematic freeform layout canvas with component drop, movement and eight resize handles.
+
+Category: Layout. Scope: feature-specific. Owner: Programming.
+
+Source: [apps/web/src/programming/layout-canvas.tsx](../../../apps/web/src/programming/layout-canvas.tsx) (export `LayoutCanvas`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `name, canvas, areas` | `string; Size; readonly CanvasArea[]` | Layout label, canonical orientation size and freeform rectangles with kind, color and stacking order. | Yes | — |
+| `selected, flagged` | `string \| null; ReadonlySet<number>` | Selected editor identity and validation issue indices. | See type | — |
+| `onSelect, onMove` | `callbacks` | Feature-owned selection and geometry updates; omit for read-only rendering. | See type | — |
+| `onGestureStart, onGestureEnd` | `callbacks` | Bracket one pointer gesture so undo restores the whole movement or resize. | See type | — |
+| `dragging, onInsert` | `"media" \| "catalog" \| null; callback` | Only an active, feature-owned component drag with the matching internal MIME payload may insert. The feature enforces the area limit. | See type | — |
+
+### States
+
+- Read-only structure
+- Selected area and covered layers
+- Pointer move or edge/corner resize
+- Component drop preview
+- Validation issue highlight
+
+Accessibility: Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.
+
+Usage: Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview.
+
+### Examples
+
+- **Layout editor canvas** (`layoutcanvas-composition`): Feature-owned schematic composition; no live authenticated requests.
+
+```tsx
+<LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />
+```

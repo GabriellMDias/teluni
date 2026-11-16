@@ -1,0 +1,60 @@
+{
+  "name": "LayoutCanvas",
+  "source": "apps/web/src/programming/layout-canvas.tsx",
+  "category": "Layout",
+  "scope": "feature-specific",
+  "owner": "Programming",
+  "summary": "Schematic freeform layout canvas with component drop, movement and eight resize handles.",
+  "usage": "Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview.",
+  "accessibility": "Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.",
+  "props": [
+    {
+      "name": "name, canvas, areas",
+      "type": "string; Size; readonly CanvasArea[]",
+      "meaning": "Layout label, canonical orientation size and freeform rectangles with kind, color and stacking order.",
+      "required": true
+    },
+    {
+      "name": "selected, flagged",
+      "type": "string | null; ReadonlySet<number>",
+      "meaning": "Selected editor identity and validation issue indices."
+    },
+    {
+      "name": "onSelect, onMove",
+      "type": "callbacks",
+      "meaning": "Feature-owned selection and geometry updates; omit for read-only rendering."
+    },
+    {
+      "name": "onGestureStart, onGestureEnd",
+      "type": "callbacks",
+      "meaning": "Bracket one pointer gesture so undo restores the whole movement or resize."
+    },
+    {
+      "name": "dragging, onInsert",
+      "type": "\"media\" | \"catalog\" | null; callback",
+      "meaning": "Only an active, feature-owned component drag with the matching internal MIME payload may insert. The feature enforces the area limit."
+    }
+  ],
+  "states": [
+    "Read-only structure",
+    "Selected area and covered layers",
+    "Pointer move or edge/corner resize",
+    "Component drop preview",
+    "Validation issue highlight"
+  ],
+  "examples": [
+    {
+      "id": "layoutcanvas-composition",
+      "label": "Layout editor canvas",
+      "description": "Feature-owned schematic composition; no live authenticated requests.",
+      "code": "<LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />",
+      "live": false
+    }
+  ],
+  "id": "LayoutCanvas",
+  "exportName": "LayoutCanvas",
+  "metadataSource": "apps/web/src/programming/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/programming/layout-canvas.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/programming/components.docs.json"
+}

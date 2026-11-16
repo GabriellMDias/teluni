@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established validation toolchain that must be migrated.\nRepository implementation must introduce and configure:\nTypeScript compiler\nESLint\ntypescript-eslint\nPrettier\ndependency-cruiser\n\nand expose their relevant repository-level commands through pnpm scripts.\nThe repository must establish:\npnpm validate\n\nas the canonical complete validation command.\nCI, once implemented, must execute the same validation responsibilities instead of maintaining an independent repository-validation definition.\nTool versions must be pinned through the repository dependency-management mechanism established by ADR-0002.\nRoutine upgrades to TypeScript, ESLint, typescript-eslint, Prettier, or dependency-cruiser do not require a new ADR when they preserve the responsibilities and validation architecture established here.\nAdding additional checks to `pnpm validate` as already-approved repository capabilities are implemented does not require a new ADR when the additions are consistent with this decision.\nReplacing one of the primary validation mechanisms with a materially different validation architecture may require a new ADR depending on the scope and consequences of the change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [repository structure](../architecture/repository-structure.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "anchor": "adr-0004-select-fastify-as-the-backend-http-framework",
+    "text": "ADR-0004: Select Fastify as the Backend HTTP Framework\n**Status:** accepted\n**Date:** 2026-09-13\n"
+  },
+  {
     "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
     "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
     "group": "Decisions",
@@ -952,14 +979,5 @@
     "heading": "Performance strategy",
     "anchor": "performance-strategy",
     "text": "Performance strategy\nOrion will treat frontend performance as a system property rather than a framework benchmark.\nPerformance work should consider, where relevant:\nJavaScript bundle size;\nroute-level code splitting;\nlazy loading;\nAPI latency;\nrequest waterfalls;\nunnecessary network requests;\nserver-state caching;\nlarge DOM trees;\nlist and table virtualization;\nexpensive rendering;\nimage and asset delivery;\nunnecessary component updates;\nclient-side computation;\nmemory usage;\nbrowser profiling results.\nPerformance optimizations that materially increase code complexity should normally be supported by profiling or other evidence.\nThe selected framework does not remove the need for performance budgets, profiling, observability, or careful UI architecture in large applications.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "UI libraries and design systems",
-    "anchor": "ui-libraries-and-design-systems",
-    "text": "UI libraries and design systems\nThis ADR does not select a component library or design system.\nUI component systems, styling approaches, accessibility primitives, charting libraries, data grids, form libraries, and similar product-facing dependencies should be selected when their concrete requirements are understood.\nShared UI code should be introduced only when it represents a genuine reusable responsibility.\n"
   }
 ]

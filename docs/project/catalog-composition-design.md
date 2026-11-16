@@ -305,6 +305,11 @@ Increment 4 adds **Publicação nas telas** to the record page: what each price 
 
 Increment 2 adds the **Layouts** editor under Programação: a canvas preview with drag and resize, plus numeric inputs and arrow keys for keyboard users; the area list; the view editor; the fit report with overflow by record; pages; and JSON import and export.
 
+The interactive authoring refinement adds a visible Media/Catalog palette with native drag-and-drop insertion and equivalent click controls, a front-to-back layer list for covered areas, a schematic canvas with eight edge/corner resize handles and numeric geometry, and four directional split actions. A split partitions only the selected rectangle into two adjacent regions; it retains the original output key, catalog configuration, audio and page bindings. The new region is an independent, muted media area with a fresh key and unused stacking order, no page binding and no assigned content. Repeated splits produce rows or columns without introducing a persisted grid, parent container or new component kind. Subsequent freeform moves/resizes remain independent and may intentionally overlap under the existing model. Odd dimensions retain every original unit. The 40-unit minimum and 12-area limit apply to these authoring actions.
+
+Draft-only undo/redo retains up to 50 prior states and groups a pointer gesture into one action; saving or authoritative reload starts a fresh history. Appearance/audio and output identifiers use native disclosures, while content, selection and geometry stay directly available. The overview continues to use DataSet. Catalog view configuration, coordinated pages, fit reports, export, server validation and confirmation before dropping scheduled outputs remain available. The canvas is a structure preview, not the player's rendered content. An unknown/stale save blocks editing until a successful authoritative read, including when the server version has not changed; a failed read retains the blocked draft and reports the failure. These controls do not add API, schema, player or external widget capabilities.
+
+
 ## Verification
 
 - **Domain tests:**

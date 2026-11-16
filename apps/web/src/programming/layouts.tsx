@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type PointerEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure, type ApiIssue } from "../api-client.js";
@@ -38,6 +31,15 @@ import {
 } from "./api.js";
 import { Button, DataSet, TextField } from "../components.js";
 import type { DataSetColumn } from "../dataset.js";
+import { UiIcon } from "../ui-icon.js";
+import { LayoutCanvas, layoutComponentType } from "./layout-canvas.js";
+import {
+  minSize,
+  splitGeometry,
+  insertionGeometry,
+  type Geometry,
+  type SplitDirection,
+} from "./layout-geometry.js";
 import {
   ProgrammingNameFilter,
   useProgrammingDataSet,
@@ -71,8 +73,7 @@ const canvasSizes: Readonly<
   landscape: { width: 1920, height: 1080 },
   portrait: { width: 1080, height: 1920 },
 };
-const grid = 10;
-const minSize = 40;
+
 const maxImportBytes = 512 * 1024;
 
 export type LayoutsFilter = ProgrammingSearch;
@@ -801,211 +802,6 @@ const audible = (area: { muted: boolean; volume: number }) =>
 const whole = (value: string) =>
   value.trim() === "" ? Number.NaN : Number(value);
 
-// Canvas
-
-type Geometry = Pick<DraftArea, "x" | "y" | "width" | "height">;
-
-const snap = (value: number) => Math.round(value / grid) * grid;
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), Math.max(min, max));
-
-/**
- * The canvas scaled to the page, with areas drawn by stacking order. Areas
- * move by dragging or arrow keys and resize by their corner or Shift with
- * arrow keys, snapping to 10 units inside the canvas.
- */
-function LayoutCanvas({
-  name,
-  canvas,
-  areas,
-  selected,
-  flagged,
-  onSelect,
-  onMove,
-}: {
-  name: string;
-  canvas: { width: number; height: number };
-  areas: readonly Pick<
-    DraftArea,
-    "uid" | "name" | "kind" | "background" | "z" | keyof Geometry
-  >[];
-  selected?: string | null;
-  flagged?: ReadonlySet<number>;
-  onSelect?: (uid: string) => void;
-  onMove?: (uid: string, geometry: Geometry) => void;
-}) {
-  const { t } = useProgrammingMessages();
-  const box = useRef<HTMLDivElement>(null);
-  const drag = useRef<{
-    uid: string;
-    mode: "move" | "resize";
-    x: number;
-    y: number;
-    start: Geometry;
-    last: Geometry;
-  } | null>(null);
-  const place = (
-    start: Geometry,
-    mode: "move" | "resize",
-    dx: number,
-    dy: number,
-  ) =>
-    mode === "move"
-      ? {
-          ...start,
-          x: clamp(snap(start.x + dx), 0, canvas.width - start.width),
-          y: clamp(snap(start.y + dy), 0, canvas.height - start.height),
-        }
-      : {
-          ...start,
-          width: clamp(snap(start.width + dx), minSize, canvas.width - start.x),
-          height: clamp(
-            snap(start.height + dy),
-            minSize,
-            canvas.height - start.y,
-          ),
-        };
-  const begin = (
-    event: PointerEvent<HTMLElement>,
-    area: Geometry & { uid: string },
-    mode: "move" | "resize",
-  ) => {
-    if (!onMove) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    // Preventing the default also prevents focus, which arrow keys need.
-    event.currentTarget.closest("button")?.focus();
-    const start = {
-      x: area.x,
-      y: area.y,
-      width: area.width,
-      height: area.height,
-    };
-    drag.current = {
-      uid: area.uid,
-      mode,
-      x: event.clientX,
-      y: event.clientY,
-      start,
-      last: start,
-    };
-    onSelect?.(area.uid);
-  };
-  const follow = (event: PointerEvent<HTMLElement>) => {
-    const current = drag.current;
-    const rect = box.current?.getBoundingClientRect();
-    if (!current || !rect || !onMove) return;
-    const next = place(
-      current.start,
-      current.mode,
-      ((event.clientX - current.x) * canvas.width) / rect.width,
-      ((event.clientY - current.y) * canvas.height) / rect.height,
-    );
-    // A click's jitter that snaps back to the same place changes nothing.
-    if (
-      next.x === current.last.x &&
-      next.y === current.last.y &&
-      next.width === current.last.width &&
-      next.height === current.last.height
-    )
-      return;
-    current.last = next;
-    onMove(current.uid, next);
-  };
-  const end = () => {
-    drag.current = null;
-  };
-  const keys = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    area: Geometry & { uid: string },
-  ) => {
-    const step = {
-      ArrowLeft: [-grid, 0],
-      ArrowRight: [grid, 0],
-      ArrowUp: [0, -grid],
-      ArrowDown: [0, grid],
-    }[event.key];
-    if (!step || !onMove) return;
-    event.preventDefault();
-    onMove(
-      area.uid,
-      place(area, event.shiftKey ? "resize" : "move", step[0], step[1]),
-    );
-  };
-  return (
-    <div
-      ref={box}
-      className="layout-canvas"
-      role="group"
-      aria-label={t.layouts.canvasLabel(name)}
-      style={{
-        aspectRatio: `${canvas.width} / ${canvas.height}`,
-        // Portrait canvases stay within the window's height.
-        width: `min(100%, ${(70 * canvas.width) / canvas.height}vh)`,
-      }}
-    >
-      {areas.map((area, index) =>
-        !onSelect ? (
-          <div
-            key={area.uid}
-            className="layout-area"
-            style={{
-              left: `${(area.x / canvas.width) * 100}%`,
-              top: `${(area.y / canvas.height) * 100}%`,
-              width: `${(area.width / canvas.width) * 100}%`,
-              height: `${(area.height / canvas.height) * 100}%`,
-              zIndex: area.z + 1,
-              background: area.background,
-            }}
-          >
-            <span className="layout-area-label">
-              {t.layouts.areaButton(area.name, t.layouts.kinds[area.kind])}
-            </span>
-          </div>
-        ) : (
-          <button
-            key={area.uid}
-            type="button"
-            className={`layout-area${area.uid === selected ? " selected" : ""}${
-              flagged?.has(index) ? " flagged" : ""
-            }`}
-            aria-pressed={area.uid === selected}
-            style={{
-              left: `${(area.x / canvas.width) * 100}%`,
-              top: `${(area.y / canvas.height) * 100}%`,
-              width: `${(area.width / canvas.width) * 100}%`,
-              height: `${(area.height / canvas.height) * 100}%`,
-              zIndex: area.z + 1,
-              background: area.background,
-            }}
-            onClick={() => onSelect(area.uid)}
-            onPointerDown={(event) => begin(event, area, "move")}
-            onPointerMove={follow}
-            onPointerUp={end}
-            onPointerCancel={end}
-            onKeyDown={(event) => keys(event, area)}
-          >
-            <span className="layout-area-label">
-              {t.layouts.areaButton(area.name, t.layouts.kinds[area.kind])}
-            </span>
-            {onMove && area.uid === selected && (
-              <span
-                className="layout-area-handle"
-                aria-hidden="true"
-                onPointerDown={(event) => begin(event, area, "resize")}
-                onPointerMove={follow}
-                onPointerUp={end}
-                onPointerCancel={end}
-              />
-            )}
-          </button>
-        ),
-      )}
-    </div>
-  );
-}
-
 // Editor panels
 
 function NumberInput({
@@ -1024,19 +820,18 @@ function NumberInput({
   onChange: (value: number) => void;
 }) {
   return (
-    <span className="layout-number">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="number"
-        min={min}
-        max={max}
-        step={1}
-        required
-        value={Number.isNaN(value) ? "" : value}
-        onChange={(event) => onChange(whole(event.target.value))}
-      />
-    </span>
+    <TextField
+      className="layout-number-control"
+      id={id}
+      label={label}
+      type="number"
+      min={min}
+      max={max}
+      step={1}
+      required
+      value={Number.isNaN(value) ? "" : value}
+      onChange={(event) => onChange(whole(event.target.value))}
+    />
   );
 }
 
@@ -1316,6 +1111,7 @@ function AreaSettings({
   catalogsVisible,
   onChange,
   onRemove,
+  removable,
 }: {
   companyId: string;
   layout: Layout;
@@ -1324,6 +1120,7 @@ function AreaSettings({
   catalogsVisible: boolean;
   onChange: (area: DraftArea) => void;
   onRemove: () => void;
+  removable: boolean;
 }) {
   const { t } = useProgrammingMessages();
   const l = t.layouts;
@@ -1333,27 +1130,18 @@ function AreaSettings({
   return (
     <section className="layout-settings" aria-labelledby={`${id}-title`}>
       <h3 id={`${id}-title`}>{l.selectedTitle(area.name)}</h3>
+      <p className="hint">{l.inspectorHint}</p>
       {issues.length > 0 && (
         <p className="layout-field-issue">{issues.join(" ")}</p>
       )}
-      <label htmlFor={`${id}-name`}>{l.areaName}</label>
-      <input
+      <TextField
+        label={l.areaName}
         id={`${id}-name`}
         required
         maxLength={40}
         value={area.name}
         onChange={(event) => set({ name: event.target.value })}
       />
-      <label htmlFor={`${id}-key`}>{l.areaKey}</label>
-      <input
-        id={`${id}-key`}
-        required
-        maxLength={16}
-        value={area.key}
-        readOnly={area.saved}
-        onChange={(event) => set({ key: event.target.value })}
-      />
-      <p className="hint">{l.areaKeyHint}</p>
       <label htmlFor={`${id}-kind`}>{l.areaKind}</label>
       <select
         id={`${id}-kind`}
@@ -1401,56 +1189,76 @@ function AreaSettings({
           onChange={(height) => set({ height })}
         />
       </fieldset>
-      <NumberInput
-        id={`${id}-z`}
-        label={l.stack}
-        value={area.z}
-        min={0}
-        max={99}
-        onChange={(z) => set({ z })}
-      />
-      <label htmlFor={`${id}-background`}>{l.background}</label>
-      <input
-        id={`${id}-background`}
-        type="color"
-        value={area.background.toLowerCase()}
-        onChange={(event) =>
-          set({ background: event.target.value.toUpperCase() })
-        }
-      />
-      {area.kind === "media" && (
-        <>
-          <label htmlFor={`${id}-fit`}>{l.fit}</label>
-          <select
-            id={`${id}-fit`}
-            value={area.fit}
+      <details className="layout-advanced">
+        <summary>{l.appearanceTitle}</summary>
+        <div className="form-stack">
+          <NumberInput
+            id={`${id}-z`}
+            label={l.stack}
+            value={area.z}
+            min={0}
+            max={99}
+            onChange={(z) => set({ z })}
+          />
+          <label htmlFor={`${id}-background`}>{l.background}</label>
+          <input
+            id={`${id}-background`}
+            type="color"
+            value={area.background.toLowerCase()}
             onChange={(event) =>
-              set({ fit: event.target.value as "contain" | "cover" })
+              set({ background: event.target.value.toUpperCase() })
             }
-          >
-            <option value="contain">{l.fits.contain}</option>
-            <option value="cover">{l.fits.cover}</option>
-          </select>
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={area.muted}
-              onChange={(event) => set({ muted: event.target.checked })}
-            />
-            {l.muted}
-          </label>
-          {!area.muted && (
-            <NumberInput
-              id={`${id}-volume`}
-              label={l.volume}
-              value={area.volume}
-              min={0}
-              max={100}
-              onChange={(volume) => set({ volume })}
-            />
+          />
+          {area.kind === "media" && (
+            <>
+              <label htmlFor={`${id}-fit`}>{l.fit}</label>
+              <select
+                id={`${id}-fit`}
+                value={area.fit}
+                onChange={(event) =>
+                  set({ fit: event.target.value as "contain" | "cover" })
+                }
+              >
+                <option value="contain">{l.fits.contain}</option>
+                <option value="cover">{l.fits.cover}</option>
+              </select>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={area.muted}
+                  onChange={(event) => set({ muted: event.target.checked })}
+                />
+                {l.muted}
+              </label>
+              {!area.muted && (
+                <NumberInput
+                  id={`${id}-volume`}
+                  label={l.volume}
+                  value={area.volume}
+                  min={0}
+                  max={100}
+                  onChange={(volume) => set({ volume })}
+                />
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </details>
+      <details className="layout-advanced">
+        <summary>{l.identifierTitle}</summary>
+        <div className="form-stack">
+          <label htmlFor={`${id}-key`}>{l.areaKey}</label>
+          <input
+            id={`${id}-key`}
+            required
+            maxLength={16}
+            value={area.key}
+            readOnly={area.saved}
+            onChange={(event) => set({ key: event.target.value })}
+          />
+          <p className="hint">{l.areaKeyHint}</p>
+        </div>
+      </details>
       <label className="checkbox-row">
         <input
           type="checkbox"
@@ -1468,9 +1276,9 @@ function AreaSettings({
           onChange={(view) => set({ view })}
         />
       )}
-      <button type="button" onClick={onRemove}>
+      <Button disabled={!removable} onClick={onRemove}>
         {l.removeArea}
-      </button>
+      </Button>
     </section>
   );
 }
@@ -1910,8 +1718,31 @@ function LayoutEditor({
     () => draft.areas[0]?.uid ?? null,
   );
   const [dirty, setDirty] = useState(false);
+  const [past, setPast] = useState<Draft[]>([]);
+  const [future, setFuture] = useState<Draft[]>([]);
+  const gesture = useRef<Draft | null>(null);
+  const latest = useRef(draft);
+  latest.current = draft;
+  const [dragging, setDragging] = useState<Kind | null>(null);
+  const [announcement, setAnnouncement] = useState("");
   const change = (next: Draft) => {
+    if (!gesture.current) setPast((entries) => [...entries.slice(-49), draft]);
+    setFuture([]);
     setDraft(next);
+    setDirty(true);
+  };
+  const travel = (undo: boolean) => {
+    const entries = undo ? past : future;
+    const next = entries.at(-1);
+    if (!next) return;
+    (undo ? setPast : setFuture)(entries.slice(0, -1));
+    (undo ? setFuture : setPast)((items) => [...items, draft]);
+    setDraft(next);
+    setSelected((uid) =>
+      next.areas.some((area) => area.uid === uid)
+        ? uid
+        : (next.areas[0]?.uid ?? null),
+    );
     setDirty(true);
   };
   const setArea = (uid: string, patch: Partial<DraftArea>) =>
@@ -1922,6 +1753,7 @@ function LayoutEditor({
       ),
     });
   const [confirmRemoval, setConfirmRemoval] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<unknown>(null);
   const save = useMutation({
     mutationFn: () =>
       updateLayout(companyId, layout, {
@@ -1931,26 +1763,31 @@ function LayoutEditor({
       }),
     onSuccess: (changed) => onChanged(changed, l.layoutSaved),
   });
+  const blocked = save.isPending || mustReload(save.error);
   const removalPending =
     save.error instanceof ApiFailure &&
     save.error.code === "LAYOUT_CHANGE_CONFIRMATION_REQUIRED";
-  const addArea = (kind: Kind) => {
+  const makeArea = (kind: Kind, geometry: Geometry): DraftArea => {
     const keys = new Set(draft.areas.map((area) => area.key));
     let number = draft.areas.length + 1;
     while (keys.has(`area-${number}`)) number += 1;
-    const canvas = layout.canvas;
-    const width = Math.min(480, canvas.width);
-    const height = Math.min(270, canvas.height);
-    const area: DraftArea = {
+    const used = new Set(draft.areas.map((area) => area.z));
+    // Prefer the front, then a free order if the highest imported order is 99.
+    let z = Math.max(-1, ...used) + 1;
+    if (z > 99) {
+      z = 0;
+      while (used.has(z)) z += 1;
+    }
+    return {
       uid: nextUid(),
       saved: false,
       key: `area-${number}`,
       name: l.newAreaName(number),
-      x: snap((canvas.width - width) / 2),
-      y: snap((canvas.height - height) / 2),
-      width,
-      height,
-      z: Math.min(99, Math.max(-1, ...draft.areas.map((entry) => entry.z)) + 1),
+      x: geometry.x,
+      y: geometry.y,
+      width: geometry.width,
+      height: geometry.height,
+      z,
       background: "#000000",
       fit: "contain",
       muted: true,
@@ -1959,8 +1796,36 @@ function LayoutEditor({
       pageControlled: false,
       view: null,
     };
+  };
+  const addArea = (kind: Kind, geometry = insertionGeometry(layout.canvas)) => {
+    if (draft.areas.length >= 12 || save.isPending || mustReload(save.error))
+      return;
+    const area = makeArea(kind, geometry);
     change({ ...draft, areas: [...draft.areas, area] });
     setSelected(area.uid);
+    setDragging(null);
+    setAnnouncement(l.componentAdded(l.kinds[kind]));
+  };
+  const split = (direction: SplitDirection) => {
+    if (!current || draft.areas.length >= 12) return;
+    const geometry = splitGeometry(current, direction);
+    if (!geometry) return;
+    // The original output and page bindings stay on the retained area. The
+    // new media output starts neutral, so no content or audio is duplicated.
+    const area = makeArea("media", geometry.added);
+    change({
+      ...draft,
+      areas: [
+        ...draft.areas.map((entry) =>
+          entry.uid === current.uid
+            ? { ...entry, ...geometry.retained }
+            : entry,
+        ),
+        area,
+      ],
+    });
+    setSelected(area.uid);
+    setAnnouncement(l.splitDone);
   };
   const flagged = new Set(
     draft.areas.flatMap((_, index) =>
@@ -1977,105 +1842,15 @@ function LayoutEditor({
       aria-label={l.saveLayout}
       onSubmit={(event) => {
         event.preventDefault();
-        save.mutate();
+        if (
+          dirty &&
+          !save.isPending &&
+          !mustReload(save.error) &&
+          (!removalPending || confirmRemoval)
+        )
+          save.mutate();
       }}
     >
-      <section className="form-stack" aria-labelledby="layout-name-title">
-        <h2 id="layout-name-title">{l.nameTitle}</h2>
-        <label htmlFor="layout-rename">{t.fieldName}</label>
-        <input
-          id="layout-rename"
-          required
-          maxLength={120}
-          value={draft.name}
-          onChange={(event) => change({ ...draft, name: event.target.value })}
-        />
-      </section>
-      <section aria-labelledby="layout-areas-title">
-        <h2 id="layout-areas-title">{l.areasTitle}</h2>
-        <p className="hint">{l.canvasHint}</p>
-        <div className="layout-workspace">
-          <LayoutCanvas
-            name={draft.name}
-            canvas={layout.canvas}
-            areas={draft.areas}
-            selected={selected}
-            flagged={flagged}
-            onSelect={setSelected}
-            onMove={(uid, geometry) => setArea(uid, geometry)}
-          />
-          <div className="layout-side">
-            <div className="programming-item-actions">
-              <button
-                type="button"
-                disabled={draft.areas.length >= 12}
-                onClick={() => addArea("media")}
-              >
-                {l.addMediaArea}
-              </button>
-              <button
-                type="button"
-                disabled={draft.areas.length >= 12}
-                onClick={() => addArea("catalog")}
-              >
-                {l.addCatalogArea}
-              </button>
-            </div>
-            {current ? (
-              <AreaSettings
-                key={current.uid}
-                companyId={companyId}
-                layout={layout}
-                area={current}
-                issues={issuesOfArea(
-                  save.error,
-                  draft.areas.indexOf(current),
-                  t,
-                )}
-                catalogsVisible={catalogsVisible}
-                onChange={(area) => setArea(area.uid, area)}
-                onRemove={() => {
-                  change({
-                    ...draft,
-                    areas: draft.areas.filter(
-                      (area) => area.uid !== current.uid,
-                    ),
-                  });
-                  setSelected(null);
-                }}
-              />
-            ) : (
-              <p className="hint">{l.noSelection}</p>
-            )}
-          </div>
-        </div>
-      </section>
-      {(audibleAreas.length > 1 || draft.audioMixConfirmed) && (
-        <fieldset className="layout-audio">
-          <legend>{l.audioTitle}</legend>
-          <p className="hint">
-            {l.audioAreas(audibleAreas.map((area) => area.name).join(", "))}
-          </p>
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={draft.audioMixConfirmed}
-              onChange={(event) =>
-                change({ ...draft, audioMixConfirmed: event.target.checked })
-              }
-            />
-            {l.audioMix}
-          </label>
-        </fieldset>
-      )}
-      <PagesEditor
-        companyId={companyId}
-        layout={layout}
-        draft={draft}
-        catalogsVisible={catalogsVisible}
-        onChange={(pages) => change({ ...draft, pages })}
-      />
-      {dirty && <p className="hint">{t.unsaved}</p>}
       {save.error && (
         <LayoutFailure
           error={save.error}
@@ -2083,10 +1858,13 @@ function LayoutEditor({
           areas={draft.areas}
           outputs={layout.areas}
           onReload={() => {
-            save.reset();
-            void onChanged(layout);
+            setRecoveryError(null);
+            void onChanged(null).catch(setRecoveryError);
           }}
         />
+      )}
+      {Boolean(recoveryError) && (
+        <LayoutFailure error={recoveryError} operation="read" />
       )}
       {removalPending && (
         <label className="checkbox-row">
@@ -2098,19 +1876,252 @@ function LayoutEditor({
           {l.confirmRemoval}
         </label>
       )}
-      <button
-        type="submit"
-        className="button-primary"
-        disabled={
-          !dirty ||
-          !draft.name.trim() ||
-          save.isPending ||
-          mustReload(save.error) ||
-          (removalPending && !confirmRemoval)
-        }
-      >
-        {save.isPending ? t.saving : l.saveLayout}
-      </button>
+      <fieldset className="layout-editable" disabled={blocked}>
+        <div className="layout-editor-heading">
+          <TextField
+            label={t.fieldName}
+            id="layout-rename"
+            required
+            maxLength={120}
+            value={draft.name}
+            onChange={(event) => change({ ...draft, name: event.target.value })}
+          />
+          <div className="layout-save-actions">
+            <span className="hint">{dirty ? t.unsaved : l.savedState}</span>
+            <Button
+              type="submit"
+              variant="primary"
+              pending={save.isPending}
+              disabled={
+                !dirty ||
+                !draft.name.trim() ||
+                mustReload(save.error) ||
+                (removalPending && !confirmRemoval)
+              }
+            >
+              {save.isPending ? t.saving : l.saveLayout}
+            </Button>
+          </div>
+        </div>
+        <section aria-labelledby="layout-areas-title">
+          <div className="layout-section-heading">
+            <div>
+              <h2 id="layout-areas-title">{l.builderTitle}</h2>
+              <p className="hint">{l.builderLead}</p>
+            </div>
+            <span className="layout-canvas-size">
+              {layout.canvas.width} × {layout.canvas.height} ·{" "}
+              {draft.areas.length}/12
+            </span>
+          </div>
+          <div className="layout-workspace">
+            <aside className="layout-library" aria-label={l.componentsTitle}>
+              <h3>{l.componentsTitle}</h3>
+              <p className="hint">{l.componentsHint}</p>
+              {(["media", "catalog"] as const).map((kind) => (
+                <Button
+                  key={kind}
+                  className="layout-component"
+                  draggable={draft.areas.length < 12}
+                  disabled={draft.areas.length >= 12}
+                  aria-label={
+                    kind === "media" ? l.addMediaArea : l.addCatalogArea
+                  }
+                  onClick={() => addArea(kind)}
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(layoutComponentType, kind);
+                    event.dataTransfer.effectAllowed = "copy";
+                    setDragging(kind);
+                  }}
+                  onDragEnd={() => setDragging(null)}
+                >
+                  <span className="layout-component-icon" aria-hidden="true">
+                    <UiIcon name={kind === "media" ? "image" : "grid"} />
+                  </span>
+                  <span>
+                    <strong>{l.kinds[kind]}</strong>
+                    <small>
+                      {kind === "media"
+                        ? l.mediaDescription
+                        : l.catalogDescription}
+                    </small>
+                  </span>
+                  <span aria-hidden="true">＋</span>
+                </Button>
+              ))}
+              {draft.areas.length >= 12 && (
+                <p className="hint">{l.areaLimit}</p>
+              )}
+              <h3>{l.layersTitle}</h3>
+              <ol className="layout-layer-list">
+                {[...draft.areas]
+                  .sort((a, b) => b.z - a.z)
+                  .map((area) => (
+                    <li key={area.uid}>
+                      <Button
+                        aria-pressed={selected === area.uid}
+                        onClick={() => setSelected(area.uid)}
+                        aria-label={l.selectArea(area.name)}
+                      >
+                        <span aria-hidden="true">
+                          <UiIcon
+                            name={area.kind === "media" ? "image" : "grid"}
+                          />
+                        </span>
+                        <span>
+                          {area.name}
+                          <small>
+                            {l.kinds[area.kind]} · {area.width} × {area.height}
+                          </small>
+                        </span>
+                      </Button>
+                    </li>
+                  ))}
+              </ol>
+            </aside>
+            <div className="layout-stage">
+              <div className="layout-canvas-toolbar" aria-label={l.canvasTools}>
+                <div className="programming-item-actions">
+                  <Button disabled={!past.length} onClick={() => travel(true)}>
+                    {l.undo}
+                  </Button>
+                  <Button
+                    disabled={!future.length}
+                    onClick={() => travel(false)}
+                  >
+                    {l.redo}
+                  </Button>
+                </div>
+                <span className="hint">{l.schematic}</span>
+              </div>
+              <div className="layout-canvas-mat">
+                <LayoutCanvas
+                  name={draft.name}
+                  canvas={layout.canvas}
+                  areas={draft.areas}
+                  selected={selected}
+                  flagged={flagged}
+                  onSelect={blocked ? undefined : setSelected}
+                  onMove={
+                    blocked
+                      ? undefined
+                      : (uid, geometry) => setArea(uid, geometry)
+                  }
+                  onGestureStart={() => {
+                    gesture.current = draft;
+                  }}
+                  onGestureEnd={() => {
+                    const initial = gesture.current;
+                    gesture.current = null;
+                    if (initial && initial !== latest.current)
+                      setPast((entries) => [...entries.slice(-49), initial]);
+                  }}
+                  dragging={dragging}
+                  onInsert={addArea}
+                />
+              </div>
+              <p className="hint layout-canvas-help">{l.canvasHint}</p>
+              <section
+                className="layout-split"
+                aria-labelledby="layout-split-title"
+              >
+                <h3 id="layout-split-title">{l.splitTitle}</h3>
+                <p className="hint">
+                  {current ? l.splitLead(current.name) : l.noSelection}
+                </p>
+                <div className="layout-split-actions">
+                  {(["left", "right", "above", "below"] as const).map(
+                    (direction) => (
+                      <Button
+                        key={direction}
+                        disabled={
+                          !current ||
+                          draft.areas.length >= 12 ||
+                          !splitGeometry(current, direction)
+                        }
+                        onClick={() => split(direction)}
+                      >
+                        {l.splitDirections[direction]}
+                      </Button>
+                    ),
+                  )}
+                </div>
+                <p className="hint">{l.splitHint}</p>
+              </section>
+            </div>
+            <div className="layout-side">
+              {current ? (
+                <AreaSettings
+                  removable={draft.areas.length > 1}
+                  key={current.uid}
+                  companyId={companyId}
+                  layout={layout}
+                  area={current}
+                  issues={issuesOfArea(
+                    save.error,
+                    draft.areas.indexOf(current),
+                    t,
+                  )}
+                  catalogsVisible={catalogsVisible}
+                  onChange={(area) => setArea(area.uid, area)}
+                  onRemove={() => {
+                    change({
+                      ...draft,
+                      areas: draft.areas.filter(
+                        (area) => area.uid !== current.uid,
+                      ),
+                      pages: draft.pages.map((page) => ({
+                        ...page,
+                        contents: Object.fromEntries(
+                          Object.entries(page.contents).filter(
+                            ([uid]) => uid !== current.uid,
+                          ),
+                        ),
+                      })),
+                    });
+                    setSelected(
+                      draft.areas.find((area) => area.uid !== current.uid)
+                        ?.uid ?? null,
+                    );
+                  }}
+                />
+              ) : (
+                <p className="hint">{l.noSelection}</p>
+              )}
+            </div>
+          </div>
+        </section>
+        {(audibleAreas.length > 1 || draft.audioMixConfirmed) && (
+          <fieldset className="layout-audio">
+            <legend>{l.audioTitle}</legend>
+            <p className="hint">
+              {l.audioAreas(audibleAreas.map((area) => area.name).join(", "))}
+            </p>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={draft.audioMixConfirmed}
+                onChange={(event) =>
+                  change({ ...draft, audioMixConfirmed: event.target.checked })
+                }
+              />
+              {l.audioMix}
+            </label>
+          </fieldset>
+        )}
+        <PagesEditor
+          companyId={companyId}
+          layout={layout}
+          draft={draft}
+          catalogsVisible={catalogsVisible}
+          onChange={(pages) => change({ ...draft, pages })}
+        />
+      </fieldset>
+      {announcement && (
+        <p role="status" className="visually-hidden">
+          {announcement}
+        </p>
+      )}
     </form>
   );
 }
@@ -2155,6 +2166,7 @@ function LayoutDetail({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [notice, setNotice] = useState<string | null>(null);
+  const [reloadRevision, setReloadRevision] = useState(0);
   const layout = useQuery({
     queryKey: layoutKey(companyId, layoutId),
     queryFn: () => getLayout(companyId, layoutId),
@@ -2164,13 +2176,17 @@ function LayoutDetail({
     if (changed)
       queryClient.setQueryData(layoutKey(companyId, layoutId), changed);
     await queryClient.invalidateQueries({ queryKey: layoutsKey(companyId) });
-    if (!changed)
-      await queryClient.invalidateQueries({
+    if (!changed) {
+      await queryClient.fetchQuery({
         queryKey: layoutKey(companyId, layoutId),
+        queryFn: () => getLayout(companyId, layoutId),
+        staleTime: 0,
       });
+      setReloadRevision((value) => value + 1);
+    }
   };
   if (layout.isPending) return <p>{t.loading}</p>;
-  if (layout.isError)
+  if (layout.isError && !layout.data)
     return (
       <>
         <LayoutFailure
@@ -2182,6 +2198,7 @@ function LayoutDetail({
       </>
     );
   const item = layout.data;
+  if (!item) return null;
   // Company layouts need company-wide authority, which the server decides.
   const edit = can(company, "programming.edit");
   return (
@@ -2200,7 +2217,7 @@ function LayoutDetail({
       />
       {edit ? (
         <LayoutEditor
-          key={`editor-${item.version}`}
+          key={`editor-${item.version}-${reloadRevision}`}
           companyId={companyId}
           layout={item}
           catalogsVisible={can(company, "catalogs.view")}
@@ -2211,24 +2228,27 @@ function LayoutDetail({
       )}
       <FitReport layout={item} />
       {edit && (
-        <ConfirmedDelete
-          key={`delete-${item.version}`}
-          title={l.deleteTitle}
-          lead={l.deleteLead}
-          confirm={l.deleteConfirm(item.name)}
-          label={l.delete}
-          run={() => deleteLayout(companyId, item)}
-          onDone={() => {
-            void queryClient.invalidateQueries({
-              queryKey: layoutsKey(companyId),
-            });
-            void navigate({
-              to: "/companies/$companyId/programming",
-              params: { companyId },
-              search: { view: "layouts" },
-            });
-          }}
-        />
+        <details className="layout-danger-settings">
+          <summary>{l.deleteTitle}</summary>
+          <ConfirmedDelete
+            key={`delete-${item.version}`}
+            title={l.deleteTitle}
+            lead={l.deleteLead}
+            confirm={l.deleteConfirm(item.name)}
+            label={l.delete}
+            run={() => deleteLayout(companyId, item)}
+            onDone={() => {
+              void queryClient.invalidateQueries({
+                queryKey: layoutsKey(companyId),
+              });
+              void navigate({
+                to: "/companies/$companyId/programming",
+                params: { companyId },
+                search: { view: "layouts" },
+              });
+            }}
+          />
+        </details>
       )}
     </>
   );

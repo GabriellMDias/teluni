@@ -1,5 +1,14 @@
 [
   {
+    "id": "repository/apps/api/src/features/media/AGENTS",
+    "title": "Media Module",
+    "group": "Agent instructions",
+    "kind": "repository",
+    "heading": "Media Module",
+    "anchor": "media-module",
+    "text": "Media Module\nThis module owns the company media library: images and videos, their processing into playback renditions, storage and lifecycle under [ADR-0028](../../../../../docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md) and the [media library design](../../../../../docs/project/media-library-design.md). Read both before changing behavior.\nUploaded bytes are untrusted. Admission checks the declared type and size; the processor checks the file signature, forces the matching demuxer and reads files only through FFmpeg/ffprobe child processes started by `ffmpeg.ts` (no shell, PATH-only environment, `-protocol_whitelist file`, timeouts, process-group kill, `prlimit` where present). Never pass user text (names, tags) to a tool, and never log tool output, paths, hashes or file names.\nObjects are content-addressed per company under `<root>/objects/<companyId>/` and only `storage.ts` builds paths. Publish an object (insert its row and rename the work file) only inside a transaction holding `lockObject` for that hash. Release one by checking references and deleting the row under that lock, and unlink the file only after the transaction commits, through `removeFiles`/`removeUnrecorded`, which take the lock again and keep the file if the row exists. A purge and an upload of the same bytes then never lose a file, and a rollback never leaves a row without its file; an orphan file is swept.\nHuman operations resolve access through the organizations `CompanyAccessPort` and take its `lockForWrite` before locking asset rows; then the asset row, then object locks. A hidden item answers `RESOURCE_NOT_FOUND`. `PURGED` rows stay for audit and are never visible.\nProcessing claims rows with a lease and an attempt fencing token; every finishing write checks both, so a superseded attempt changes nothing. Rejections are permanent and release the original; failures retry with backoff up to `mediaPolicy.maxAttempts`.\nModules that reference media register a guard through `public.ts` (`registerReferenceGuard`) and select media only through `requireSelectable`. Deletion and purge refuse while any guard reports a reference. Each human change writes its `media_audit_events` row in the same transaction; details hold IDs, sizes and settings only.\n"
+  },
+  {
     "id": "repository/apps/api/src/features/organizations/AGENTS",
     "title": "Organizations Module",
     "group": "Agent instructions",
@@ -619,32 +628,5 @@
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nOrion adopts multiple validation tools rather than a single integrated toolchain.\nContributors and maintainers must understand the boundaries between Prettier, ESLint, TypeScript, and dependency-cruiser.\nTyped ESLint rules can materially increase lint execution time compared with syntax-only linting.\nMaintaining architecture rules requires keeping dependency-cruiser configuration consistent with architectural documentation.\nSome architectural invariants may not be expressible purely through dependency-graph analysis and may require additional validation mechanisms later.\nPrettier and ESLint may occasionally require compatibility configuration to prevent overlapping responsibilities.\nRepository-wide validation may become increasingly expensive as the monorepo grows until task caching or affected-project execution is justified.\nMaintaining one canonical validation workflow requires discipline when new tools are introduced so that important checks do not exist only as undocumented standalone commands.\n"
-  },
-  {
-    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
-    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion does not currently have an established validation toolchain that must be migrated.\nRepository implementation must introduce and configure:\nTypeScript compiler\nESLint\ntypescript-eslint\nPrettier\ndependency-cruiser\n\nand expose their relevant repository-level commands through pnpm scripts.\nThe repository must establish:\npnpm validate\n\nas the canonical complete validation command.\nCI, once implemented, must execute the same validation responsibilities instead of maintaining an independent repository-validation definition.\nTool versions must be pinned through the repository dependency-management mechanism established by ADR-0002.\nRoutine upgrades to TypeScript, ESLint, typescript-eslint, Prettier, or dependency-cruiser do not require a new ADR when they preserve the responsibilities and validation architecture established here.\nAdding additional checks to `pnpm validate` as already-approved repository capabilities are implemented does not require a new ADR when the additions are consistent with this decision.\nReplacing one of the primary validation mechanisms with a materially different validation architecture may require a new ADR depending on the scope and consequences of the change.\n"
-  },
-  {
-    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
-    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [repository structure](../architecture/repository-structure.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
-    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0004: Select Fastify as the Backend HTTP Framework",
-    "anchor": "adr-0004-select-fastify-as-the-backend-http-framework",
-    "text": "ADR-0004: Select Fastify as the Backend HTTP Framework\n**Status:** accepted\n**Date:** 2026-09-13\n"
   }
 ]
