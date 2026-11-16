@@ -242,6 +242,10 @@ test("creates a catalog from the products preset and opens it", async () => {
     return undefined;
   });
   const { screen, router } = await open(base);
+  await screen.getByRole("link", { name: t.createCatalogTitle }).click();
+  await expect
+    .element(screen.getByText(t.workspace.templateFields))
+    .toBeVisible();
   await screen.getByLabelText(t.fieldName).fill("Cardápio");
   await screen.getByLabelText(t.fieldScope).selectOptions("Centro");
   await screen.getByRole("button", { name: t.create }).click();
@@ -263,6 +267,102 @@ test("creates a catalog from the products preset and opens it", async () => {
     "money",
   ]);
   expect(body.fields[4].currency).toBe("BRL");
+});
+
+test("filters the catalog grid on the server, keeps archived pagination and hides creation from viewers", async () => {
+  const queries: URLSearchParams[] = [];
+  respond(["catalogs.view"], (url) => {
+    if (!url.pathname.endsWith("/catalogs")) return undefined;
+    queries.push(url.searchParams);
+    return {
+      body:
+        url.searchParams.get("status") === "ARCHIVED"
+          ? {
+              items: [catalog({ name: "Cardápio antigo", status: "ARCHIVED" })],
+              nextCursor: url.searchParams.has("cursor")
+                ? null
+                : "next-catalog-page",
+            }
+          : { items: [catalog()], nextCursor: null },
+    };
+  });
+  const { screen, router } = await open(`${base}?create=true`);
+  await expect
+    .element(screen.getByRole("link", { name: "Cardápio", exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: t.createCatalogTitle }))
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("button", {
+      name: locale === "pt-BR" ? "Filtrar" : "Filter",
+      exact: true,
+    })
+    .click();
+  const filters = screen.getByRole("dialog");
+  await filters.getByRole("searchbox", { name: t.filterText }).fill("antigo");
+  await filters.getByLabelText(t.statusFilter).selectOptions("ARCHIVED");
+  await filters.getByRole("button", { name: t.search }).click();
+  await expect
+    .element(screen.getByRole("link", { name: "Cardápio antigo" }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    text: "antigo",
+    status: "ARCHIVED",
+  });
+  await screen.getByRole("link", { name: t.nextPage }).click();
+  await expect
+    .poll(() => queries.at(-1)?.get("cursor"))
+    .toBe("next-catalog-page");
+  expect(queries.at(-1)?.get("text")).toBe("antigo");
+  expect(queries.at(-1)?.get("status")).toBe("ARCHIVED");
+  await screen.getByRole("button", { name: t.workspace.clearFilters }).click();
+  await expect
+    .element(screen.getByRole("link", { name: "Cardápio", exact: true }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({});
+});
+
+test("keeps item drafts between sections and returns to the filtered items page", async () => {
+  const detail = `${base}/${catalogId}/items/${recordId}`;
+  respond(manager, (url) => {
+    if (url.pathname.endsWith(`/records/${recordId}`))
+      return { body: record() };
+    if (url.pathname.endsWith(`/catalogs/${catalogId}/records`))
+      return { body: { items: [record()], nextCursor: null } };
+    if (url.pathname.endsWith(`/catalogs/${catalogId}`))
+      return { body: catalog() };
+    if (url.pathname.endsWith("/effective-prices"))
+      return { body: { fields: [] } };
+    if (url.pathname.endsWith("/promotions")) return { body: { items: [] } };
+    return undefined;
+  });
+  const { screen, router } = await open(
+    `${detail}?text=cafe&cursor=second-page`,
+  );
+  const name = screen.getByRole("textbox", { name: "Nome *" });
+  await name.fill("Café especial");
+  await screen.getByRole("link", { name: t.pricesTitle, exact: true }).click();
+  await expect
+    .element(screen.getByRole("link", { name: t.pricesTitle, exact: true }))
+    .toHaveAttribute("aria-current", "page");
+  await expect
+    .element(screen.getByRole("textbox", { name: t.basePrice }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: t.workspace.recordDetails }))
+    .toHaveAttribute("aria-current", "false");
+  await expect.element(name).not.toBeInTheDocument();
+  await screen.getByRole("link", { name: t.workspace.recordDetails }).click();
+  await expect.element(name).toHaveValue("Café especial");
+  await screen.getByRole("link", { name: "Cardápio", exact: true }).click();
+  await expect
+    .element(screen.getByRole("link", { name: "Café", exact: true }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    text: "cafe",
+    cursor: "second-page",
+  });
 });
 
 test("saves the field list and names the fields that stored items block", async () => {
@@ -327,6 +427,7 @@ test("shows item value problems beside their fields", async () => {
   await expect
     .element(screen.getByRole("link", { name: "Café" }))
     .toHaveAttribute("href", `${base}/${catalogId}/items/${recordId}`);
+  await screen.getByRole("link", { name: t.newItemTitle }).click();
   await screen.getByLabelText(t.weekdays[0]).click();
   await screen.getByLabelText(t.weekdays[4]).click();
   await screen.getByRole("button", { name: t.addItem }).click();
@@ -399,7 +500,7 @@ test("offers only images that fit the catalog and searches items to refer to", a
       return { body: withLinks };
     return undefined;
   });
-  const { screen } = await open(`${base}/${catalogId}`);
+  const { screen } = await open(`${base}/${catalogId}?create=true`);
   const photo = screen.getByLabelText("Foto", { exact: true });
   await expect
     .element(photo.getByRole("option", { name: "Logo" }))
@@ -493,6 +594,7 @@ test("saves prices in the person's locale and previews the price in effect", asy
     return undefined;
   });
   const { screen } = await open(`${base}/${catalogId}/items/${recordId}`);
+  await screen.getByRole("link", { name: t.pricesTitle, exact: true }).click();
   await expect
     .element(screen.getByRole("heading", { level: 1, name: "Café" }))
     .toBeVisible();
@@ -638,6 +740,7 @@ test("shows what price changes did on screens and authorizes blocked ones again"
     return undefined;
   });
   const { screen } = await open(`${base}/${catalogId}/items/${recordId}`);
+  await screen.getByRole("link", { name: p.title }).click();
   const text = (item: { query(): Element | null }) =>
     item.query()?.textContent ?? "";
   const list = screen.getByRole("list", { name: p.title });
@@ -662,6 +765,7 @@ test("shows what price changes did on screens and authorizes blocked ones again"
   await expect.element(screen.getByText(p.retried)).toBeVisible();
   await expect.poll(() => text(lojas)).toContain(p.states.pending());
   // A price that screens show through a program the person cannot publish.
+  await screen.getByRole("link", { name: t.pricesTitle, exact: true }).click();
   const decimal = locale === "pt-BR" ? "," : ".";
   await screen
     .getByRole("textbox", { name: t.basePrice })

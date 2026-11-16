@@ -1,4 +1,5 @@
 import {
+  Activity,
   useDeferredValue,
   useMemo,
   useState,
@@ -8,6 +9,9 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure, type ApiIssue } from "../api-client.js";
+import { Button, Checkbox, DataSet, TextField } from "../components.js";
+import type { DataSetColumn } from "../dataset.js";
+import { UiIcon, type UiIconName } from "../ui-icon.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale, type Locale } from "../locale.js";
 import { formatInstant } from "../organizations/members.js";
@@ -69,13 +73,30 @@ export type CatalogsFilter = Readonly<{
   cursor?: string;
   text?: string;
   status?: "ARCHIVED";
+  create?: true;
 }>;
 
 export type CatalogFilter = Readonly<{
-  view?: "fields";
+  view?: "fields" | "settings";
+  create?: true;
   cursor?: string;
   text?: string;
 }>;
+
+export type RecordFilter = Readonly<{
+  view?: "prices" | "publications" | "settings";
+  text?: string;
+  cursor?: string;
+}>;
+
+function withSearch(path: string, filter: object) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(filter)) {
+    if (typeof value === "string") search.set(key, value);
+    else if (value === true) search.set(key, "true");
+  }
+  return search.size ? `${path}?${search}` : path;
+}
 
 export function useCatalogMessages() {
   const locale = useMemo(browserLocale, []);
@@ -216,7 +237,7 @@ function CompanyGate({
   return (
     <section
       className="panel organization-panel catalogs-panel"
-      aria-labelledby="catalogs-title"
+      aria-label={t.title}
       lang={locale}
     >
       <p className="eyebrow">
@@ -322,22 +343,25 @@ export function presetFields(preset: Preset, t: Messages): FieldInput[] {
 
 function CreateCatalogForm({
   companyId,
-  branches,
+  onCancel,
 }: {
   companyId: string;
-  branches: { id: string; name: string }[];
+  onCancel: () => void;
 }) {
   const { t } = useCatalogMessages();
   const navigate = useNavigate();
+  const branchChoices = useBranchChoices(companyId);
+  const branches = branchChoices.data?.items ?? [];
   const [name, setName] = useState("");
   const [scope, setScope] = useState("company");
   const [preset, setPreset] = useState<Preset>("products");
+  const fields = presetFields(preset, t);
   const create = useMutation({
     mutationFn: () =>
       createCatalog(companyId, {
         name,
         branchId: scope === "company" ? null : scope,
-        fields: presetFields(preset, t),
+        fields,
       }),
     onSuccess: (created) =>
       navigate({
@@ -355,9 +379,10 @@ function CreateCatalogForm({
       }}
     >
       <h2 id="create-catalog-title">{t.createCatalogTitle}</h2>
-      <label htmlFor="catalog-name">{t.fieldName}</label>
-      <input
+      <p className="hint">{t.workspace.createLead}</p>
+      <TextField
         id="catalog-name"
+        label={t.fieldName}
         required
         maxLength={120}
         value={name}
@@ -366,6 +391,7 @@ function CreateCatalogForm({
       <label htmlFor="catalog-scope">{t.fieldScope}</label>
       <select
         id="catalog-scope"
+        disabled={branchChoices.isPending || branchChoices.isError}
         value={scope}
         onChange={(event) => setScope(event.target.value)}
       >
@@ -376,6 +402,14 @@ function CreateCatalogForm({
           </option>
         ))}
       </select>
+      {branchChoices.isPending && <p className="hint">{t.loading}</p>}
+      {branchChoices.isError && (
+        <Failure
+          error={branchChoices.error}
+          operation="read"
+          onReload={() => void branchChoices.refetch()}
+        />
+      )}
       <label htmlFor="catalog-preset">{t.presetLabel}</label>
       <select
         id="catalog-preset"
@@ -388,134 +422,370 @@ function CreateCatalogForm({
           </option>
         ))}
       </select>
+      <div className="catalog-template">
+        <strong>{t.workspace.templateFields}</strong>
+        {fields.length ? (
+          <ul className="catalog-chips">
+            {fields.map((field) => (
+              <li key={field.label}>{field.label}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="hint">{t.workspace.emptyTemplate}</p>
+        )}
+      </div>
       {create.error && <Failure error={create.error} operation="write" />}
-      <button
-        type="submit"
-        className="button-primary"
-        disabled={create.isPending || !name.trim()}
-      >
-        {create.isPending ? t.creating : t.create}
-      </button>
+      <div className="catalog-actions">
+        <Button
+          type="submit"
+          variant="primary"
+          pending={create.isPending}
+          disabled={
+            !name.trim() ||
+            mustReload(create.error) ||
+            (scope !== "company" && !branchChoices.isSuccess)
+          }
+        >
+          {create.isPending ? t.creating : t.create}
+        </Button>
+        <Button onClick={onCancel} disabled={create.isPending}>
+          {t.workspace.cancel}
+        </Button>
+      </div>
     </form>
+  );
+}
+
+type PageFilter = Readonly<{ cursor?: string; text?: string }>;
+
+function CollectionFilter({
+  text,
+  status,
+  onApply,
+}: {
+  text?: string;
+  status?: "ACTIVE" | "ARCHIVED";
+  onApply: (text?: string, status?: "ARCHIVED") => void;
+}) {
+  const { t } = useCatalogMessages();
+  const [term, setTerm] = useState(text ?? "");
+  const [archived, setArchived] = useState(status === "ARCHIVED");
+  return (
+    <form
+      className="form-stack"
+      role="search"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onApply(term.trim() || undefined, archived ? "ARCHIVED" : undefined);
+      }}
+    >
+      <TextField
+        label={t.filterText}
+        type="search"
+        maxLength={120}
+        value={term}
+        onChange={(event) => setTerm(event.target.value)}
+        data-autofocus
+      />
+      {status && (
+        <div className="catalog-setting">
+          <label htmlFor="catalog-list-status">{t.statusFilter}</label>
+          <select
+            id="catalog-list-status"
+            value={archived ? "ARCHIVED" : "ACTIVE"}
+            onChange={(event) => setArchived(event.target.value === "ARCHIVED")}
+          >
+            <option value="ACTIVE">{t.statusActive}</option>
+            <option value="ARCHIVED">{t.statusArchived}</option>
+          </select>
+        </div>
+      )}
+      <div className="catalog-actions">
+        <Button type="submit" variant="primary">
+          {t.search}
+        </Button>
+        <Button onClick={() => onApply()}>{t.workspace.clearFilters}</Button>
+      </div>
+    </form>
+  );
+}
+
+function CatalogHeading({
+  title,
+  lead,
+  icon,
+  action,
+}: {
+  title: string;
+  lead?: string;
+  icon: UiIconName;
+  action?: ReactNode;
+}) {
+  return (
+    <header className="catalog-heading">
+      <span className="catalog-heading-icon">
+        <UiIcon name={icon} />
+      </span>
+      <div className="catalog-heading-copy">
+        <h1>{title}</h1>
+        {lead && <p className="hint">{lead}</p>}
+      </div>
+      {action}
+    </header>
+  );
+}
+
+function CatalogBadge({ label, live }: { label: string; live: boolean }) {
+  return (
+    <span className="catalog-badge" data-live={live}>
+      {label}
+    </span>
+  );
+}
+
+/** A page of server-filtered catalog rows or items, with creation on demand. */
+function CatalogCollection<Row extends { id: string }>({
+  label,
+  rows,
+  columns,
+  filter,
+  status,
+  creating,
+  onCreate,
+  onFilter,
+  onRefresh,
+  refreshing,
+  empty,
+  pagination,
+  children,
+}: {
+  label: string;
+  rows: readonly Row[];
+  columns: readonly DataSetColumn<Row>[];
+  filter: PageFilter;
+  status?: "ACTIVE" | "ARCHIVED";
+  creating: boolean;
+  onCreate?: () => void;
+  onFilter: (text?: string, status?: "ARCHIVED") => void;
+  onRefresh: () => void;
+  refreshing: boolean;
+  empty: string;
+  pagination?: ReactNode;
+  children?: ReactNode;
+}) {
+  const { locale, t } = useCatalogMessages();
+  const active = Number(Boolean(filter.text)) + Number(status === "ARCHIVED");
+  return (
+    <div className="dataset-region catalog-collection">
+      {!creating && active > 0 && (
+        <div className="catalog-filter-summary">
+          {filter.text && <span>{t.workspace.searchFor(filter.text)}</span>}
+          {status === "ARCHIVED" && <span>{t.statusArchived}</span>}
+          <Button onClick={() => onFilter()}>{t.workspace.clearFilters}</Button>
+        </div>
+      )}
+      <DataSet
+        label={label}
+        locale={locale}
+        mode={creating ? "form" : "grid"}
+        rows={rows}
+        columns={columns}
+        rowId={(row) => row.id}
+        onAdd={creating ? undefined : onCreate}
+        onRefresh={creating ? undefined : onRefresh}
+        refreshing={!creating && refreshing}
+        filters={
+          creating
+            ? undefined
+            : {
+                active,
+                render: (close) => (
+                  <CollectionFilter
+                    text={filter.text}
+                    status={status}
+                    onApply={(text, status) => {
+                      onFilter(text, status);
+                      close();
+                    }}
+                  />
+                ),
+              }
+        }
+        empty={
+          <p className="empty-state">
+            {filter.cursor
+              ? t.pageEmpty
+              : active
+                ? t.workspace.noResults
+                : empty}
+          </p>
+        }
+      >
+        {children}
+      </DataSet>
+      {!creating && pagination}
+    </div>
   );
 }
 
 function CatalogList({
   companyId,
   filter,
+  editable,
 }: {
   companyId: string;
   filter: CatalogsFilter;
+  editable: boolean;
 }) {
   const { t } = useCatalogMessages();
   const navigate = useNavigate();
-  const [text, setText] = useState(filter.text ?? "");
-  const [archived, setArchived] = useState(filter.status === "ARCHIVED");
+  const { create, ...query } = filter;
+  const creating = editable && create === true;
   const catalogs = useQuery({
-    queryKey: [...catalogsKey(companyId), filter],
+    queryKey: [...catalogsKey(companyId), query],
     queryFn: () =>
-      listCatalogs(companyId, {
-        status: filter.status ?? "ACTIVE",
-        ...(filter.cursor ? { cursor: filter.cursor } : {}),
-        ...(filter.text ? { text: filter.text } : {}),
-      }),
+      listCatalogs(companyId, { ...query, status: query.status ?? "ACTIVE" }),
+    enabled: !creating,
   });
-  const base = {
-    ...(filter.text ? { text: filter.text } : {}),
-    ...(filter.status ? { status: filter.status } : {}),
+  const columns = useMemo<readonly DataSetColumn<Catalog>[]>(
+    () => [
+      {
+        key: "name",
+        header: t.fieldName,
+        width: 290,
+        value: (row) => row.name,
+        render: (row) => (
+          <Link
+            className="catalog-row-link"
+            to="/companies/$companyId/catalogs/$catalogId"
+            params={{ companyId, catalogId: row.id }}
+          >
+            {row.name}
+          </Link>
+        ),
+      },
+      {
+        key: "scope",
+        header: t.fieldScope,
+        width: 225,
+        value: (row) => scopeName(row.branch, t),
+      },
+      {
+        key: "records",
+        header: t.itemsTitle,
+        width: 105,
+        value: (row) => row.recordCount,
+        align: "end",
+      },
+      {
+        key: "fields",
+        header: t.fieldsTitle,
+        width: 130,
+        value: (row) => row.fields.filter((field) => !field.archived).length,
+        align: "end",
+      },
+      {
+        key: "status",
+        header: t.statusFilter,
+        width: 130,
+        value: (row) =>
+          row.status === "ACTIVE" ? t.workspace.active : t.archivedBadge,
+        render: (row) => (
+          <CatalogBadge
+            label={
+              row.status === "ACTIVE" ? t.workspace.active : t.archivedBadge
+            }
+            live={row.status === "ACTIVE"}
+          />
+        ),
+      },
+    ],
+    [companyId, t],
+  );
+  const go = (search: CatalogsFilter) => {
+    void navigate({
+      to: "/companies/$companyId/catalogs",
+      params: { companyId },
+      search,
+    });
   };
+  const onCreate = () => go({ ...query, create: true });
   return (
-    <section aria-labelledby="catalog-list-title">
-      <h2 id="catalog-list-title">{t.listTitle}</h2>
-      <form
-        role="search"
-        className="catalog-filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void navigate({
-            to: "/companies/$companyId/catalogs",
-            params: { companyId },
-            search: {
-              ...(text.trim() ? { text: text.trim() } : {}),
-              ...(archived ? { status: "ARCHIVED" as const } : {}),
-            },
-          });
-        }}
-      >
-        <label htmlFor="catalog-text">{t.filterText}</label>{" "}
-        <input
-          id="catalog-text"
-          type="search"
-          maxLength={120}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />{" "}
-        <label htmlFor="catalog-status">{t.statusFilter}</label>{" "}
-        <select
-          id="catalog-status"
-          value={archived ? "ARCHIVED" : "ACTIVE"}
-          onChange={(event) => setArchived(event.target.value === "ARCHIVED")}
-        >
-          <option value="ACTIVE">{t.statusActive}</option>
-          <option value="ARCHIVED">{t.statusArchived}</option>
-        </select>{" "}
-        <button type="submit">{t.search}</button>
-      </form>
-      {catalogs.isPending ? (
-        <p>{t.loading}</p>
-      ) : catalogs.isError ? (
+    <>
+      <CatalogHeading
+        title={t.title}
+        lead={t.lead}
+        icon="grid"
+        action={
+          editable &&
+          !creating && (
+            <Link
+              className="button-link button-primary catalog-create-action"
+              to="/companies/$companyId/catalogs"
+              params={{ companyId }}
+              search={{ ...query, create: true }}
+            >
+              <UiIcon name="add" />
+              {t.createCatalogTitle}
+            </Link>
+          )
+        }
+      />
+      {!creating && catalogs.isPending ? (
+        <p role="status">{t.loading}</p>
+      ) : !creating && catalogs.isError ? (
         <Failure
           error={catalogs.error}
           operation="read"
           onReload={() => void catalogs.refetch()}
         />
-      ) : catalogs.data.items.length === 0 ? (
-        <p className="empty-state">
-          {filter.cursor ? t.pageEmpty : t.catalogsEmpty}
-        </p>
       ) : (
-        <ul className="catalog-list">
-          {catalogs.data.items.map((catalog) => (
-            <li key={catalog.id}>
-              <Link
-                to="/companies/$companyId/catalogs/$catalogId"
-                params={{ companyId, catalogId: catalog.id }}
-              >
-                {catalog.name}
-              </Link>
-              <span className="hint">
-                {scopeName(catalog.branch, t)} ·{" "}
-                {t.catalogSummary(
-                  catalog.recordCount,
-                  catalog.fields.filter((field) => !field.archived).length,
+        <CatalogCollection
+          label={t.listTitle}
+          rows={catalogs.data?.items ?? []}
+          columns={columns}
+          filter={query}
+          status={query.status ?? "ACTIVE"}
+          creating={creating}
+          onCreate={editable ? onCreate : undefined}
+          onFilter={(text, status) => go({ text, status })}
+          onRefresh={() => void catalogs.refetch()}
+          refreshing={catalogs.isFetching}
+          empty={t.catalogsEmpty}
+          pagination={
+            (query.cursor || catalogs.data?.nextCursor) && (
+              <nav className="pagination" aria-label={t.title}>
+                {query.cursor && (
+                  <Link
+                    to="/companies/$companyId/catalogs"
+                    params={{ companyId }}
+                    search={{ ...query, cursor: undefined }}
+                  >
+                    {t.firstPage}
+                  </Link>
                 )}
-                {catalog.status === "ARCHIVED" ? ` · ${t.archivedBadge}` : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
+                {catalogs.data?.nextCursor && (
+                  <Link
+                    to="/companies/$companyId/catalogs"
+                    params={{ companyId }}
+                    search={{ ...query, cursor: catalogs.data.nextCursor }}
+                  >
+                    {t.nextPage}
+                  </Link>
+                )}
+              </nav>
+            )
+          }
+        >
+          {creating && (
+            <CreateCatalogForm
+              companyId={companyId}
+              onCancel={() => go(query)}
+            />
+          )}
+        </CatalogCollection>
       )}
-      <nav className="pagination" aria-label={t.title}>
-        {filter.cursor && (
-          <Link
-            to="/companies/$companyId/catalogs"
-            params={{ companyId }}
-            search={base}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {catalogs.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId/catalogs"
-            params={{ companyId }}
-            search={{ ...base, cursor: catalogs.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
-    </section>
+    </>
   );
 }
 
@@ -526,28 +796,17 @@ export function CatalogsPage({
   companyId: string;
   filter: CatalogsFilter;
 }) {
-  const { t } = useCatalogMessages();
-  const branches = useBranchChoices(companyId);
-  const search = new URLSearchParams(
-    Object.entries(filter).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
-  const returnTo = `/companies/${companyId}/catalogs${search.size ? `?${search}` : ""}`;
   return (
-    <CompanyGate companyId={companyId} returnTo={returnTo}>
+    <CompanyGate
+      companyId={companyId}
+      returnTo={withSearch(`/companies/${companyId}/catalogs`, filter)}
+    >
       {(company) => (
-        <>
-          <h1 id="catalogs-title">{t.title}</h1>
-          <p>{t.lead}</p>
-          {can(company, "catalogs.manage") && (
-            <CreateCatalogForm
-              companyId={companyId}
-              branches={branches.data?.items ?? []}
-            />
-          )}
-          <CatalogList companyId={companyId} filter={filter} />
-        </>
+        <CatalogList
+          companyId={companyId}
+          filter={filter}
+          editable={can(company, "catalogs.manage")}
+        />
       )}
     </CompanyGate>
   );
@@ -1446,6 +1705,7 @@ export function ValuesForm({
   submitLabel,
   run,
   onDone,
+  onCancel,
 }: {
   companyId: string;
   catalog: Catalog;
@@ -1454,6 +1714,7 @@ export function ValuesForm({
   submitLabel: string;
   run: (values: Record<string, Value>, available: boolean) => Promise<unknown>;
   onDone: (result: unknown) => void;
+  onCancel?: () => void;
 }) {
   const { locale, t } = useCatalogMessages();
   const fields = editable(catalog);
@@ -1514,24 +1775,29 @@ export function ValuesForm({
           <FieldIssues error={save.error} path={`/values/${field.id}`} />
         </div>
       ))}
-      <label className="checkbox-row">
-        <input
-          type="checkbox"
-          checked={available}
-          onChange={(event) => setAvailable(event.target.checked)}
-        />
-        {t.availableLabel}
-      </label>
+      <Checkbox
+        label={t.availableLabel}
+        checked={available}
+        onChange={(event) => setAvailable(event.target.checked)}
+      />
       {save.error && (
         <Failure error={save.error} operation="write" label={label} />
       )}
-      <button
-        type="submit"
-        className="button-primary"
-        disabled={save.isPending || mustReload(save.error)}
-      >
-        {save.isPending ? t.saving : submitLabel}
-      </button>
+      <div className="catalog-actions">
+        <Button
+          type="submit"
+          variant="primary"
+          pending={save.isPending}
+          disabled={mustReload(save.error)}
+        >
+          {save.isPending ? t.saving : submitLabel}
+        </Button>
+        {onCancel && (
+          <Button onClick={onCancel} disabled={save.isPending}>
+            {t.workspace.cancel}
+          </Button>
+        )}
+      </div>
     </form>
   );
 }
@@ -1596,100 +1862,191 @@ function RecordList({
   companyId,
   catalog,
   filter,
+  editable,
 }: {
   companyId: string;
   catalog: Catalog;
   filter: CatalogFilter;
+  editable: boolean;
 }) {
-  const { t } = useCatalogMessages();
+  const { locale, t } = useCatalogMessages();
   const navigate = useNavigate();
-  const [text, setText] = useState(filter.text ?? "");
+  const queryClient = useQueryClient();
+  const query = { cursor: filter.cursor, text: filter.text };
+  const creating = editable && filter.create === true;
   const records = useQuery({
-    queryKey: [...recordsKey(companyId, catalog.id), filter],
-    queryFn: () =>
-      listRecords(companyId, catalog.id, {
-        ...(filter.cursor ? { cursor: filter.cursor } : {}),
-        ...(filter.text ? { text: filter.text } : {}),
-      }),
+    queryKey: [...recordsKey(companyId, catalog.id), query],
+    queryFn: () => listRecords(companyId, catalog.id, query),
+    enabled: !creating,
   });
+  const columns = useMemo<readonly DataSetColumn<CatalogRecord>[]>(
+    () => [
+      {
+        key: "title",
+        header: t.workspace.itemName,
+        width: 280,
+        value: (row) => row.title ?? t.untitled,
+        render: (row) => (
+          <Link
+            className="catalog-row-link"
+            to="/companies/$companyId/catalogs/$catalogId/items/$recordId"
+            params={{ companyId, catalogId: catalog.id, recordId: row.id }}
+            search={{ text: filter.text, cursor: filter.cursor }}
+          >
+            {row.title ?? t.untitled}
+          </Link>
+        ),
+      },
+      {
+        key: "available",
+        header: t.statusFilter,
+        width: 175,
+        value: (row) => (row.available ? t.workspace.available : t.unavailable),
+        render: (row) => (
+          <CatalogBadge
+            label={row.available ? t.workspace.available : t.unavailable}
+            live={row.available}
+          />
+        ),
+      },
+      ...catalog.fields
+        .filter((field) => field.type === "money" && !field.archived)
+        .slice(0, 1)
+        .map((field): DataSetColumn<CatalogRecord> => ({
+          key: field.id,
+          header: t.workspace.basePriceColumn(field.label),
+          width: 175,
+          align: "end",
+          value: (row) => {
+            const amount = row.values[field.id];
+            return typeof amount === "number" ? amount : null;
+          },
+          render: (row) => {
+            const amount = row.values[field.id];
+            return typeof amount === "number"
+              ? formatAmount(amount, field.currency ?? "BRL", locale)
+              : t.noPrice;
+          },
+        })),
+    ],
+    [
+      catalog.fields,
+      catalog.id,
+      companyId,
+      filter.cursor,
+      filter.text,
+      locale,
+      t,
+    ],
+  );
+  const go = (search: CatalogFilter) => {
+    void navigate({
+      to: "/companies/$companyId/catalogs/$catalogId",
+      params: { companyId, catalogId: catalog.id },
+      search,
+    });
+  };
+  const onCreate = () => go({ ...query, create: true });
   return (
-    <section aria-labelledby="catalog-items-title">
-      <h2 id="catalog-items-title">{t.itemsTitle}</h2>
-      <form
-        role="search"
-        className="catalog-filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void navigate({
-            to: "/companies/$companyId/catalogs/$catalogId",
-            params: { companyId, catalogId: catalog.id },
-            search: text.trim() ? { text: text.trim() } : {},
-          });
-        }}
-      >
-        <label htmlFor="catalog-item-text">{t.filterText}</label>{" "}
-        <input
-          id="catalog-item-text"
-          type="search"
-          maxLength={120}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />{" "}
-        <button type="submit">{t.search}</button>
-      </form>
-      {records.isPending ? (
-        <p>{t.loading}</p>
-      ) : records.isError ? (
+    <section className="catalog-section">
+      <div className="catalog-section-heading">
+        <div>
+          <h2 id="catalog-items-title">{t.itemsTitle}</h2>
+          <p className="hint">{t.workspace.itemsLead}</p>
+        </div>
+        {editable && !creating && (
+          <Link
+            className="button-link button-primary catalog-create-action"
+            to="/companies/$companyId/catalogs/$catalogId"
+            params={{ companyId, catalogId: catalog.id }}
+            search={{ ...query, create: true }}
+          >
+            <UiIcon name="add" />
+            {t.newItemTitle}
+          </Link>
+        )}
+      </div>
+      {!creating && records.isPending ? (
+        <p role="status">{t.loading}</p>
+      ) : !creating && records.isError ? (
         <Failure
           error={records.error}
           operation="read"
           onReload={() => void records.refetch()}
         />
-      ) : records.data.items.length === 0 ? (
-        <p className="empty-state">
-          {filter.cursor ? t.pageEmpty : t.itemsEmpty}
-        </p>
       ) : (
-        <ol className="catalog-list">
-          {records.data.items.map((record) => (
-            <li key={record.id}>
-              <Link
-                to="/companies/$companyId/catalogs/$catalogId/items/$recordId"
-                params={{
-                  companyId,
-                  catalogId: catalog.id,
-                  recordId: record.id,
-                }}
-              >
-                {record.title ?? t.untitled}
-              </Link>
-              {!record.available && (
-                <span className="hint">{t.unavailable}</span>
-              )}
-            </li>
-          ))}
-        </ol>
+        <CatalogCollection
+          label={t.itemsTitle}
+          rows={records.data?.items ?? []}
+          columns={columns}
+          filter={query}
+          creating={creating}
+          onCreate={editable ? onCreate : undefined}
+          onFilter={(text) => go({ text })}
+          onRefresh={() => void records.refetch()}
+          refreshing={records.isFetching}
+          empty={t.itemsEmpty}
+          pagination={
+            (query.cursor || records.data?.nextCursor) && (
+              <nav className="pagination" aria-label={t.itemsTitle}>
+                {query.cursor && (
+                  <Link
+                    to="/companies/$companyId/catalogs/$catalogId"
+                    params={{ companyId, catalogId: catalog.id }}
+                    search={{ text: query.text }}
+                  >
+                    {t.firstPage}
+                  </Link>
+                )}
+                {records.data?.nextCursor && (
+                  <Link
+                    to="/companies/$companyId/catalogs/$catalogId"
+                    params={{ companyId, catalogId: catalog.id }}
+                    search={{ ...query, cursor: records.data.nextCursor }}
+                  >
+                    {t.nextPage}
+                  </Link>
+                )}
+              </nav>
+            )
+          }
+        >
+          {creating && (
+            <ValuesForm
+              key={catalog.version}
+              companyId={companyId}
+              catalog={catalog}
+              record={null}
+              title={t.newItemTitle}
+              submitLabel={t.addItem}
+              onCancel={() => go(query)}
+              run={(values, available) =>
+                createRecord(companyId, catalog.id, values, available)
+              }
+              onDone={(created) => {
+                void queryClient.invalidateQueries({
+                  queryKey: catalogKey(companyId, catalog.id),
+                });
+                void queryClient.invalidateQueries({
+                  queryKey: catalogsKey(companyId),
+                });
+                void queryClient.invalidateQueries({
+                  queryKey: recordsKey(companyId, catalog.id),
+                });
+                void navigate({
+                  to: "/companies/$companyId/catalogs/$catalogId/items/$recordId",
+                  params: {
+                    companyId,
+                    catalogId: catalog.id,
+                    recordId: (created as CatalogRecord).id,
+                  },
+                  search: query,
+                });
+              }}
+            />
+          )}
+        </CatalogCollection>
       )}
-      <nav className="pagination" aria-label={t.itemsTitle}>
-        {filter.cursor && (
-          <Link
-            to="/companies/$companyId/catalogs/$catalogId"
-            params={{ companyId, catalogId: catalog.id }}
-            search={filter.text ? { text: filter.text } : {}}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {records.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId/catalogs/$catalogId"
-            params={{ companyId, catalogId: catalog.id }}
-            search={{ ...filter, cursor: records.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
     </section>
   );
 }
@@ -1716,47 +2073,49 @@ function CatalogSettings({
       }),
     onSuccess: (changed) => onChanged(changed, t.saved),
   });
+  const error = rename.error ?? status.error;
+  const blocked = rename.isPending || status.isPending || mustReload(error);
+  const canRename =
+    catalog.status === "ACTIVE" &&
+    !!name.trim() &&
+    name.trim() !== catalog.name &&
+    !blocked;
   return (
     <form
       className="form-stack"
       aria-labelledby="catalog-settings-title"
       onSubmit={(event) => {
         event.preventDefault();
-        rename.mutate();
+        if (canRename) rename.mutate();
       }}
     >
       <h2 id="catalog-settings-title">{t.settingsTitle}</h2>
-      <label htmlFor="catalog-rename">{t.fieldName}</label>
-      <input
+      <TextField
+        label={t.fieldName}
         id="catalog-rename"
         required
         maxLength={120}
-        disabled={catalog.status === "ARCHIVED"}
+        disabled={catalog.status === "ARCHIVED" || blocked}
         value={name}
         onChange={(event) => setName(event.target.value)}
       />
-      {(rename.error ?? status.error) && (
-        <Failure error={rename.error ?? status.error} operation="write" />
-      )}
-      <div className="catalog-field-actions">
-        <button
+      {error && <Failure error={error} operation="write" />}
+      <div className="catalog-actions">
+        <Button
           type="submit"
-          className="button-primary"
-          disabled={
-            rename.isPending ||
-            catalog.status === "ARCHIVED" ||
-            name.trim() === catalog.name
-          }
+          variant="primary"
+          pending={rename.isPending}
+          disabled={!canRename}
         >
           {rename.isPending ? t.saving : t.save}
-        </button>
-        <button
-          type="button"
-          disabled={status.isPending}
+        </Button>
+        <Button
+          pending={status.isPending}
+          disabled={blocked}
           onClick={() => status.mutate()}
         >
           {catalog.status === "ARCHIVED" ? t.restoreCatalog : t.archiveCatalog}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -1803,110 +2162,108 @@ function CatalogDetail({
     );
   const item = catalog.data;
   const active = item.status === "ACTIVE";
-  const view = filter.view ?? "items";
+  const manage = can(company, "catalogs.manage");
+  const view =
+    filter.view === "settings" && !manage ? "items" : (filter.view ?? "items");
+  const views = [
+    { view: "items", icon: "grid" },
+    { view: "fields", icon: "form" },
+    ...(manage ? [{ view: "settings", icon: "more" } as const] : []),
+  ] as const;
   return (
     <>
       <BackToCatalogs companyId={companyId} />
-      <h1 id="catalogs-title">{item.name}</h1>
-      <p className="hint">
-        {scopeName(item.branch, t)} ·{" "}
-        {t.catalogSummary(
-          item.recordCount,
-          item.fields.filter((field) => !field.archived).length,
-        )}
-      </p>
+      <CatalogHeading title={item.name} icon="grid" />
+      <div className="catalog-detail-meta">
+        <span>{scopeName(item.branch, t)}</span>
+        <span>
+          {t.catalogSummary(
+            item.recordCount,
+            item.fields.filter((field) => !field.archived).length,
+          )}
+        </span>
+        <CatalogBadge
+          label={active ? t.workspace.active : t.archivedBadge}
+          live={active}
+        />
+      </div>
       {!active && (
         <p role="status" className="notice">
           {t.archivedNotice}
         </p>
       )}
-      {notice && <p role="status">{notice}</p>}
-      <nav className="company-navigation" aria-label={t.viewsLabel}>
-        <Link
-          to="/companies/$companyId/catalogs/$catalogId"
-          params={{ companyId, catalogId }}
-          search={{}}
-          aria-current={view === "items" ? "page" : undefined}
-        >
-          {t.views.items}
-        </Link>
-        <Link
-          to="/companies/$companyId/catalogs/$catalogId"
-          params={{ companyId, catalogId }}
-          search={{ view: "fields" }}
-          aria-current={view === "fields" ? "page" : undefined}
-        >
-          {t.views.fields}
-        </Link>
+      {notice && (
+        <p role="status" className="notice notice-success">
+          {notice}
+        </p>
+      )}
+      <nav className="catalog-tabs" aria-label={t.viewsLabel}>
+        {views.map((entry) => (
+          <Link
+            key={entry.view}
+            to="/companies/$companyId/catalogs/$catalogId"
+            params={{ companyId, catalogId }}
+            search={{
+              view: entry.view === "items" ? undefined : entry.view,
+              text: filter.text,
+              cursor: filter.cursor,
+            }}
+            activeOptions={{ exact: true }}
+            aria-current={view === entry.view ? "page" : false}
+          >
+            <UiIcon name={entry.icon} />
+            {t.views[entry.view]}
+          </Link>
+        ))}
       </nav>
-      {view === "fields" ? (
-        can(company, "catalogs.manage") && active ? (
+      {view === "items" && (
+        <RecordList
+          companyId={companyId}
+          catalog={item}
+          filter={filter}
+          editable={can(company, "catalogs.edit") && active}
+        />
+      )}
+      {view === "fields" &&
+        (manage && active ? (
           <SchemaEditor
-            key={`schema-${item.version}`}
+            key={item.version}
             companyId={companyId}
             catalog={item}
             onChanged={onChanged}
           />
         ) : (
           <FieldList catalog={item} />
-        )
-      ) : (
-        <>
-          {can(company, "catalogs.edit") && active && (
-            <ValuesForm
-              key={`new-${item.version}`}
-              companyId={companyId}
-              catalog={item}
-              record={null}
-              title={t.newItemTitle}
-              submitLabel={t.addItem}
-              run={(values, available) =>
-                createRecord(companyId, catalogId, values, available)
-              }
-              onDone={(created) => {
-                void queryClient.invalidateQueries({
-                  queryKey: catalogKey(companyId, catalogId),
-                });
-                void navigate({
-                  to: "/companies/$companyId/catalogs/$catalogId/items/$recordId",
-                  params: {
-                    companyId,
-                    catalogId,
-                    recordId: (created as CatalogRecord).id,
-                  },
-                });
-              }}
-            />
-          )}
-          <RecordList companyId={companyId} catalog={item} filter={filter} />
-        </>
-      )}
-      {can(company, "catalogs.manage") && (
-        <>
+        ))}
+      {view === "settings" && manage && (
+        <div className="catalog-settings-stack">
           <CatalogSettings
             key={`settings-${item.version}`}
             companyId={companyId}
             catalog={item}
             onChanged={onChanged}
           />
-          <ConfirmedDelete
-            key={`delete-${item.version}`}
-            title={t.deleteCatalogTitle}
-            lead={t.deleteCatalogLead}
-            confirm={t.deleteCatalogConfirm(item.name)}
-            label={t.deleteCatalog}
-            run={() => deleteCatalog(companyId, item)}
-            onDone={() => {
-              void queryClient.invalidateQueries({
-                queryKey: catalogsKey(companyId),
-              });
-              void navigate({
-                to: "/companies/$companyId/catalogs",
-                params: { companyId },
-              });
-            }}
-          />
-        </>
+          <details className="catalog-disclosure catalog-destructive">
+            <summary>{t.deleteCatalogTitle}</summary>
+            <ConfirmedDelete
+              key={`delete-${item.version}`}
+              title={t.deleteCatalogTitle}
+              lead={t.deleteCatalogLead}
+              confirm={t.deleteCatalogConfirm(item.name)}
+              label={t.deleteCatalog}
+              run={() => deleteCatalog(companyId, item)}
+              onDone={() => {
+                void queryClient.invalidateQueries({
+                  queryKey: catalogsKey(companyId),
+                });
+                void navigate({
+                  to: "/companies/$companyId/catalogs",
+                  params: { companyId },
+                });
+              }}
+            />
+          </details>
+        </div>
       )}
     </>
   );
@@ -1915,8 +2272,9 @@ function CatalogDetail({
 function BackToCatalogs({ companyId }: { companyId: string }) {
   const { t } = useCatalogMessages();
   return (
-    <p className="hint">
+    <p className="catalog-breadcrumb">
       <Link to="/companies/$companyId/catalogs" params={{ companyId }}>
+        <UiIcon name="previous" />
         {t.backToCatalogs}
       </Link>
     </p>
@@ -1935,7 +2293,10 @@ export function CatalogPage({
   return (
     <CompanyGate
       companyId={companyId}
-      returnTo={`/companies/${companyId}/catalogs/${catalogId}`}
+      returnTo={withSearch(
+        `/companies/${companyId}/catalogs/${catalogId}`,
+        filter,
+      )}
     >
       {(company) => (
         <CatalogDetail
@@ -1975,53 +2336,50 @@ function AmountForm({
   );
   const parsed = parseAmount(text, currency, locale);
   const save = useMutation({ mutationFn: run, onSuccess: onDone });
-  return (
+  const formatted =
+    amount === null ? t.noPrice : formatAmount(amount, currency, locale);
+  const blocked = save.isPending || mustReload(save.error);
+  const valid = parsed !== undefined && parsed !== amount && !blocked;
+  return disabled ? (
+    <dl className="catalog-values">
+      <div>
+        <dt>{label}</dt>
+        <dd>{formatted}</dd>
+      </div>
+    </dl>
+  ) : (
     <form
       className="catalog-amount"
       aria-label={label}
       onSubmit={(event) => {
         event.preventDefault();
-        if (parsed !== undefined) save.mutate(parsed);
+        if (valid) save.mutate(parsed);
       }}
     >
-      <label htmlFor={id}>{label}</label>
-      <input
+      <TextField
         id={id}
+        label={label}
         inputMode="decimal"
-        aria-invalid={parsed === undefined}
-        aria-describedby={parsed === undefined ? `${id}-invalid` : undefined}
+        hint={formatted}
+        error={parsed === undefined ? t.amountInvalid : undefined}
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
-      <span className="hint">
-        {amount === null ? t.noPrice : formatAmount(amount, currency, locale)}
-      </span>
-      {parsed === undefined && (
-        <p id={`${id}-invalid`} className="catalog-field-issue">
-          {t.amountInvalid}
-        </p>
-      )}
-      <button
-        type="submit"
-        disabled={
-          disabled ||
-          save.isPending ||
-          parsed === undefined ||
-          parsed === amount ||
-          mustReload(save.error)
-        }
-      >
-        {save.isPending ? t.saving : t.save}
-      </button>
-      {amount !== null && (
-        <button
-          type="button"
-          disabled={disabled || save.isPending || mustReload(save.error)}
-          onClick={() => save.mutate(null)}
+      <div className="catalog-actions">
+        <Button
+          type="submit"
+          variant="primary"
+          pending={save.isPending}
+          disabled={!valid}
         >
-          {t.clear}
-        </button>
-      )}
+          {save.isPending ? t.saving : t.save}
+        </Button>
+        {amount !== null && (
+          <Button disabled={blocked} onClick={() => save.mutate(null)}>
+            {t.clear}
+          </Button>
+        )}
+      </div>
       {save.error && <Failure error={save.error} operation="write" />}
     </form>
   );
@@ -2087,6 +2445,17 @@ function Promotions({
       deletePromotion(companyId, record, field.id, promotionId),
     onSuccess: refresh,
   });
+  const canCreate =
+    canEdit &&
+    field.promotions &&
+    !create.isPending &&
+    !remove.isPending &&
+    !mustReload(create.error) &&
+    !mustReload(remove.error) &&
+    amount !== undefined &&
+    amount !== null &&
+    !!startsAt &&
+    !!endsAt;
   const prefix = `promotion-${field.id}`;
   return (
     <section aria-labelledby={`${prefix}-title`}>
@@ -2114,7 +2483,12 @@ function Promotions({
               {canEdit && (
                 <button
                   type="button"
-                  disabled={remove.isPending}
+                  disabled={
+                    remove.isPending ||
+                    create.isPending ||
+                    mustReload(remove.error) ||
+                    mustReload(create.error)
+                  }
                   onClick={() => remove.mutate(promotion.id)}
                 >
                   {t.removePromotion}
@@ -2127,11 +2501,11 @@ function Promotions({
       {remove.error && <Failure error={remove.error} operation="write" />}
       {canEdit && field.promotions && (
         <form
-          className="catalog-field-row"
+          className="catalog-promotion-form"
           aria-label={t.addPromotion}
           onSubmit={(event) => {
             event.preventDefault();
-            create.mutate();
+            if (canCreate) create.mutate();
           }}
         >
           {catalog.branch === null && (
@@ -2150,46 +2524,37 @@ function Promotions({
               </select>
             </label>
           )}
-          <label className="catalog-setting">
-            {t.amountLabel(currency)}
-            <input
-              inputMode="decimal"
-              required
-              aria-invalid={amount === undefined}
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-            />
-          </label>
-          <label className="catalog-setting">
-            {t.promotionStart}
-            <input
-              type="datetime-local"
-              required
-              value={startsAt}
-              onChange={(event) => setStartsAt(event.target.value)}
-            />
-          </label>
-          <label className="catalog-setting">
-            {t.promotionEnd}
-            <input
-              type="datetime-local"
-              required
-              value={endsAt}
-              onChange={(event) => setEndsAt(event.target.value)}
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={
-              create.isPending ||
-              amount === undefined ||
-              amount === null ||
-              !startsAt ||
-              !endsAt
-            }
-          >
-            {t.addPromotion}
-          </button>
+          <TextField
+            label={t.amountLabel(currency)}
+            inputMode="decimal"
+            required
+            error={amount === undefined ? t.amountInvalid : undefined}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+          />
+          <TextField
+            label={t.promotionStart}
+            type="datetime-local"
+            required
+            value={startsAt}
+            onChange={(event) => setStartsAt(event.target.value)}
+          />
+          <TextField
+            label={t.promotionEnd}
+            type="datetime-local"
+            required
+            value={endsAt}
+            onChange={(event) => setEndsAt(event.target.value)}
+          />
+          <div className="catalog-actions">
+            <Button
+              type="submit"
+              pending={create.isPending}
+              disabled={!canCreate}
+            >
+              {t.addPromotion}
+            </Button>
+          </div>
           {create.error && <Failure error={create.error} operation="write" />}
         </form>
       )}
@@ -2221,11 +2586,14 @@ function EffectivePrices({
   const price = (amount: number | null, currency: string) =>
     amount === null ? t.noPrice : formatAmount(amount, currency, locale);
   return (
-    <section aria-labelledby="catalog-effective-title">
+    <section
+      className="catalog-price"
+      aria-labelledby="catalog-effective-title"
+    >
       <h3 id="catalog-effective-title">{t.effectiveTitle}</h3>
-      <label htmlFor="catalog-effective-at">{t.effectiveAt}</label>{" "}
-      <input
+      <TextField
         id="catalog-effective-at"
+        label={t.effectiveAt}
         type="datetime-local"
         value={at}
         onChange={(event) => setAt(event.target.value)}
@@ -2375,7 +2743,7 @@ function PricePublications({
         : p.device(item.target.name);
   return (
     <section aria-labelledby="catalog-price-publications-title">
-      <h3 id="catalog-price-publications-title">{p.title}</h3>
+      <h2 id="catalog-price-publications-title">{p.title}</h2>
       <p className="hint">{p.lead}</p>
       {notice && <p role="status">{notice}</p>}
       {list.isPending && <p>{t.loading}</p>}
@@ -2495,11 +2863,13 @@ function RecordDetail({
   companyId,
   catalogId,
   recordId,
+  filter,
   company,
 }: {
   companyId: string;
   catalogId: string;
   recordId: string;
+  filter: RecordFilter;
   company: CompanyWithAccess;
 }) {
   const { t } = useCatalogMessages();
@@ -2560,30 +2930,76 @@ function RecordDetail({
   const money = catalog.data.fields.filter(
     (field) => field.type === "money" && !field.archived,
   );
+  const view =
+    ((filter.view === "prices" || filter.view === "publications") &&
+      !money.length) ||
+    (filter.view === "settings" && !edit)
+      ? undefined
+      : filter.view;
+  const itemSearch = { text: filter.text, cursor: filter.cursor };
+  const views = [
+    { view: undefined, label: t.workspace.recordDetails, icon: "form" },
+    ...(money.length
+      ? ([
+          { view: "prices", label: t.pricesTitle, icon: "grid" },
+          {
+            view: "publications",
+            label: t.pricePublications.title,
+            icon: "refresh",
+          },
+        ] as const)
+      : []),
+    ...(edit
+      ? [{ view: "settings", label: t.views.settings, icon: "more" } as const]
+      : []),
+  ] as const;
   return (
     <>
-      <p className="hint">
+      <p className="catalog-breadcrumb">
         <Link
           to="/companies/$companyId/catalogs/$catalogId"
           params={{ companyId, catalogId }}
+          search={itemSearch}
         >
-          {t.backToCatalog}
+          <UiIcon name="previous" />
+          {catalog.data.name}
         </Link>
       </p>
-      <h1 id="catalogs-title">{item.title ?? t.untitled}</h1>
-      <p className="hint">
-        {catalog.data.name}
-        {item.available ? "" : ` · ${t.unavailable}`}
-      </p>
+      <CatalogHeading title={item.title ?? t.untitled} icon="form" />
+      <div className="catalog-detail-meta">
+        <span>{scopeName(catalog.data.branch, t)}</span>
+        <CatalogBadge
+          label={item.available ? t.workspace.available : t.unavailable}
+          live={item.available}
+        />
+      </div>
+      <nav className="catalog-tabs" aria-label={t.workspace.recordViews}>
+        {views.map((entry) => (
+          <Link
+            key={entry.view ?? "details"}
+            to="/companies/$companyId/catalogs/$catalogId/items/$recordId"
+            params={{ companyId, catalogId, recordId }}
+            search={{ ...itemSearch, view: entry.view }}
+            activeOptions={{ exact: true }}
+            aria-current={view === entry.view ? "page" : false}
+          >
+            <UiIcon name={entry.icon} />
+            {entry.label}
+          </Link>
+        ))}
+      </nav>
       {!active && (
         <p role="status" className="notice">
           {t.archivedNotice}
         </p>
       )}
-      {notice && <p role="status">{notice}</p>}
-      {!edit && <ValueList catalog={catalog.data} record={item} />}
-      {edit && (
-        <>
+      {notice && (
+        <p role="status" className="notice notice-success">
+          {notice}
+        </p>
+      )}
+      <Activity mode={view === undefined ? "visible" : "hidden"}>
+        {edit ? (
           <ValuesForm
             key={`values-${item.version}`}
             companyId={companyId}
@@ -2596,64 +3012,79 @@ function RecordDetail({
             }
             onDone={(changed) => onChanged(changed as CatalogRecord)}
           />
+        ) : (
+          <ValueList catalog={catalog.data} record={item} />
+        )}
+      </Activity>
+      {money.length > 0 && (
+        <Activity mode={view === "prices" ? "visible" : "hidden"}>
+          <section aria-labelledby="catalog-prices-title">
+            <h2 id="catalog-prices-title">{t.pricesTitle}</h2>
+            <p className="hint">{t.pricesLead}</p>
+            {money.map((field) => (
+              <PriceSection
+                key={field.id}
+                companyId={companyId}
+                catalog={catalog.data}
+                record={item}
+                field={field}
+                branches={branches.data?.items ?? []}
+                editable={prices}
+                onChanged={onChanged}
+                onPromotions={onPromotions}
+              />
+            ))}
+            <EffectivePrices
+              companyId={companyId}
+              catalog={catalog.data}
+              record={item}
+            />
+          </section>
+        </Activity>
+      )}
+      {view === "publications" && (
+        <PricePublications
+          companyId={companyId}
+          catalogId={catalogId}
+          canRetry={can(company, "publications.publish")}
+        />
+      )}
+      {view === "settings" && edit && (
+        <div className="catalog-settings-stack">
           <MoveForm
             key={`move-${item.version}`}
             companyId={companyId}
             record={item}
             onChanged={onChanged}
           />
-        </>
-      )}
-      {money.length > 0 && (
-        <section aria-labelledby="catalog-prices-title">
-          <h2 id="catalog-prices-title">{t.pricesTitle}</h2>
-          <p className="hint">{t.pricesLead}</p>
-          {money.map((field) => (
-            <PriceSection
-              key={field.id}
-              companyId={companyId}
-              catalog={catalog.data}
-              record={item}
-              field={field}
-              branches={branches.data?.items ?? []}
-              editable={prices}
-              onChanged={onChanged}
-              onPromotions={onPromotions}
+          <details className="catalog-disclosure catalog-destructive">
+            <summary>{t.deleteItemTitle}</summary>
+            <ConfirmedDelete
+              key={`delete-${item.version}`}
+              title={t.deleteItemTitle}
+              lead={t.deleteItemLead}
+              confirm={t.deleteItemConfirm(item.title ?? t.untitled)}
+              label={t.deleteItem}
+              run={() => deleteRecord(companyId, item)}
+              onDone={() => {
+                void queryClient.invalidateQueries({
+                  queryKey: recordsKey(companyId, catalogId),
+                });
+                void queryClient.invalidateQueries({
+                  queryKey: catalogKey(companyId, catalogId),
+                });
+                void queryClient.invalidateQueries({
+                  queryKey: catalogsKey(companyId),
+                });
+                void navigate({
+                  to: "/companies/$companyId/catalogs/$catalogId",
+                  params: { companyId, catalogId },
+                  search: itemSearch,
+                });
+              }}
             />
-          ))}
-          <EffectivePrices
-            companyId={companyId}
-            catalog={catalog.data}
-            record={item}
-          />
-          <PricePublications
-            companyId={companyId}
-            catalogId={catalogId}
-            canRetry={can(company, "publications.publish")}
-          />
-        </section>
-      )}
-      {edit && (
-        <ConfirmedDelete
-          key={`delete-${item.version}`}
-          title={t.deleteItemTitle}
-          lead={t.deleteItemLead}
-          confirm={t.deleteItemConfirm(item.title ?? t.untitled)}
-          label={t.deleteItem}
-          run={() => deleteRecord(companyId, item)}
-          onDone={() => {
-            void queryClient.invalidateQueries({
-              queryKey: recordsKey(companyId, catalogId),
-            });
-            void queryClient.invalidateQueries({
-              queryKey: catalogKey(companyId, catalogId),
-            });
-            void navigate({
-              to: "/companies/$companyId/catalogs/$catalogId",
-              params: { companyId, catalogId },
-            });
-          }}
-        />
+          </details>
+        </div>
       )}
     </>
   );
@@ -2663,21 +3094,27 @@ export function RecordPage({
   companyId,
   catalogId,
   recordId,
+  filter,
 }: {
   companyId: string;
   catalogId: string;
   recordId: string;
+  filter: RecordFilter;
 }) {
   return (
     <CompanyGate
       companyId={companyId}
-      returnTo={`/companies/${companyId}/catalogs/${catalogId}/items/${recordId}`}
+      returnTo={withSearch(
+        `/companies/${companyId}/catalogs/${catalogId}/items/${recordId}`,
+        filter,
+      )}
     >
       {(company) => (
         <RecordDetail
           companyId={companyId}
           catalogId={catalogId}
           recordId={recordId}
+          filter={filter}
           company={company}
         />
       )}

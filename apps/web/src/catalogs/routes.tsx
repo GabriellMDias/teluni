@@ -6,6 +6,7 @@ import {
   RecordPage,
   type CatalogFilter,
   type CatalogsFilter,
+  type RecordFilter,
 } from "./pages.js";
 import "./catalogs.css";
 
@@ -28,6 +29,7 @@ const listRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): CatalogsFilter => ({
     ...cursor(search),
     ...text(search),
+    ...(search.create === true ? { create: true } : {}),
     ...(search.status === "ARCHIVED" ? { status: search.status } : {}),
   }),
   component: function CatalogsRoute() {
@@ -43,7 +45,10 @@ const catalogRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/catalogs/$catalogId",
   validateSearch: (search: Record<string, unknown>): CatalogFilter => ({
-    ...(search.view === "fields" ? { view: search.view } : {}),
+    ...(search.view === "fields" || search.view === "settings"
+      ? { view: search.view }
+      : {}),
+    ...(!search.view && search.create === true ? { create: true } : {}),
     ...cursor(search),
     ...text(search),
   }),
@@ -64,6 +69,15 @@ const catalogRoute = createRoute({
 const recordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/catalogs/$catalogId/items/$recordId",
+  validateSearch: (search: Record<string, unknown>): RecordFilter => ({
+    ...cursor(search),
+    ...text(search),
+    ...(search.view === "prices" ||
+    search.view === "publications" ||
+    search.view === "settings"
+      ? { view: search.view }
+      : {}),
+  }),
   component: function RecordRoute() {
     const { companyId, catalogId, recordId } = recordRoute.useParams();
     return (
@@ -72,6 +86,7 @@ const recordRoute = createRoute({
         companyId={companyId}
         catalogId={catalogId}
         recordId={recordId}
+        filter={recordRoute.useSearch()}
       />
     );
   },

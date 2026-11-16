@@ -45,6 +45,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
   await page.getByRole("link", { name: "Catálogos", exact: true }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/catalogs`);
   await expect(page.getByText("Nenhum catálogo ainda.")).toBeVisible();
+  await page.getByRole("link", { name: "Novo catálogo" }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Cardápio");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -56,6 +57,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   // An item, then its prices.
+  await page.getByRole("link", { name: "Novo item", exact: true }).click();
   await page.getByLabel("Nome *").fill("X-Burger");
   await page.getByLabel("Categoria").selectOption("Pratos");
   await page.getByRole("button", { name: "Adicionar item" }).click();
@@ -63,6 +65,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
     page.getByRole("heading", { level: 1, name: "X-Burger" }),
   ).toBeVisible();
   const itemUrl = page.url();
+  await page.getByRole("link", { name: "Preços", exact: true }).click();
   await page.getByRole("textbox", { name: "Preço base" }).fill("19,90");
   await page
     .getByRole("form", { name: "Preço base" })
@@ -197,12 +200,16 @@ test("creates a product catalog with a branch price and a promotion and reads th
   // A price change reaches the published program as a new generation that
   // changes only the prices.
   await page.goto(itemUrl);
+  await page.getByRole("link", { name: "Preços", exact: true }).click();
   await page.getByRole("textbox", { name: "Preço base" }).fill("20,90");
   await page
     .getByRole("form", { name: "Preço base" })
     .getByRole("button", { name: "Salvar" })
     .click();
   await expect(page.getByRole("status")).toContainText("Alterações salvas.");
+  await page
+    .getByRole("link", { name: "Publicação nas telas", exact: true })
+    .click();
   const published = page
     .getByRole("list", { name: "Publicação nas telas" })
     .getByRole("listitem")

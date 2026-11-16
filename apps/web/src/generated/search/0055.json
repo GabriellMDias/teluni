@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Exercise automated workflows",
+    "anchor": "exercise-automated-workflows",
+    "text": "Exercise automated workflows\nAutomated workflows use disposable databases and synthetic identities. No seed data or external account is needed:\npnpm build\npnpm smoke\npnpm test:e2e\n\n`pnpm smoke` exercises the emitted API process, then any module process smokes. `pnpm test:e2e` runs the emitted API and the Vite web app for the shared documentation and shell journeys; module journeys start their own migrated PostgreSQL and synthetic issuer through the shared [end-to-end stack helpers](../apps/web/test/e2e/stack.ts). These fixtures are disposable and are not release or production data.\n"
+  },
+  {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Validate, regenerate, and build",
+    "anchor": "validate-regenerate-and-build",
+    "text": "Validate, regenerate, and build\nRun the full, non-mutating tracked-source gate after changes:\npnpm validate\n\nIt checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, project provenance, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated API/database/SDK drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change those references, edit their canonical TypeBox/schema/metadata sources and run `pnpm -C apps/api references:write`, then `pnpm -C packages/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`.\nAfter intentional repository Markdown, API, database, or component-metadata changes, run `pnpm docs:references:write` and review the generated component Markdown, catalog, detail pages, and search shards. Vite serves/emits the existing API, database, error, and component artifacts without committing duplicate copies. `pnpm docs:references:check` is non-mutating and fails on drift, missing component metadata, or known secret patterns; it runs within `pnpm validate` and CI. Do not edit either generated layer directly.\n`pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.\n"
+  },
+  {
+    "id": "repository/docs/validation",
+    "title": "Validation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Validation",
+    "anchor": "validation",
+    "text": "Validation\n"
+  },
+  {
     "id": "repository/docs/validation",
     "title": "Validation",
     "group": "Project guides",
