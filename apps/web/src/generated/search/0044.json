@@ -1,5 +1,95 @@
 [
   {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Performance, observability, and repair",
+    "anchor": "performance-observability-and-repair",
+    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Testing and verification",
+    "anchor": "testing-and-verification",
+    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "New Transaction Checklist",
+    "anchor": "new-transaction-checklist",
+    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
+  },
+  {
+    "id": "repository/docs/generated/api/errors",
+    "title": "API Error Registry",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "API Error Registry",
+    "anchor": "api-error-registry",
+    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`RECENT_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires you to confirm your identity again. Sign in again and retry.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n`LOCATION_TIME_ZONE_UNRESOLVED`\n400\nvalidation\nno\nThe selected point does not have a unique supported time zone. Choose a different point or contact support.\n`MEMBERSHIP_REMOVED`\n409\nconflict\nno\nThis membership was removed and cannot be reactivated.\n`RESPONSIBLE_ADMINISTRATOR_PROTECTED`\n409\nconflict\nno\nTransfer responsibility before suspending or removing the responsible administrator.\n`LAST_ADMINISTRATOR_REQUIRED`\n409\nconflict\nno\nThe company must retain an active administrator.\n`RESPONSIBLE_APPROVAL_REQUIRED`\n403\nauthorization\nno\nOnly the company's responsible administrator can approve this administrator change.\n`SUCCESSOR_NOT_ELIGIBLE`\n409\nconflict\nno\nResponsibility can only pass to another active company administrator.\n`RESPONSIBILITY_TRANSFER_PENDING`\n409\nconflict\nno\nA responsibility transfer is already waiting for acceptance. Cancel it first.\n`RESPONSIBILITY_TRANSFER_NOT_PENDING`\n409\nconflict\nno\nThis responsibility transfer was already decided or has expired.\n`PERMISSION_DENIED`\n403\nauthorization\nno\nYou do not have permission to perform this action.\n`COMPANY_SUSPENDED`\n403\nauthorization\nno\nThis company is suspended. Contact Teluni support.\n`RESOURCE_VERSION_CONFLICT`\n409\nconflict\nno\nThe resource changed; reload it before trying again.\n`IDEMPOTENCY_KEY_REUSED`\n409\nconflict\nno\nThe creation key was used for different content.\n`BRANCH_NAME_IN_USE`\n409\nconflict\nno\nAnother active branch of this company already uses that name.\n`BRANCH_ARCHIVED`\n409\nconflict\nno\nThe branch is archived and cannot be changed.\n`PROFILE_NAME_IN_USE`\n409\nconflict\nno\nAnother active access profile of this company already uses that name.\n`PROFILE_ARCHIVED`\n409\nconflict\nno\nThe access profile is archived and cannot be changed.\n`PROFILE_IN_USE`\n409\nconflict\nno\nMembers still hold this access profile. Revoke their grants before archiving it.\n`PROFILE_LIMIT_REACHED`\n409\nconflict\nno\nThe company already has the maximum number of active access profiles.\n`BRANCH_IN_USE`\n409\nconflict\nno\nThe branch still has active resources, such as paired screens. Move or unlink them before archiving it.\n`INVITATION_PENDING`\n409\nconflict\nno\nA pending invitation for this address already exists. Resend it instead.\n`INVITATION_NO_LONGER_VALID`\n409\nconflict\nno\nThis invitation is no longer valid. Ask for a new one.\n`INVITATION_RECIPIENT_MISMATCH`\n403\nauthorization\nno\nThis invitation was sent to another email address. Sign in with that address to accept it.\n`MEMBERSHIP_SUSPENDED`\n409\nconflict\nno\nYour access to this company is suspended. Contact a company administrator.\n`PAIRING_CODE_INVALID`\n409\nconflict\nno\nThis code is not valid. Check the code shown on the screen, or restart pairing on the screen to get a new one.\n`ENROLLMENT_REJECTED`\n409\nconflict\nno\nThis credential cannot be used. Generate a new credential on the device.\n`ROTATION_UNSUPPORTED`\n409\nconflict\nno\nThe screen did not report support for this rotation.\n`DEVICE_UNAUTHORIZED`\n401\nauthentication\nno\nThe device credential is not valid for this operation.\n`DEVICE_UNLINKED`\n409\nconflict\nno\nThis screen was unlinked and can no longer change.\n`DEVICE_ERASURE_NOT_PENDING`\n409\nconflict\nno\nThis screen has no pending erasure to record.\n`MEDIA_FOLDER_NOT_EMPTY`\n409\nconflict\nno\nMove the folder's contents elsewhere before removing it. Archived and trashed items also keep their folder.\n`MEDIA_INVALID_DESTINATION`\n409\nconflict\nno\nA folder cannot be moved or copied into itself or one of its descendants.\n`MEDIA_FOLDER_LIMIT`\n409\nconflict\nno\nThe folder or operation exceeds the library's folder, depth or batch limits.\n`MEDIA_SCOPE_MISMATCH`\n409\nconflict\nno\nMoving an item must preserve its owning scope. Choose a folder of the same scope, or copy it with the required destination upload permission.\n`MEDIA_TYPE_UNSUPPORTED`\n400\nvalidation\nno\nThis file type is not supported. Use a JPEG, PNG or WebP image, or an MP4, MOV, WebM or MKV video.\n`MEDIA_TOO_LARGE`\n400\nvalidation\nno\nThis file is too large. Images may have up to 20 MiB and videos up to 1 GiB.\n`MEDIA_UPLOAD_INCOMPLETE`\n400\nvalidation\nyes\nThe upload did not deliver exactly the declared file. Send the whole file again.\n`MEDIA_NOT_UPLOADING`\n409\nconflict\nno\nThis media item already received its file.\n`MEDIA_NOT_READY`\n409\nconflict\nyes\nThis media item is not ready to be shown yet.\n`MEDIA_IN_USE`\n409\nconflict\nno\nThis media item is still used by programming or a publication and cannot be deleted.\n`MEDIA_STORAGE_FULL`\n503\navailability\nyes\nThe media storage is nearly full, so new uploads are paused. Contact support.\n`MEDIA_INVALID_STATE`\n409\nconflict\nno\nThis media item cannot do that in its current state.\n`CATALOG_SCHEMA_INVALID`\n409\nconflict\nno\nThe fields cannot be saved this way. Each issue names the field and the reason, with how many items cause it when stored data does.\n`CATALOG_RECORD_INVALID`\n409\nconflict\nno\nThe item's values do not match the catalog's fields. Each issue names the field and the reason.\n`CATALOG_RECORD_REFERENCED`\n409\nconflict\nno\nOther items refer to this item, so it cannot be deleted. Change those items first.\n`CATALOG_PROMOTION_CONFLICT`\n409\nconflict\nno\nAnother promotion of this price overlaps this period for the same branches.\n`CATALOG_LIMIT_REACHED`\n409\nconflict\nno\nA catalog limit was reached: 200 catalogs per company, 60 fields or 5,000 items per catalog, or 100 promotions per price.\n`CATALOG_ARCHIVED`\n409\nconflict\nno\nThis catalog is archived. Restore it before changing it.\n`CATALOG_NOT_EMPTY`\n409\nconflict\nno\nOnly an empty catalog can be deleted. Delete its items first.\n`CATALOG_IN_USE`\n409\nconflict\nno\nA field of another catalog or a layout uses this catalog, so it cannot be deleted.\n`PRICE_TARGET_FORBIDDEN`\n403\nauthorization\nno\nScreens show this catalog through programs you cannot publish, so its prices cannot change from your account. Ask someone who can publish them.\n`PROGRAMMING_LIMIT_REACHED`\n409\nconflict\nno\nThis company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output.\n`PLAYLIST_IN_USE`\n409\nconflict\nno\nThis playlist is still used by a schedule or a default and cannot be deleted.\n`PLAYLIST_SCOPE_MISMATCH`\n409\nconflict\nno\nThis playlist or media item belongs to a branch the programming does not cover. Use company content or content of that single branch.\n`GROUP_NAME_IN_USE`\n409\nconflict\nno\nAnother programming group of this company already has this name.\n`GROUP_HAS_MEMBERS`\n409\nconflict\nno\nRemove the screens from this group before deleting it.\n`GROUP_SPAN_EXCLUDES_DEVICE`\n409\nconflict\nno\nThe group does not cover the screen's branch. Change the group's branches or choose another group.\n`SCHEDULE_TIMES_EQUAL`\n400\nvalidation\nno\nA schedule cannot start and end at the same time. Use the all-day option for a whole day.\n`SCHEDULE_CONFLICT`\n409\nconflict\nno\nTwo schedules of the same screen output overlap. Check the schedules to find them.\n`ASSIGNMENT_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nThe chosen programming is not published yet, so the screen will show neutral output. Confirm to continue.\n`LAYOUT_INVALID`\n409\nconflict\nno\nThe layout cannot be saved this way. Each issue names the area, view or page and the reason.\n`LAYOUT_IN_USE`\n409\nconflict\nno\nPrograms use this layout. Choose another layout for them before deleting it.\n`LAYOUT_SCOPE_MISMATCH`\n409\nconflict\nno\nThis layout belongs to a branch the programming does not cover. Use a company layout or a layout of that single branch.\n`LAYOUT_CHANGE_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nThis change removes schedules or defaults of areas that no longer exist or no longer take a default playlist. Each issue names the output; confirm to remove them.\n`TIMELINE_TOO_LARGE`\n400\nvalidation\nno\nThis period has too many schedule changes to show at once. Choose a shorter period.\n`PUBLICATION_INVALID`\n409\nconflict\nno\nThis programming cannot be published as it is. Check it to see what must change first.\n`PUBLICATION_NOT_RESTORABLE`\n409\nconflict\nno\nThis publication is no longer kept and cannot be restored. Publish the current programming instead.\n`PROTOCOL_UNSUPPORTED`\n409\nconflict\nno\nThis player supports no synchronization protocol the server offers. Update the player.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Web Component Reference",
+    "anchor": "web-component-reference",
+    "text": "Web Component Reference\n[Component architecture](../../architecture/web-components.md) · [Living documentation](../../architecture/living-documentation.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Button",
+    "anchor": "button",
+    "text": "Button\nA native action button with explicit variants and safe pending behavior.\nCategory: Actions. Scope: shared. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Button`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`children`\n`ReactNode`\nVisible action name or content with an equivalent accessible name.\nYes\n—\n`type`\n`button | submit | reset`\nNative form behavior; the safe default does not submit a form.\nNo\nbutton\n`variant`\n`primary | secondary`\nSemantic action emphasis, styled through product-owned tokens.\nNo\nsecondary\n`pending`\n`boolean`\nDisables activation and exposes aria-busy while the caller owns pending work.\nNo\nfalse\n`…buttonProps`\n`ComponentPropsWithRef<\"button\">`\nNative props such as disabled, onClick, className, ref and ARIA attributes are forwarded.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states",
+    "text": "States\nDefault and primary\nHover and keyboard focus\nDisabled\nPending\nProduct token override\nAccessibility: Uses a native button and visible focus. Pending disables activation and sets aria-busy; preserve meaningful button text while work is pending.\nUsage: Use for actions. Use a link for navigation. Keep a visible accessible name; choose type=submit explicitly inside forms. Native button props and refs are forwarded.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples",
+    "text": "Examples\n**Action states and product styling** (`button-states`): Local actions, disabled and pending states, and a scoped token override.\n<Button variant=\"primary\" onClick={save}>Save</Button>\n<Button pending>Saving…</Button>\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "TextField",
+    "anchor": "textfield",
+    "text": "TextField\nA labeled native input with linked hints and validation messages.\nCategory: Inputs. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `TextField`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
     "id": "repository/docs/generated/components/web",
     "title": "Web Component Reference",
     "group": "Generated references",
@@ -463,6 +553,42 @@
     "title": "Web Component Reference",
     "group": "Generated references",
     "kind": "repository",
+    "heading": "CompanyLogoField",
+    "anchor": "companylogofield",
+    "text": "CompanyLogoField\nAdmits a local raster image and previews the company's draft logo.\nCategory: Forms. Scope: feature-specific. Owner: Organizations.\nSource: [apps/web/src/organizations/company-logo.tsx](../../../apps/web/src/organizations/company-logo.tsx) (export `CompanyLogoField`). Metadata: [apps/web/src/organizations/components.docs.json](../../../apps/web/src/organizations/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-14",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`id`\n`string`\nUnique file control identifier and prefix for help and error descriptions.\nSee type\n—\n`value`\n`string | null`\nCurrent draft PNG data URL, or null when no logo is set.\nSee type\n—\n`disabled`\n`boolean`\nDisables the file control and draft actions during blocked form states.\nSee type\n—\n`onChange`\n`(value: string | null) => void`\nReceives a prepared PNG or an explicit removal.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-14",
+    "text": "States\nNo logo: Shows a placeholder and offers image selection.\nExisting logo: Shows the selected image with replacement and removal actions.\nProcessing or rejected: Keeps the previous logo and blocks submission until the selection is resolved or discarded.\nAccessibility: The native file control keeps its label and format description. Processing and rejection are announced. Discarding a file selection clears validation without removing the current logo.\nUsage: Use with the owning company form, which saves the result through the Organizations API. Image selection and removal change the draft only. The API validates the resulting PNG before persistence.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-14",
+    "text": "Examples\n**Company settings draft** (`company-logo-draft`): Pass the draft selection and keep submission in the surrounding form.\n<CompanyLogoField id=\"company-logo\" value={draftLogo} disabled={saving} onChange={setDraftLogo} />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
     "heading": "ProgrammingGuide",
     "anchor": "programmingguide",
     "text": "ProgrammingGuide\nExplains the existing content-to-screen workflow.\nCategory: Layout. Scope: feature-specific. Owner: Programming.\nSource: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgrammingGuide`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).\n"
@@ -473,7 +599,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-14",
+    "anchor": "props-15",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n"
   },
   {
@@ -482,7 +608,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-14",
+    "anchor": "states-15",
     "text": "States\nLocalized Portuguese/English\nLight/dark and narrow/wide screens\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use above the programming overview. Static guidance explains playlists, shared/individual schedules and the separate publish action without inferring task completion.\n"
   },
   {
@@ -491,7 +617,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-14",
+    "anchor": "examples-15",
     "text": "Examples\n**Programming composition** (`programmingguide-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingGuide />\n\n"
   },
   {
@@ -509,7 +635,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-15",
+    "anchor": "props-16",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company identifier.\nYes\n—\n`source`\n`ProgramSource`\nGroup or screen identity.\nYes\n—\n`section`\n`ProgrammingSection`\nCurrent validated URL section; omitted means Program.\nNo\n—\n`editable`\n`boolean`\nCurrent programming edit capability.\nYes\n—\n`assignable`\n`boolean`\nCurrent screen assignment capability.\nNo\n—\n"
   },
   {
@@ -518,7 +644,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-15",
+    "anchor": "states-16",
     "text": "States\nDefault schedule\nPreview\nGroup screens\nPublication\nPermitted settings or destination\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use within the authorized programming details page. Native router links separate schedule, preview, group membership, publication and permitted settings/destination; API permissions remain authoritative.\n"
   },
   {
@@ -527,7 +653,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-15",
+    "anchor": "examples-16",
     "text": "Examples\n**Programming composition** (`programnavigation-composition`): Feature-owned composition without live authenticated requests.\n<ProgramNavigation companyId={companyId} source={source} section={section} editable={editable} assignable={assignable} />\n\n"
   },
   {
@@ -545,7 +671,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-16",
+    "anchor": "props-17",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`active`\n`boolean`\nWhether the validated URL selects this section.\nYes\n—\n`children`\n`ReactNode`\nOwning workflow and local form state.\nYes\n—\n"
   },
   {
@@ -554,7 +680,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-16",
+    "anchor": "states-17",
     "text": "States\nUnvisited\nActive\nVisited and hidden\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use for sections of the same resource. Initial content mounts on demand; visited children remain mounted under native hidden. Key the resource and write forms by authoritative identity/version; this preserves temporary state, not persistence across reloads.\n"
   },
   {
@@ -563,7 +689,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-16",
+    "anchor": "examples-17",
     "text": "Examples\n**Programming composition** (`programmingpanel-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingPanel active={section === \"preview\"}>{preview}</ProgrammingPanel>\n\n"
   },
   {
@@ -581,7 +707,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-17",
+    "anchor": "props-18",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`name, canvas, areas`\n`string; Size; readonly CanvasArea[]`\nLayout label, canonical orientation size and freeform rectangles with kind, color and stacking order.\nYes\n—\n`selected, flagged`\n`string | null; ReadonlySet<number>`\nSelected editor identity and validation issue indices.\nSee type\n—\n`onSelect, onMove`\n`callbacks`\nFeature-owned selection and geometry updates; omit for read-only rendering.\nSee type\n—\n`onGestureStart, onGestureEnd`\n`callbacks`\nBracket one pointer gesture so undo restores the whole movement or resize.\nSee type\n—\n`dragging, onInsert`\n`\"media\" | \"catalog\" | null; callback`\nOnly an active, feature-owned component drag with the matching internal MIME payload may insert. The feature enforces the area limit.\nSee type\n—\n"
   },
   {
@@ -590,7 +716,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-17",
+    "anchor": "states-18",
     "text": "States\nRead-only structure\nSelected area and covered layers\nPointer move or edge/corner resize\nComponent drop preview\nValidation issue highlight\nAccessibility: Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.\nUsage: Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview. Widget faces are illustrative; authenticated live previews belong to the inspector. Clock playback uses screen offsets rather than the browser preview time.\n"
   },
   {
@@ -599,7 +725,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-17",
+    "anchor": "examples-18",
     "text": "Examples\n**Layout editor canvas** (`layoutcanvas-composition`): Feature-owned schematic composition; no live authenticated requests.\n<LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />\n\n"
   },
   {
@@ -617,7 +743,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-18",
+    "anchor": "props-19",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId, layout, areaKey`\n`string; Layout; string`\nAuthorized layout context.\nYes\n—\n`widget, background`\n`Widget; string`\nCurrent draft configuration and area background.\nYes\n—\n`onChange`\n`(widget: Widget) => void`\nDraft update, guarded by the owning editor.\nYes\n—\n"
   },
   {
@@ -626,7 +752,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-18",
+    "anchor": "states-19",
     "text": "States\nClock, QR, ticker, weather and RSS variants\nPreview pending, ready, stale, unavailable or denied\nUnsaved changes invalidate previous preview\nAccessibility: Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.\nUsage: Use only inside an authorized layout draft. Reuses TextField/Button and branch choices; the API remains authoritative for scope, validation, provider access and publish-only QR activation.\n"
   },
   {
@@ -635,7 +761,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-18",
+    "anchor": "examples-19",
     "text": "Examples\n**WidgetSettings composition** (`widgetsettings-composition`): Feature-owned composition without live authenticated requests.\n<WidgetSettings companyId={companyId} layout={layout} areaKey={area.key} widget={area.widget} background={area.background} onChange={updateWidget} />\n\n"
   },
   {
@@ -653,7 +779,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-19",
+    "anchor": "props-20",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`widget, width`\n`Widget; number`\nDraft configuration and logical area width.\nYes\n—\n`live, modules`\n`WidgetLive?; string[]?`\nOptional explicitly loaded API preview.\nNo\n—\n"
   },
   {
@@ -662,7 +788,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-19",
+    "anchor": "states-20",
     "text": "States\nIllustrative clock/ticker and configuration-only weather/RSS\nActual QR matrix and cached source preview\nReduced-motion preference\nAccessibility: Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.\nUsage: Use with a validated draft, optional server live data and QR modules. It has no provider networking, publication authority or interactive descendants; real playback is Android-owned.\n"
   },
   {
@@ -671,7 +797,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-19",
+    "anchor": "examples-20",
     "text": "Examples\n**WidgetFace composition** (`widgetface-composition`): Feature-owned composition without live authenticated requests.\n<WidgetFace widget={widget} width={area.width} />\n\n"
   },
   {
@@ -943,86 +1069,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-13",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`device_audit_event_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company audit scopes are unrepresentable.\n`device_audit_event_branches_company_id_event_id_fkey`\n`FOREIGN KEY (company_id, event_id) REFERENCES device_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe event belongs to the same company.\n`device_audit_event_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe row belongs to an existing company.\n`device_audit_event_branches_pkey`\n`PRIMARY KEY (event_id, branch_id)`\nA branch appears at most once per event.\n`device_audit_event_branches_branch_idx`\n`CREATE INDEX device_audit_event_branches_branch_idx ON public.device_audit_event_branches USING btree (company_id, branch_id)`\nSupports finding the events that concern a branch.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "principals",
-    "anchor": "principals",
-    "text": "principals\nProvider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.\nOwner: Identity. Classification: CONFIDENTIAL.\nLifecycle: Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nApplication-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.\n—\n—\n`issuer`\n`character varying(512)`\nno\n—\nINTERNAL\nExact OIDC issuer that authenticated this principal; together with subject it is the provider association.\n—\n—\n`subject`\n`character varying(255)`\nno\n—\nCONFIDENTIAL\nProvider-assigned stable subject identifier at the issuer; never used as the application identity.\n—\n—\n`status`\n`\"PrincipalStatus\"`\nno\n`'ACTIVE'::\"PrincipalStatus\"`\nINTERNAL\nACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of principal provisioning.\n—\nUTC instant, millisecond precision\n`disabled_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant of global disablement.\nThe principal is active.\nUTC instant, millisecond precision\n`display_name`\n`character varying(200)`\nyes\n—\nCONFIDENTIAL\nPresentation name from the last verified login; never used as identity or authorization evidence.\nNo bounded display name has been obtained from a verified login.\n—\n`verified_email`\n`character varying(320)`\nyes\n—\nCONFIDENTIAL\nPresentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.\nNo bounded verified email snapshot has been obtained.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-14",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`principals_disabled_state`\n`CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))`\nA disablement instant exists exactly for disabled principals.\n`principals_display_name_nonblank`\n`CHECK (((display_name IS NULL) OR (btrim((display_name)::text) <> ''::text)))`\nA presentation name, when present, cannot be blank.\n`principals_issuer_nonblank`\n`CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))`\nIssuer is an absolute HTTP(S) URL without whitespace.\n`principals_pkey`\n`PRIMARY KEY (id)`\nUnique immutable application principal identity.\n`principals_subject_nonblank`\n`CHECK (((subject)::text ~ '[^[:space:]]'::text))`\nProvider subject cannot be blank.\n`principals_verified_email_nonblank`\n`CHECK (((verified_email IS NULL) OR (btrim((verified_email)::text) <> ''::text)))`\nA verified-login email snapshot, when present, cannot be blank.\n`principals_issuer_subject_key`\n`CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)`\nOne application principal per provider identity; concurrent first logins converge on one row.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "human_sessions",
-    "anchor": "human_sessions",
-    "text": "human_sessions\nServer-managed browser session: an opaque cookie credential's hash, its bounds and assurance, and the sealed provider tokens obtained for it.\nOwner: Identity. Classification: RESTRICTED.\nLifecycle: Created at login as ACTIVE, or PENDING_LIMIT when the principal already has five active sessions; REVOKED rows are retained without deletion until a retention rule is approved under PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nBackend-generated session UUID, shown to its owner for session management and bound into sealed tokens and CSRF tokens.\n—\n—\n`principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPrincipal that authenticated this session.\n—\n—\n`token_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 of the 32-byte random cookie credential; the recoverable credential is never stored.\n—\n—\n`state`\n`\"HumanSessionState\"`\nno\n—\nINTERNAL\nPENDING_LIMIT may only list and end sessions; ACTIVE may call protected operations; REVOKED is terminal.\n—\n—\n`provider_session_id`\n`character varying(255)`\nyes\n—\nCONFIDENTIAL\nProvider session identifier (OIDC sid) used to apply back-channel logout.\nThe provider did not report a session identifier.\n—\n`assurance_level`\n`character varying(64)`\nno\n—\nINTERNAL\nAuthentication context class (acr) asserted by the ID token verified at login.\n—\n—\n`authenticated_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nProvider-reported instant of the user's authentication (auth_time) for this session, used for recent-authentication checks (at most five minutes old for sensitive operations).\n—\nUTC instant, millisecond precision\n`idle_timeout_seconds`\n`integer`\nno\n—\nINTERNAL\nInactivity bound applied to this session: 1800 for administrative contexts or principals without memberships, 7200 for operator-only access.\n—\nseconds\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the session was created.\n—\nUTC instant, millisecond precision\n`last_activity_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest recorded human activity; background requests do not advance it, and writes are throttled to 15 seconds.\n—\nUTC instant, millisecond precision\n`absolute_expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the session is invalid regardless of activity, at most 12 hours after creation.\n—\nUTC instant, millisecond precision\n`provider_tokens`\n`bytea`\nno\n—\nRESTRICTED\nProvider access, refresh and ID tokens sealed with AES-256-GCM under the session key ring and bound to the session ID.\n—\n—\n`access_token_expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nDatabase-clock estimate of the sealed access token's expiry, five seconds earlier than the provider's lifetime.\n—\nUTC instant, millisecond precision\n`provider_checked_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nLatest instant the provider confirmed the session through introspection, refresh or login.\n—\nUTC instant, millisecond precision\n`refresh_lease_until`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nEnd of the single-flight lease held by the request refreshing provider tokens.\nNo refresh is in progress.\nUTC instant, millisecond precision\n`revoked_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the session was revoked.\nThe session has not been revoked.\nUTC instant, millisecond precision\n`revocation_reason`\n`character varying(32)`\nyes\n—\nINTERNAL\nWhy the session ended: logout, user termination, expiry, replacement, provider logout or inactivity, refresh rejection, principal disablement or principal mismatch.\nThe session has not been revoked.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-15",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`human_sessions_absolute_after_creation`\n`CHECK (((absolute_expires_at > created_at) AND (absolute_expires_at <= (created_at + '12:00:00'::interval))))`\nAbsolute expiry follows creation by at most the selected 12-hour maximum.\n`human_sessions_idle_bounds`\n`CHECK (((idle_timeout_seconds >= 60) AND (idle_timeout_seconds <= 7200)))`\nInactivity bound stays between one minute and the two-hour operator maximum.\n`human_sessions_pkey`\n`PRIMARY KEY (id)`\nUnique session identity.\n`human_sessions_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA session belongs to an existing principal; principals cannot be deleted while sessions exist.\n`human_sessions_revocation_reason_known`\n`CHECK (((revocation_reason IS NULL) OR ((revocation_reason)::text = ANY ((ARRAY['LOGOUT'::character varying, 'TERMINATED_BY_USER'::character varying, 'EXPIRED'::character varying, 'REPLACED'::character varying, 'PROVIDER_LOGOUT'::character varying, 'PROVIDER_INACTIVE'::character varying, 'REFRESH_REJECTED'::character varying, 'PRINCIPAL_DISABLED'::character varying, 'PRINCIPAL_MISMATCH'::character varying])::text[]))))`\nRevocation reason is one of the documented values.\n`human_sessions_revocation_state`\n`CHECK (((state = 'REVOKED'::\"HumanSessionState\") = ((revoked_at IS NOT NULL) AND (revocation_reason IS NOT NULL))))`\nRevocation instant and reason exist exactly for revoked sessions.\n`human_sessions_token_hash_sha256`\n`CHECK ((octet_length(token_hash) = 32))`\nCredential hash is exactly one SHA-256 digest.\n`human_sessions_principal_state_idx`\n`CREATE INDEX human_sessions_principal_state_idx ON public.human_sessions USING btree (principal_id, state)`\nSupports counting and listing a principal's sessions by state.\n`human_sessions_provider_session_idx`\n`CREATE INDEX human_sessions_provider_session_idx ON public.human_sessions USING btree (provider_session_id)`\nSupports back-channel logout by provider session identifier.\n`human_sessions_token_hash_key`\n`CREATE UNIQUE INDEX human_sessions_token_hash_key ON public.human_sessions USING btree (token_hash)`\nOne session per cookie credential; supports lookup by credential hash.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "oidc_login_attempts",
-    "anchor": "oidc_login_attempts",
-    "text": "oidc_login_attempts\nSingle-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.\nOwner: Identity. Classification: RESTRICTED.\nLifecycle: Created when a login starts, consumed once by the callback and expired after 10 minutes; expired rows are retained until a cleanup rule is approved.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated attempt UUID that binds the sealed secrets.\n—\n—\n`handle_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 of the random login-attempt cookie value.\n—\n—\n`state`\n`character varying(128)`\nno\n—\nINTERNAL\nOIDC state value expected back at the callback.\n—\n—\n`secrets`\n`bytea`\nno\n—\nRESTRICTED\nPKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID.\n—\n—\n`return_to`\n`character varying(2048)`\nno\n—\nINTERNAL\nValidated same-origin relative path to open after a successful login.\n—\n—\n`max_age_seconds`\n`integer`\nyes\n—\nINTERNAL\nMaximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.\nNo maximum age was requested.\nseconds\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the login started.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the callback can no longer consume the attempt.\n—\nUTC instant, millisecond precision\n`consumed_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant the callback consumed the attempt; a second use is rejected.\nThe attempt has not been used.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-16",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`oidc_login_attempts_expiry_bounds`\n`CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))`\nAn attempt expires after creation and within 10 minutes.\n`oidc_login_attempts_handle_sha256`\n`CHECK ((octet_length(handle_hash) = 32))`\nHandle hash is exactly one SHA-256 digest.\n`oidc_login_attempts_max_age_bounds`\n`CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))`\nRequested maximum authentication age cannot be negative.\n`oidc_login_attempts_pkey`\n`PRIMARY KEY (id)`\nUnique attempt identity.\n`oidc_login_attempts_return_relative`\n`CHECK (((return_to)::text ~ '^/'::text))`\nReturn path is relative to the panel origin.\n`oidc_login_attempts_state_nonblank`\n`CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))`\nState uses the base64url alphabet and cannot be blank.\n`oidc_login_attempts_handle_hash_key`\n`CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)`\nOne attempt per browser handle; supports consumption by handle.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "backchannel_logout_replays",
-    "anchor": "backchannel_logout_replays",
-    "text": "backchannel_logout_replays\nIdentifiers of accepted provider logout tokens, kept to reject a replayed token.\nOwner: Identity. Classification: INTERNAL.\nLifecycle: Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti`\n`character varying(255)`\nno\n—\nINTERNAL\nUnique identifier (jti) of an accepted logout token.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the token was accepted.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the token would fail the five-minute age check, so its record is no longer needed.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-17",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "outbound_emails",
-    "anchor": "outbound_emails",
-    "text": "outbound_emails\nTransactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.\nOwner: Mail. Classification: CONFIDENTIAL.\nLifecycle: Created PENDING by a producer; becomes SENT when the relay accepts it, FAILED after a permanent rejection or the last attempt, or CANCELLED by its producer. The sealed secret is erased at the final state, and the row is deleted 30 days later (provisional until PH-13).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated message UUID; also the stable source of the email Message-ID across retries.\n—\n—\n`producer`\n`character varying(64)`\nno\n—\nINTERNAL\nCapability that enqueued the message and owns its meaning, for example organizations.invitation.\n—\n—\n`producer_reference`\n`uuid`\nno\n—\nINTERNAL\nIdentifier of the producer's record the message reports, such as an invitation ID.\n—\n—\n`template`\n`character varying(64)`\nno\n—\nINTERNAL\nProducer-registered template rendered when the message is sent.\n—\n—\n`locale`\n`character varying(16)`\nno\n—\nINTERNAL\nTemplate locale: pt-BR or en-US.\n—\n—\n`recipient`\n`character varying(254)`\nno\n—\nCONFIDENTIAL\nNormalized recipient address.\n—\n—\n`parameters`\n`jsonb`\nno\n—\nCONFIDENTIAL\nAllowlisted, non-secret template parameters as a JSON object of strings.\n—\n—\n`sealed_secret`\n`bytea`\nyes\n—\nRESTRICTED\nAES-256-GCM sealed secret parameter (such as an invitation credential) under the mail key ring, bound to the message ID.\nThe message has no secret parameter, or it reached a final state and the secret was erased.\n—\n`status`\n`\"OutboundEmailStatus\"`\nno\n`'PENDING'::\"OutboundEmailStatus\"`\nINTERNAL\nPENDING until sent, failed or cancelled.\n—\n—\n`attempts`\n`integer`\nno\n`0`\nINTERNAL\nDelivery attempts claimed so far, including an attempt interrupted by a crash.\n—\nattempts\n`next_attempt_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nEarliest instant the dispatcher may claim the pending message again.\n—\nUTC instant, millisecond precision\n`lease_expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nEnd of the current dispatcher's claim; also its ownership token when recording the outcome.\nNo dispatcher has claimed the message yet.\nUTC instant, millisecond precision\n`last_failure`\n`character varying(32)`\nyes\n—\nINTERNAL\nClass of the latest failed attempt: connection, timeout, tls, authentication, rejected or unexpected. Never raw provider text.\nNo attempt has failed.\n—\n`last_reply_code`\n`integer`\nyes\n—\nINTERNAL\nSMTP reply code of the latest failed attempt.\nNo failure, or the failure carried no SMTP reply.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the producer enqueued the message.\n—\nUTC instant, millisecond precision\n`finalized_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the message reached SENT, FAILED or CANCELLED; starts the retention period.\nThe message is still pending.\nUTC instant, millisecond precision\n"
   }
 ]

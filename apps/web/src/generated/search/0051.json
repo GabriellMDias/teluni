@@ -4,6 +4,132 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Upload",
+    "anchor": "upload",
+    "text": "Upload\nUpload is two requests, so the server can admit the file before receiving any bytes and the bytes stream to disk without buffering:\n`POST /companies/{companyId}/media` with the name, scope, declared content type and declared size creates the asset in `UPLOADING`. The server requires `media.upload` on the scope, an active company and branch, a declared type from the allowlist below and a declared size within the kind's limit, and checks the abuse limits and the storage reserve.\n`PUT /companies/{companyId}/media/{assetId}/content` with `Content-Type: application/octet-stream` and a `Content-Length` equal to the declared size streams the bytes to a temporary file on the media volume while computing their SHA-256. More bytes than declared, fewer bytes, a closed connection or a size mismatch delete the temporary file and leave the asset in `UPLOADING`, so the person can retry the same `PUT`. A complete upload moves the asset to `PROCESSING` and wakes the processor.\nAn asset still in `UPLOADING` one hour after creation is discarded by maintenance. Resumable chunked upload (for example the tus protocol) is not part of this design; it is the preferred extension if pilot measurements show that whole-file retries of large videos are a problem.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Inspection and validation",
+    "anchor": "inspection-and-validation",
+    "text": "Inspection and validation\nEvery check runs on the server; the declared values only admit the upload.\n**Signature.** The first bytes must carry the signature of an allowed format, and that format must match the declared type: JPEG (`FF D8 FF`), PNG (the 8-byte PNG signature), WebP (`RIFF....WEBP`), the ISO base media family (`ftyp` box: MP4, MOV, M4V) or Matroska/WebM (EBML header). Anything else, including a mismatch with the declared type, is rejected as `MEDIA_TYPE_MISMATCH` or `MEDIA_TYPE_UNSUPPORTED`.\n**Probe.** `ffprobe` reads the file with its demuxer forced to the format the signature identified, input limited to the local file protocol, and JSON output bounded to 1 MiB. A probe that fails, times out or reports no usable stream rejects the asset as `MEDIA_UNREADABLE`.\n**Images.** Exactly one still picture coded as JPEG, PNG or WebP; animated PNG or WebP is rejected. Each axis at most 8,192 px and at most 32,000,000 pixels, after applying the EXIF orientation.\n**Videos.** At least one video stream whose codec is H.264, HEVC, VP8, VP9, AV1 or MPEG-4 Part 2; audio, when present, AAC, MP3, Opus, Vorbis, FLAC or AC-3. Each axis at most 8,192 px, frame rate at most 120 fps, duration more than 0 and at most 3,600 seconds (AT-03). Further streams (subtitles, data, attachments) are ignored and never copied.\n**Decode.** Producing the renditions decodes the whole file. A decoding error rejects the asset as `MEDIA_UNREADABLE`; the original is never offered for use in that case.\nA rejection is final for that asset: it moves to `REJECTED` with the reason code, its temporary and derived files are deleted, and the panel explains the reason in the person's language. The person may discard it.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Renditions and the playback profile",
+    "anchor": "renditions-and-the-playback-profile",
+    "text": "Renditions and the playback profile\nThe original is kept unchanged and is never sent to a screen. Each asset gets a **display** rendition, which is what playlists and publications use, and a **thumbnail** for the panel:\nKind\nDisplay rendition\nThumbnail\nImage\nJPEG (or PNG when the image has transparency), EXIF orientation applied, all metadata removed (including location), scaled down without enlargement to fit 3840×2160 for landscape or 2160×3840 for portrait\nJPEG fitting 320×320\nVideo\nMP4 with the index at the start, H.264 High profile level 4.1, 8-bit 4:2:0, at most 1920×1080 for landscape or 1080×1920 for portrait, at most 30 fps, rotation applied, metadata removed; audio AAC-LC stereo 48 kHz at 128 kbit/s when the original has audio\nJPEG fitting 320×320 from the frame at one second (or the middle of shorter videos)\nA video that already matches the profile (H.264 High, Main or Baseline at or below level 4.1, 8-bit 4:2:0, within the size and frame-rate bounds, AAC or no audio, no rotation) is remuxed without re-encoding, so it keeps its quality. Everything else is transcoded with `libx264` (preset `veryfast`, constant quality 21). The result is probed again and must match the profile before the asset becomes `READY`.\nThis profile is the conservative reference that Android TV hardware decoders commonly support and matches the AT-04 reference qualification (1080p output, two simultaneous 1080p/30 fps videos). It is not a support claim: PH-08 and PJ-12 qualify real devices, and a later profile (for example 4K HEVC) is an additional rendition with its own evidence, never a silent replacement. Output larger than 2 GiB, a transcode slower than the processing timeout or a profile violation after conversion rejects the asset as `MEDIA_CONVERSION_FAILED` with the advice to export a smaller or shorter file.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Processing and isolation",
+    "anchor": "processing-and-isolation",
+    "text": "Processing and isolation\n**Processor.** An in-process processor, like the mail dispatcher, claims assets in `PROCESSING` from PostgreSQL with `FOR UPDATE SKIP LOCKED` and a lease, and runs one job at a time by default (`TELUNI_MEDIA_PROCESSING_CONCURRENCY`, 1 to 4). Several API processes can share one database. Interrupted work (crash, restart, lease expiry) is picked up again; an internal failure retries up to three times with backoff and then moves the asset to `FAILED`, which the panel shows as \"could not be prepared, try again or contact support\".\n**Isolation.** Untrusted bytes are parsed only by `ffprobe` and `ffmpeg`, never inside the API process. Each runs as a separate child process with an empty environment except `PATH`, a fixed argument list (no shell), inputs and outputs only inside the job's temporary directory, the file protocol only (no network or other protocols), stdin closed, bounded stderr capture, and a wall-clock timeout: 30 seconds for a probe, 120 seconds for an image, and 120 seconds plus four times the video duration for a video (at most four hours), after which the process group is killed. Where the host provides `prlimit`, each child also gets address-space and CPU-time limits. Container-level confinement (non-root user, read-only root filesystem, no network for a separate processing container) belongs to the deployment work in PJ-13.\n**Tools.** FFmpeg is an external executable found at `TELUNI_MEDIA_FFMPEG_PATH` and `TELUNI_MEDIA_FFPROBE_PATH` (default `ffmpeg` and `ffprobe` on `PATH`), version 6.1 or later. At startup the module checks both; in production a missing or older tool stops the start, elsewhere processing stays queued and an error is logged.\n**Progress.** The asset stores the processing stage (`probing`, `converting`, `verifying`) and, while converting a video, the percentage reported by FFmpeg's progress output, at most once per two seconds. The panel polls the asset while it is processing.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Storage",
+    "anchor": "storage",
+    "text": "Storage\n**Volume.** Media lives under the directory in `TELUNI_MEDIA_STORAGE_PATH`, which must be an absolute path on a durable mount outside disposable containers (ADR-0021). Setting it activates the media module. The directory holds `objects/` and `work/`; both must be on the same filesystem so a finished file is published with an atomic rename.\n**Objects.** Every stored file is an immutable object named by the SHA-256 of its bytes inside its company: `objects/{companyId}/{first two hex digits}/{sha256}`. The same bytes uploaded twice by one company are stored once; companies never share objects, so storage never reveals whether another company holds a file. A `media_objects` row per company and hash records size and type and is the lock that keeps publication and purge consistent.\n**Writes.** A finished file is written to `work/`, flushed to disk, and then, inside a transaction that holds the object row's lock, renamed into place before the referencing asset row commits. Releasing an object deletes its row under the same lock and unlinks the file only after that transaction commits, again under the lock and only while no row exists. A crash or rollback can therefore leave an unreferenced file, never a reference without a file. Maintenance deletes `work/` entries older than one day and object files without a row.\n**Reads.** The database is the authority: a read resolves the asset, checks authorization and only then opens the object by hash. File paths, hashes and the storage directory never appear in responses, errors, logs or audit.\n**Reserve.** Uploads are refused with `MEDIA_STORAGE_FULL` when the free space of the media volume would fall below the larger of 2 GiB and 10% of the volume, so a full disk never corrupts published media or stops the database. A video conversion starts only while the reserve still holds with room for the rendition cap of every running conversion; otherwise it fails and retries with backoff. This protects the host; it is not the commercial quota.\n**Portability.** A later S3-compatible store implements the same small object interface (`put` from a finished temporary file, `open` with an optional byte range, `delete`, `list` for reconciliation), keeping object identity and domain rules unchanged.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Delivery to the panel",
+    "anchor": "delivery-to-the-panel",
+    "text": "Delivery to the panel\n`GET /companies/{companyId}/media/{assetId}/content?variant=thumbnail|display|original` streams the variant to an authenticated session with `media.view` on the asset (`original` needs `media.upload` on the asset's scope, since it may carry metadata the renditions removed). Responses are `Cache-Control: private, no-cache` with the object hash as a strong `ETag` (so revalidation is cheap and revocation applies on the next request), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox; default-src 'none'`, the server-determined content type, `Content-Disposition` (`inline` for renditions, `attachment` with a sanitized name for the original), and single-range `Range` support for video seeking. Delivery to screens is defined with publications (PJ-11) and uses the device credential, never the panel route.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Lifecycle",
+    "anchor": "lifecycle",
+    "text": "Lifecycle\n create      upload complete       processing ok\n───────▶ UPLOADING ───────▶ PROCESSING ───────▶ READY ◀──────▶ ARCHIVED ───────▶ DELETED ───────▶ PURGED\n            │                  │   │              archive / restore   delete        (30 days, no\n            │ 1 h idle         │   └─▶ FAILED                         ▲  restore     protected\n            ▼                  ▼                                      │  ◀────────   references)\n        discarded           REJECTED ── discard ──▶ discarded\n\n**Rename and tags.** `media.upload` on the asset's scope and the expected version, in any state but `DELETED` and `PURGED`.\n**Archive and restore.** `media.archive` on the scope. An archived asset disappears from selection lists and keeps working wherever it is already used.\n**Delete.** Only from `ARCHIVED`, with `media.delete` (administrators) and a confirmation naming the asset. The server asks every registered reference guard whether a protected reference exists (drafts, active, staged or recovery generations, protected publications); if one does, it answers `MEDIA_IN_USE` and nothing changes. Listing the references the caller may see arrives with the first referencing module (PJ-10), which owns their names. Otherwise the asset becomes `DELETED` with `purge_after` 30 days later (AT-17), hidden from everyone but administrators' trash view.\n**Restore from trash.** `media.delete` before `purge_after`; the asset returns to `ARCHIVED`.\n**Purge.** Maintenance takes `DELETED` assets past `purge_after`, asks the reference guards again, and only when nothing protects the asset marks it `PURGED`, clears its object references and deletes each object no other asset of the company references. A protected asset stays `DELETED` and is retried; retention expiry alone never deletes media, as the release policies require. The `PURGED` row keeps the ID, name and dates for audit; its bytes are gone.\n**Discard.** An asset in `UPLOADING`, `REJECTED` or `FAILED` was never usable, so a person with `media.upload` on its scope can discard it immediately; it becomes `PURGED` and its files are deleted.\n**Reference port.** The media module exposes `registerReferenceGuard(kind, guard)` on its public port. A guard runs in the deleting or purging transaction after the asset row is locked and returns the references it knows, each with the branch it belongs to, so the media module can disclose only what the caller may see. Programming (PJ-10), publications (PJ-11), compositions (PJ-20) and catalogs (PJ-21) register their guards when they exist. Selecting media for a new reference goes through the port's `requireSelectable`, which accepts only `READY` assets the caller may use.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Permissions",
+    "anchor": "permissions",
+    "text": "Permissions\nFour capabilities are added to the organizations domain, which owns role presets and delegable profile capabilities:\nCapability\nCompany administrator\nBranch manager\nOperator\n`media.view`: list, search, preview and use assets\nCompany\nGranted branches and company assets\nGranted branches and company assets\n`media.upload`: upload, rename, tag, discard unusable uploads, download originals\nCompany\nGranted branches\nGranted branches\n`media.archive`: archive and restore\nCompany\nGranted branches\nNo (additional grant)\n`media.delete`: delete to trash, restore from trash\nCompany\nNo\nNo\n`media.view`, `media.upload` and `media.archive` are delegable in company-customized profiles; `media.delete` is not, because the matrix gives permanent deletion only to administrators. Company-scoped assets are viewable through any `media.view` grant in the company, but uploading, editing or archiving them needs the capability company-wide. Hidden assets answer `RESOURCE_NOT_FOUND`.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Abuse limits",
+    "anchor": "abuse-limits",
+    "text": "Abuse limits\nProposed initial values, each answering `RATE_LIMITED` with `Retry-After`:\nAt most 5 assets in `UPLOADING` per person and 20 per company.\nAt most 200 asset creations per company per day.\nAt most 20 assets in `PROCESSING` per company, so one company cannot monopolize the processor.\nThe upload `PUT` has no request-size limit beyond the declared size, a 2-hour request timeout and an idle timeout of 60 seconds without bytes.\nCommercial original-media quotas (2 GiB trial, 10 GiB paid) and their warnings arrive with PJ-27, which will count each original object once per company as the commercial policies require; the creation request is where admission will be checked.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Data",
+    "anchor": "data",
+    "text": "Data\nAll tables belong to the media module, with Prisma models in `prisma/schema/media.prisma`, semantic metadata, runtime grants and one reviewed migration.\nTable\nContents\nNotes\n`media_objects`\n`(company_id, sha256)` key, byte size, content type, created time\nOne row per stored file per company; publication and purge serialize on a transaction-scoped advisory lock per object\n`media_assets`\n`(company_id, id)`, optional composite `(company_id, branch_id)` reference, name, tags, kind, status, rejection reason, declared type and size, original/display/thumbnail object hashes (composite references to `media_objects`), inspected facts, processing stage/progress/attempts/lease, created-by membership, created/ready/archived/deleted/purge-after/purged times, version\nComposite tenant references; runtime role never updates `company_id` or `branch_id`\n`media_audit_events`\nCompany, actor, action, target asset or folder, allowlisted details\nAppend-only; `media.created`, `media.uploaded`, `media.ready`, `media.failed`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths\nNames, tags, inspected facts and the stored bytes are `CONFIDENTIAL`. The original file name is used as the default name only; it is not stored separately.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contracts",
+    "anchor": "contracts",
+    "text": "Contracts\nHuman operations (session access, CSRF as elsewhere): `GET /companies/{companyId}/media` (paginated, cursor-bound; filters by kind, status, scope, tag and name text), `POST .../media` (create), `GET .../media/{assetId}`, `PUT .../media/{assetId}/content` (upload bytes), `GET .../media/{assetId}/content` (download a variant), `PATCH .../media/{assetId}` (name, tags, expected version), `POST .../media/{assetId}/archive`, `.../restore`, `.../delete`, `.../restore-deleted` and `DELETE .../media/{assetId}` (discard). All are TypeBox contracts in the OpenAPI document; the shared module contract gains the `application/octet-stream` request body and a binary response so the document describes them. The web uses the generated SDK except for the upload body, which it sends with `XMLHttpRequest` to report progress. New expected errors: `MEDIA_TYPE_UNSUPPORTED`, `MEDIA_TOO_LARGE`, `MEDIA_UPLOAD_INCOMPLETE`, `MEDIA_NOT_UPLOADING`, `MEDIA_NOT_READY`, `MEDIA_IN_USE`, `MEDIA_STORAGE_FULL`, `MEDIA_INVALID_STATE`, plus the existing `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`, `RATE_LIMITED`, `VALIDATION_FAILED` and access errors. Rejection reasons (`MEDIA_TYPE_MISMATCH`, `MEDIA_TYPE_UNSUPPORTED`, `MEDIA_TOO_LARGE`, `MEDIA_DIMENSIONS_EXCEEDED`, `MEDIA_DURATION_EXCEEDED`, `MEDIA_UNREADABLE`, `MEDIA_CONVERSION_FAILED`) are a closed enumeration on the asset, not HTTP errors.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Panel",
+    "anchor": "panel",
+    "text": "Panel\nA **Media** view per company (pt-BR \"Mídia\") shows a grid of thumbnails with name, kind, duration or dimensions, scope and state, with filters by kind, scope, tag and state and a name search, limited to what the person may view. **Upload** accepts several files (button or drag and drop), asks for the scope when the person may upload to more than one, shows per-file progress and then the preparation state, and explains rejections. The asset page shows the preview (image, or video with controls), facts, scope, tags and history of state, and offers rename, tags, archive and restore, delete with a confirmation naming the asset, and download of the original where allowed. Administrators see a **Trash** filter with restore. Copy is in `pt-BR` and `en-US`.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nDomain unit tests: signature detection, declared-type matching, probe interpretation for every bound (axis, pixels, duration, frame rate, codecs, animation), the remux-or-transcode decision, lifecycle transitions and permission decisions.\nProcessing tests with real FFmpeg against generated fixtures: JPEG with EXIF orientation and location metadata (rotated and stripped), PNG with transparency, oversized and over-pixel images, animated WebP, a spoofed extension, truncated and corrupted files, a polyglot file, compliant H.264 (remuxed), HEVC and VP9 (transcoded), portrait video with rotation metadata, a video over 60 minutes declared as short (rejected from the probe), and a timeout.\nIntegration tests against PostgreSQL with two companies and differently scoped members: creation and upload allowed and denied by scope, company assets visible to branch members but not editable, ID substitution across companies, cursors, versions, size mismatch and interrupted uploads, abuse limits, concurrent processing claims, reference guards blocking delete and purge, purge after 30 days keeping objects still used by another asset, and audit rows.\nDelivery tests: authorization on every variant, range requests, headers, and no route answering for another company's asset.\nBrowser component tests for the library, upload progress and the delete confirmation, and one end-to-end journey: upload an image and a video, wait until ready, preview, archive, delete and restore from trash.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Delivery increments",
+    "anchor": "delivery-increments",
+    "text": "Delivery increments\nModule, schema, migration, configuration, object store, upload, inspection, processor, renditions, list, detail, delivery, rename, tags, archive and restore, audit and the panel library with upload and preview.\nDelete to trash, restore from trash, purge, reference port and guards, discard, maintenance (expired uploads, work files, orphan objects) and the trash view.\nExplicit sharing with selected branches, storage accounting per company for PJ-27 and the end-to-end journey hardening.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Implementation status",
     "anchor": "implementation-status",
     "text": "Implementation status\n2026-11-15: the requested folder/file-manager increment adds additive folder/receipt persistence, tenant-safe API contracts and generated SDK, atomic move/copy, shared immutable objects, and a responsive library with selection, clipboard, destination dialogs and previews. Qualification evidence is tracked in the [media file manager increment](implementation-plan.md#media-file-manager); existing production prerequisites remain unchanged.\nImplemented in [PJ-09](implementation-plan.md#current-work) on 2026-10-19, increments 1 and 2:\nThe [`media` API module](../../apps/api/src/features/media/AGENTS.md), its reviewed migration (which also lets profiles delegate the media capabilities), runtime grants and schema metadata, the binary upload and content operations in the [OpenAPI document](../generated/api/openapi.json), and the `TELUNI_MEDIA_` settings. Without `TELUNI_MEDIA_STORAGE_PATH` the module stays unmounted.\n`media.view`, `media.upload`, `media.archive` and `media.delete` in the standard roles and as delegable profile capabilities (except `media.delete`).\nThe in-process processor with leases, FFmpeg isolation and renditions; delete to trash, restore, discard, purge with reference guards and object sharing, and maintenance of expired uploads, work files and orphan objects. Programming and publications register their guards in PJ-10 and PJ-11.\nThe [two-company integration suite](../../apps/api/test/media/integration.test.ts) processes generated fixtures with real FFmpeg against PostgreSQL as the runtime role, and [domain tests](../../apps/api/test/media/domain.test.ts) cover the bounds and the playback-profile decision.\nThe panel's **Mídia** pages in `apps/web` for the library, upload with per-file progress, preview, rename and tags, archive, trash and discard, with browser component tests and a [browser journey](../../apps/web/test/e2e/media/library.spec.ts) through the real identity stack and FFmpeg.\nBackup consistency (2026-10-22, [deployment design](deployment-design.md#backups-and-restore)): every object file deletion first takes the `teluni.media-backup` advisory lock shared without waiting, and leaves the file for the orphan sweep while a backup holds it exclusively.\nPending: increment 3 (explicit sharing with selected branches and storage accounting for PJ-27) and a processing-timeout fixture.\n"
@@ -421,149 +547,5 @@
     "heading": "Decisions",
     "anchor": "decisions",
     "text": "Decisions\nThe agent took these decisions on 2026-10-20 under the owner's delegation:\n**Components.** One Gradle build in `apps/player` with a pure-JVM `core` holding every rule and an Android `app` holding the platform adapters (ADR-0031). It sits outside the pnpm workspace, is checked by its own required CI job and reads the repository's shared fixtures.\n**Unattended operation.** The managed profile (device owner, HOME activity, lock task) is the supported pilot profile. The basic profile counts only where PH-08 shows boot and crash recovery.\n**File-based state.** No database: write-once content-addressed media, exact manifests and one atomically replaced state record. Activation is a single replacement, and startup reconciliation is deterministic (ADR-0031).\n**Credential vault.** AES-256-GCM under a non-exportable Android Keystore key, backup disabled. An unreadable vault means erase and enroll again.\n**Server zone offsets.** The sync response carries the screen zone's offsets for 35 days, and the player never uses device time zone data for business time (ADR-0031).\n**Trusted time.** A monotonic anchor from each sync, a persisted lower bound, and the system clock after a reboot only when it is not earlier than that bound and automatic network time is on; otherwise neutral output with `CLOCK_UNTRUSTED`.\n**Authorization.** Keys pinned at pairing and refreshed over TLS only for an unknown `kid`. Only the latest verified statement counts. Protected output needs an unexpired statement listing the playing generation.\n**Staging.** Strict protocol 1 parsing, preflight against the AT-05 reserve, at most two resumable downloads verified by length and SHA-256, superseding by newer desired publications, and activation immediately when ready.\n**Playback.** ExoPlayer for images and videos with the next item prepared, fit without distortion, muted in protocol 1, schedule boundaries timed on the monotonic clock, and failed items skipped and reported.\n**Updates.** Server-distributed APKs verified by SHA-256 and signing certificate, installed by the device owner inside a local window. No downgrade: rollback is a roll-forward release (ADR-0031).\n**Platform floor.** `minSdk` 26 and JDK 17. Dependencies: Kotlin, kotlinx.serialization, OkHttp and Nimbus JOSE + JWT in `core`, and Media3 in `app`, all pinned and checksum-verified.\n**Hardware envelope (2026-10-22, same delegation).** Certified Android TV or Google TV devices with Android 9 or later, Anatel homologation, 2 GB of RAM, 8 GB of storage and H.264 1080p30 hardware decoding. A Google TV HDMI device is the pilot's reference class. Uncertified TV boxes and non-Android smart TVs are excluded ([envelope](#supported-hardware-envelope)).\n"
-  },
-  {
-    "id": "repository/docs/project/player-design",
-    "title": "Teluni Android TV Player Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Alternatives considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives considered\n**Room or another database for local state.** Gives queries and transactions, but brings schema migrations that interact with the no-downgrade rule. Its write-ahead log still needs power-loss testing, and the state is a handful of pointers. Atomic file replacement is simpler to reason about and to fault-test.\n**Device time zone data, or a bundled time zone library (ThreeTenBP, Joda-Time).** Device data can be years old on unmanaged TV boxes. A bundled database updates only with player releases and can still disagree with the server's preview. Offsets computed by the same server code that renders the preview cannot disagree, and need no dependency.\n**A WebView or web player.** Reuses web skills, but leaves storage, autostart, power-loss behavior and hardware decoding to the browser on each device. ADR-0020 already chose a native player.\n**Google Play distribution and in-app updates.** Requires store accounts, review and a Google account on each device. It does not give unattended updates inside a business window, and many commercial Android TV boxes do not have Play. It remains possible later for devices that do.\n**A hand-written JWS verifier.** The format is small, but the policies forbid custom cryptographic schemes. Nimbus restricts algorithms, parses keys and handles the signature encoding with an established implementation.\n**Starting at boot with a `BOOT_COMPLETED` receiver.** Android 10 and later block background activity starts without special permissions that TV devices often cannot grant. A device-owner HOME activity starts and restarts reliably.\n**Certificate pinning for the API.** Would brick screens when the pilot host's certificate or provider changes. TLS with the system trust store plus pinned statement keys protects what matters offline.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Teluni Product Vision",
-    "anchor": "teluni-product-vision",
-    "text": "Teluni Product Vision\n[Project documentation](README.md) · [MVP scope](mvp.md) · [Delivery phases](implementation-plan.md#phase-sequence-and-exit-criteria)\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Purpose and positioning",
-    "anchor": "purpose-and-positioning",
-    "text": "Purpose and positioning\n**Decided:** Teluni is a multi-tenant digital signage SaaS for centralized management of visual content on televisions, monitors, and other display devices. It should combine simple operation, reliable local playback, freeform simultaneous presentation and configurable data-driven content. Brazil is the initial market, with international commercialization anticipated. The owner selected initial capabilities for product quality rather than limiting them solely by the MVP label.\nLocale\nIntended slogan\n`pt-BR`\nTodas as suas telas. Um só lugar.\n`en-US`\nEvery screen. One place.\n**Decided:** the owner approved Teluni as the product name and `teluni.app` as the principal domain. `teluni.com.br` is the secondary/defensive Brazil option (availability reported by the owner); unavailable/premium `teluni.com` is outside the current budget and scope. [Branding](branding/README.md) owns these decisions and the approved Connected Tiles identity. Preliminary trademark research has advanced, but registration/control and final clearance are not inferred. Connected Tiles is integrated into the web shell, portal and favicon, with the selected locally served font and derived touch icon. [PH-07](human-actions.md#ph-07) remains in progress for domain registration/control and trademark evidence.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Origin and pilot",
-    "anchor": "origin-and-pilot",
-    "text": "Origin and pilot\nThe initial opportunity is a snack bar considering televisions for products, images, videos, and promotions. It is a candidate pilot, not a confirmed customer or an exclusive definition of the product.\nThe owner's experience with PDT Display provides conceptual learning only. Teluni must have independent architecture, identity, and implementation. Do not copy PDT Display code, assets, credentials, customer data, private designs, or proprietary information without authorization. Authorized Orion material remains governed by the repository's provenance and license. The owner selected Apache-2.0 for Teluni source and documentation; [ADR-0022](../adr/0022-license-teluni-under-apache-2-0.md) records that decision and [PH-06](human-actions.md#ph-06) records its verification. SaaS pricing and customer terms remain separate commercial decisions.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Audience and use cases",
-    "anchor": "audience-and-use-cases",
-    "text": "Audience and use cases\nSegment\nRepresentative use case\nRestaurants, snack bars, pizzerias, cafes\nMenus, featured products, opening-period promotions\nSupermarkets and retail\nOffers, prices, announcements, local campaigns\nGyms and sports centers\nClass schedules, instructions, promotions\nClinics, practices, hospitals\nGeneral service information and approved public announcements\nHotels and hospitality\nGuest information, services, events\nOffices and corporate environments\nInternal communications and visual announcements\nChains and franchises\nCentral publication with authorized branch-level operation\nThese are target use cases, not implemented integrations or an invitation to process sensitive patient or employee records. Sector-specific needs belong in specialized features without making the signage core restaurant-specific. One company with one branch must remain simple to operate; many branches and large device fleets must fit the conceptual ownership model, with supported capacity established through measurement.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Actors and core journeys",
-    "anchor": "actors-and-core-journeys",
-    "text": "Actors and core journeys\nThe [security model](security-and-i18n.md#actors-and-authorization) routes to the selected human access policies and their pending technical enforcement. The product journeys are:\nA verified eligible registrant creates a new company through public automatic activation and becomes its responsible administrator, subject to commercial/privacy/abuse readiness. The platform retains a controlled assisted-enrollment path without claiming existing companies by name or domain.\nA company administrator creates branches and delegates permitted operations to members.\nAn authorized operator pairs a display using a temporary code shown by the player and assigns it to the correct branch.\nAn authorized publisher uploads media, configures typed catalogs/fields/records (for example products or a weekly agenda), composes regional content/schedules, previews and publishes.\nAuthorized price saves automatically publish affected already-published data bindings, without releasing unrelated drafts or recreating artwork. Other draft edits retain explicit publication.\nThe player stages complete consistent versions and continues local media/catalog rendering through the selected offline/clock envelope, with independent areas or optional coordinated pages.\nA scoped operator sees last contact, synchronization progress and actionable failures without unrestricted remote access. Actual player observation is distinct from server intent.\nAcceptance of these journeys is specified in [release requirements](mvp.md). The owner selected [human identity/access policies](identity-and-access.md), including public signup with automatic company activation, Google-only external login, multi-company memberships, a responsible administrator and customizable scoped profiles. The owner accepted the architecture ADRs and completed PH-11 decision selection; actual Keycloak/session qualification and external readiness remain pending; no signup/session flow is implemented.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Product objectives",
-    "anchor": "product-objectives",
-    "text": "Product objectives\nObjective\nIntended outcome\nVerification owner\nCentralized remote operation\nManage displays, reusable media, playlists, and scheduling from one panel\nMVP acceptance\nReliable presentation\nContinuous local playback with controlled publication and recovery\nPlayback/sync acceptance\nSimultaneous presentation\nFreeform regional content/schedules, optional page coordination, multiple videos/audio and isolated recovery on one TV\nFR-10 acceptance and qualified device profile\nConfigurable structured content\nUsers define catalog fields/records and bind products/prices, weekly agendas or other approved data into layouts; designated prices publish automatically\nFR-11 acceptance, schema/reference safety and consistent publications\nSimple commercial use\nA nontechnical pilot operator can complete the core journey\nPilot usability session\nTenant and branch ownership\nSupport independent companies and authorized branch scopes\nSecurity acceptance\nOperational visibility\nExplain stale devices and synchronization failures safely\nMonitoring acceptance\nSustainable growth\nMeasure storage, traffic, processing, support, and capacity before expansion\nPilot operating review\nExtensibility\nExtend presentation authoring, dynamic prices, integrations, and player platforms without coupling the core to one sector\nArchitecture review\nThe [release targets](release-targets.md) select task-time, continuity, rendering, storage and reference-fleet goals under completed PH-09. Actual pilot/hardware/load results remain pending; no supported-device capacity, SLA, unlimited resources or operating-cost result is promised. [Release policies](release-policies.md) own the approved behaviors and owner/delegated decision provenance.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Commercial hypotheses",
-    "anchor": "commercial-hypotheses",
-    "text": "Commercial hypotheses\n**Decided for planning on 2026-10-18:** the owner approved all PH-12 questionnaire recommendations. [Commercial policies](commercial-policies.md) own the 30-day accompanied pilot, 14-day automatic public trial, per-output license definition, single initial monthly offer, BRL validation prices, delegated quota qualification, support and cancellation conditions. PH-12 owner policy selection is complete; actual cost/support, customer acceptance and offer readiness remain PH-18, with fiscal/billing readiness PH-19.\nThe selected validation price is BRL 79.90/company/month for up to two licenses and BRL 29.90 per additional license. This is an approved validation hypothesis, not a public offer, profitable operation or accepted customer contract. Public automatic signup receives the bounded trial only after capacity/security/privacy readiness; P16 delegates dimensioning, so the proposed paid resource table must not be sold as qualified capacity. Conditional support channels/hours do not establish actual coverage.\nBasic manual commercial authorization/licensing is an initial-release requirement under PJ-27; automatic billing, payment-gateway integration, annual offers, financial referral incentives and foreign sales remain future evaluation. The pilot must collect actual costs and willingness to continue. International presentation follows the [localization requirements](security-and-i18n.md#internationalization).\nThere is currently no cloud-service budget. Residential hosting is the accepted entry architecture with explicit [operational gates and risks](operations.md), not a commitment to production availability.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Teluni Programming Design",
-    "anchor": "teluni-programming-design",
-    "text": "Teluni Programming Design\n[Release policies](release-policies.md#time-and-scheduling) · [Assignment and publication](release-policies.md#assignment-and-publication) · [Acceptance targets](release-targets.md) · [Playback and synchronization](playback-and-sync.md#time-and-regional-scheduling) · [Identity and access policies](identity-and-access.md#permission-model-and-default-matrix) · [Tenant data design](tenant-data-design.md) · [Media library design](media-library-design.md) · [Device enrollment design](device-enrollment-design.md) · [ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md) · [PH-24](human-actions.md#ph-24)\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Status and scope",
-    "anchor": "status-and-scope",
-    "text": "Status and scope\n**Approved detailed design for D-06 and the time-zone part of D-10, 2026-10-19.** The owner approved all eleven [decisions for review](#decisions-for-review) as proposed under [PH-24](human-actions.md#ph-24), including ADR-0029, after asking for development to continue autonomously. Approval authorizes implementation of PJ-10 in local and CI environments; the player's use of the fixtures remains PJ-12.\nIn scope: playlists and their items, persistent programming groups, the programming source of each screen (group or individual), schedule rules with dates, weekdays, local hours, overnight windows and all-day windows, optional defaults, conflict validation, the time-zone and DST rules, the evaluator that turns a programming source into a timeline for one screen, the shared fixtures, the preview, permissions, limits, reference guards, audit, data, contracts, panel and verification (FR-05, FR-06).\nOut of scope, with their owners: publication, the immutable snapshot that carries the rules to screens and the confirmation that applies an assignment on a screen (D-04, PJ-11); playback, trusted time and fixture execution on the device (D-07, PJ-12); layouts with several areas, coordinated pages and their regional schedules (D-11, PJ-20), which reuse the rule model and evaluator defined here per area; catalog data and price validity (PJ-21); qualification of fades or any other transition on hardware (PH-08). The design claims none of them.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Policy inputs",
-    "anchor": "policy-inputs",
-    "text": "Policy inputs\nThe design applies these selected policies without changing them, except for the one refinement named in decision 5:\nA screen belongs to zero or one company-owned programming group, which may span authorized branches. A grouped screen follows its group unless an authorized person explicitly selects individual programming, which replaces the whole group programming and keeps the membership; returning to the group is explicit ([assignment](release-policies.md#assignment-and-publication)).\nEvery edit is a draft until deliberately published; confirming an assignment or source change requests the destination's latest published programming, and an intentionally unpublished destination needs a clear indication before confirmation.\nUse per-device local business time: the device's explicit time zone, otherwise its branch's. Never inherit the server's time zone. Starts are inclusive and ends exclusive; overlapping schedules for the same output are rejected without implicit priority; overnight windows are anchored to their starting weekday; a final date includes that whole local day and clips at the next local midnight; equal start and end times are rejected in favor of an explicit all-day option ([time and scheduling](release-policies.md#time-and-scheduling)).\nIn a DST gap, use the first valid instant; in a repeated hour, the earlier occurrence for a start and the later for an end; show the resolved result in preview and validate conflicts after resolving it. Backend preview and the player share fixtures.\nImage items last 1 to 3,600 seconds, 10 by default (AT-01); videos play their whole duration; a schedule boundary interrupts the current item (AT-13 for timing on the device). An output with no applicable schedule uses its optional default, otherwise neutral output; a group default is never borrowed while individual programming is selected.\nAuthoring playlists and schedules is allowed to administrators company-wide, branch managers in their branches and operators in their branches as drafts; publishing to managers and administrators ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)).\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Concepts",
-    "anchor": "concepts",
-    "text": "Concepts\nA **playlist** is an ordered, looping list of media items owned by a company or one branch, like media. It is reusable: several programs may schedule the same playlist.\nA **programming group** belongs to a company and names the branches it may span: either the whole company or a fixed set of one or more branches.\nA **program** is the draft programming of one source: a group, or one screen. It has one output today, the full screen (`screen`); PJ-20 adds layout areas as further outputs with their own rules and defaults, evaluated by the same functions. Each output has a set of **schedule rules** and an optional **default playlist**.\nA screen's **programming source** is its group's program when it belongs to a group and individual programming is not selected; otherwise its own program. A screen without a group is always programmed individually.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Playlists",
-    "anchor": "playlists",
-    "text": "Playlists\nA playlist has a name (1 to 120 characters), an owning scope (company or one branch), a transition and 0 to 500 items.\nEach item references one media asset that is `READY`, not archived, and visible to the playlist's scope: a company playlist may use company media only; a branch playlist may use company media and that branch's media. An image item has a duration from 1 to 3,600 whole seconds, 10 by default; a video item has no duration and plays its whole display rendition. Items play in order and the playlist loops while its schedule window lasts; a boundary interrupts the current item. The same asset may appear more than once.\nThe transition is `CUT` (default) or `FADE` with a duration from 250 to 2,000 ms. A fade is stored and previewed, but publication (PJ-11) accepts it only for screens whose profile is qualified for fades and otherwise rejects it with an actionable reason instead of dropping it; at a schedule boundary that ends commercial content the player cuts.\nSaving items replaces the whole ordered list with an expected version, so reordering is one atomic change. An archived asset already in a playlist stays and keeps playing; it cannot be added again. The panel shows the playlist's total duration and its video count.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Programming groups and sources",
-    "anchor": "programming-groups-and-sources",
-    "text": "Programming groups and sources\nA group has a name (1 to 80 characters, unique within the company, ignoring case) and its branch span. Only screens of branches in that span may join. Narrowing the span is refused while member screens of the removed branches remain, and changing it is refused when the group's rules would use a branch playlist outside the new span. Deleting a group is refused while it has members.\nJoining or leaving a group and selecting or clearing individual programming are **assignments**. An assignment never edits a program. Its request carries the screen's current settings version and, while the destination has no published programming, `confirmUnpublished: true`, which the panel asks for with a sentence explaining that the screen will show neutral output until the destination is published. Until PJ-11 exists no destination is published, so every assignment needs that confirmation; PJ-11 replaces the check with the real publication fact and requests the destination's latest publication.\nA screen that leaves its group keeps its own program, which is empty unless it was edited before. Selecting individual programming never copies the group's rules: the screen's own program is used as it is, so the person sees and edits it explicitly.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Schedule rules",
-    "anchor": "schedule-rules",
-    "text": "Schedule rules\nA rule assigns one playlist to one output of a program for a recurring local window:\nField\nMeaning\n`playlistId`\nA playlist the program may use (see permissions)\n`weekdays`\nOne to seven ISO weekdays (Monday 1 to Sunday 7) on which a window starts\n`allDay`\nWhen true, each window covers the whole local day; `startTime` and `endTime` are absent\n`startTime`, `endTime`\nLocal wall-clock times `HH:MM` with minute precision. `endTime` earlier than `startTime` makes an overnight window that ends on the next local day; equal times are rejected (`SCHEDULE_TIMES_EQUAL`); `endTime` `00:00` means the following midnight\n`startsOn`\nThe first local date on which a window may start\n`endsOn`\nOptional final local date, inclusive; every window clips at the local midnight that ends it\nRules store local values only. The time zone is applied per screen when evaluating, so one group program means the same local hours in every branch of a cross-branch group. A window anchored on Friday 22:00–02:00 ends Saturday 02:00; when Friday is the final date it ends Saturday 00:00. A window cannot start before `startsOn`; an overnight window anchored on the day before `startsOn` does not exist.\nA program has at most 200 rules per output. Rules are saved as the whole set of an output with an expected program version, so validation sees the complete result and concurrent editors get `RESOURCE_VERSION_CONFLICT`.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Conflict validation",
-    "anchor": "conflict-validation",
-    "text": "Conflict validation\nTwo rules of the same output conflict when any of their windows overlap. Validation compares windows in local wall-clock time, independently of any time zone, so it holds for every screen of a cross-branch group and never depends on the server's time zone:\nEach window becomes an interval of local minutes from its anchored start to its end, including the overnight day and the final-date clip.\nFor a pair of rules, only dates in the intersection of their validity extended by one day on each side can overlap. When that span is 21 days or shorter every date is checked; otherwise the first 10 and last 10 days are, which contain every weekday combination of the repeating middle; an open-ended span checks its first 10 days.\nTouching windows (one ends at 18:00, the next starts at 18:00) do not overlap. An overlap rejects the whole set with `SCHEDULE_CONFLICT`. Because the error envelope carries no details, a read-only check operation takes a rule set and returns each conflicting pair with its first overlapping local date, so the panel can point at both rules before saving.\nWall-clock validation is stricter than validating each zone's resolved instants, except inside a repeated hour, which decision 5 handles.\n"
   }
 ]
