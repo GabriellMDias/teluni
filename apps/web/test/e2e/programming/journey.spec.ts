@@ -125,7 +125,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await page.getByRole("link", { name: "Programação", exact: true }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/programming`);
   await expect(page.getByText("Nenhuma playlist ainda.")).toBeVisible();
-  await page.locator("summary").filter({ hasText: "Nova playlist" }).click();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Manhã");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -144,7 +144,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await afterNavigation(page).toHaveURL(
     `${companyUrl}/programming?view=groups`,
   );
-  await page.locator("summary").filter({ hasText: "Novo grupo" }).click();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitrines");
   await page.getByLabel("Centro", { exact: true }).check();
   await page.getByRole("button", { name: "Criar", exact: true }).click();

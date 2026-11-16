@@ -7,6 +7,17 @@ import type { Transition } from "./api.js";
 const ptBR = {
   workspace: {
     guideTitle: "Do conteúdo à tela",
+    playlistRecords: "Registros de playlists",
+    groupRecords: "Registros de grupos",
+    layoutRecords: "Registros de layouts",
+    durationColumn: "Duração",
+    scopeColumn: "Abrangência",
+    screensColumn: "Telas",
+    openContent: "Editar conteúdo",
+    openProgram: "Abrir programação",
+    openLayout: "Editar layout",
+    backToGrid: "Cancelar",
+    clearFilter: "Limpar filtro",
     stepContent: "Organize o conteúdo",
     stepContentLead:
       "Monte playlists com imagens e vídeos na ordem em que devem tocar.",
@@ -591,6 +602,17 @@ type Messages = typeof ptBR;
 const enUS: Messages = {
   workspace: {
     guideTitle: "From content to screen",
+    playlistRecords: "Playlist records",
+    groupRecords: "Group records",
+    layoutRecords: "Layout records",
+    durationColumn: "Duration",
+    scopeColumn: "Reach",
+    screensColumn: "Screens",
+    openContent: "Edit content",
+    openProgram: "Open programming",
+    openLayout: "Edit layout",
+    backToGrid: "Cancel",
+    clearFilter: "Clear filter",
     stepContent: "Organize content",
     stepContentLead:
       "Build playlists with images and videos in playback order.",

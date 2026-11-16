@@ -15,6 +15,17 @@ const overviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/programming",
   validateSearch: (search: Record<string, unknown>): ProgrammingFilter => ({
+    ...(search.mode === "grid" || search.mode === "form"
+      ? { mode: search.mode }
+      : {}),
+    ...(typeof search.record === "string" &&
+    (search.record === "new" ||
+      (search.view === "layouts" && search.record === "import") ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        search.record,
+      ))
+      ? { record: search.record }
+      : {}),
     ...(search.view === "groups" || search.view === "layouts"
       ? { view: search.view }
       : {}),

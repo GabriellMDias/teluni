@@ -110,8 +110,8 @@ test("creates a product catalog with a branch price and a promotion and reads th
 
   // A layout: a video column and a menu area showing the catalog.
   await page.goto(`${companyUrl}/programming?view=layouts`);
-  await page.locator("summary").filter({ hasText: "Novo layout" }).click();
   await expect(page.getByText("Nenhum layout ainda.")).toBeVisible();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitrine");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -153,7 +153,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
   // A group program chooses the layout; each area has its own schedules,
   // and it publishes with protocol 2, catalog snapshot included.
   await page.goto(`${companyUrl}/programming?view=groups`);
-  await page.locator("summary").filter({ hasText: "Novo grupo" }).click();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Lojas");
   await page.getByLabel("Centro", { exact: true }).check();
   await page.getByRole("button", { name: "Criar", exact: true }).click();

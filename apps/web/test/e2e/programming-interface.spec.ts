@@ -169,13 +169,16 @@ for (const theme of ["light", "dark"] as const) {
       await expect(page.getByRole("link", { name, exact: true })).toBeVisible();
       await accessible(page);
       await page
-        .locator("summary")
-        .filter({ hasText: t.createPlaylistTitle })
+        .getByRole("region", { name: t.workspace.playlistRecords })
+        .getByRole("button", { name: "Adicionar", exact: true })
         .click();
       await expect(
         page.getByRole("form", { name: t.createPlaylistTitle }),
       ).toBeVisible();
       await accessible(page);
+      await page
+        .getByRole("button", { name: t.workspace.backToGrid, exact: true })
+        .click();
       await page.getByRole("link", { name, exact: true }).click();
       await page.getByLabel(t.itemSeconds(name)).fill("25");
       await accessible(page);

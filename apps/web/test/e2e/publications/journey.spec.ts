@@ -194,7 +194,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   ).toContainText("Pronta");
 
   await page.goto(`${companyUrl}/programming`);
-  await page.locator("summary").filter({ hasText: "Nova playlist" }).click();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Vitrine");
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   await afterNavigation(
@@ -205,7 +205,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await expect(page.getByRole("status")).toContainText("Itens salvos.");
 
   await page.goto(`${companyUrl}/programming?view=groups`);
-  await page.locator("summary").filter({ hasText: "Novo grupo" }).click();
+  await page.getByRole("button", { name: "Adicionar", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Lojas");
   await page.getByLabel("Centro", { exact: true }).check();
   await page.getByRole("button", { name: "Criar", exact: true }).click();

@@ -369,34 +369,12 @@ div.layout-area {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
 }
-.programming-create,
 .programming-layout-choice,
 .programming-permanent {
   padding: 1rem;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   margin-block: 1rem;
-}
-.programming-create > summary {
-  font-weight: 650;
-  color: var(--color-link);
-}
-.programming-create > summary > .programming-create-plus {
-  float: right;
-}
-.programming-create[open] > summary > .programming-create-plus {
-  transform: rotate(45deg);
-}
-.programming-create .form-stack {
-  margin: 1rem 0 0;
-}
-.programming-create-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 1rem;
-}
-.programming-create-options > details {
-  flex: 1 1 20rem;
 }
 .programming-list {
   display: grid;
@@ -728,4 +706,26 @@ fieldset.programming-rules {
   overflow-y: auto;
   scrollbar-gutter: stable;
   padding: 0.2rem;
+}
+
+.programming-records {
+  min-width: 0;
+}
+.programming-records .ui-dataset {
+  min-height: 24rem;
+}
+.programming-records .ui-dataset-form form {
+  margin: 0;
+  max-width: 32rem;
+}
+.programming-record-summary {
+  padding: 0.5rem;
+}
+.programming-record-summary h3 {
+  margin-top: 0;
+}
+.programming-import-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-block: 0.75rem;
 }

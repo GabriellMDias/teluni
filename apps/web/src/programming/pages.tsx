@@ -1,12 +1,16 @@
 import {
   ProgrammingPanel,
   ProgrammingGuide,
-  ProgrammingCreate,
+  ProgrammingNameFilter,
+  useProgrammingDataSet,
+  type ProgrammingSearch,
   ProgramNavigation,
   type ProgrammingSection,
 } from "./workspace.js";
+import { Button, Checkbox, DataSet, TextField } from "../components.js";
+import type { DataSetColumn } from "../dataset.js";
 import { UiIcon } from "../ui-icon.js";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ApiFailure } from "../api-client.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -75,11 +79,7 @@ import {
 import { LayoutsView } from "./layouts.js";
 import { PublicationPanel } from "./publications.js";
 
-export type ProgrammingFilter = Readonly<{
-  view?: "groups" | "layouts";
-  cursor?: string;
-  text?: string;
-}>;
+export type ProgrammingFilter = ProgrammingSearch;
 
 /** `1:05` or `1:02:05` for a duration in milliseconds. */
 export function formatDuration(ms: number): string {
@@ -105,9 +105,13 @@ function summary(playlist: Playlist, t: Messages) {
 function CreatePlaylistForm({
   companyId,
   branches,
+  onCancel,
+  onDirtyChange,
 }: {
   companyId: string;
   branches: { id: string; name: string }[];
+  onCancel: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useProgrammingMessages();
   const navigate = useNavigate();
@@ -125,6 +129,16 @@ function CreatePlaylistForm({
         params: { companyId, playlistId: created.id },
       }),
   });
+  useEffect(
+    () =>
+      onDirtyChange(
+        name !== "" ||
+          scope !== "company" ||
+          create.isPending ||
+          mustReload(create.error),
+      ),
+    [name, scope, create.isPending, create.error, onDirtyChange],
+  );
   return (
     <form
       className="form-stack"
@@ -135,8 +149,8 @@ function CreatePlaylistForm({
       }}
     >
       <h2 id="create-playlist-title">{t.createPlaylistTitle}</h2>
-      <label htmlFor="playlist-name">{t.fieldName}</label>
-      <input
+      <TextField
+        label={t.fieldName}
         id="playlist-name"
         required
         maxLength={120}
@@ -156,14 +170,19 @@ function CreatePlaylistForm({
           </option>
         ))}
       </select>
-      {create.error && <Failure error={create.error} operation="write" />}
-      <button
+      {create.error && (
+        <Failure error={create.error} operation="write" onReload={onCancel} />
+      )}
+      <Button
         type="submit"
-        className="button-primary"
-        disabled={create.isPending || !name.trim()}
+        variant="primary"
+        disabled={create.isPending || mustReload(create.error) || !name.trim()}
       >
         {create.isPending ? t.creating : t.create}
-      </button>
+      </Button>
+      <Button disabled={create.isPending} onClick={onCancel}>
+        {t.workspace.backToGrid}
+      </Button>
     </form>
   );
 }
@@ -171,47 +190,83 @@ function CreatePlaylistForm({
 function PlaylistList({
   companyId,
   filter,
+  company,
+  branches,
 }: {
   companyId: string;
   filter: ProgrammingFilter;
+  company: CompanyWithAccess;
+  branches: { id: string; name: string }[];
 }) {
-  const { t } = useProgrammingMessages();
+  const { locale, t } = useProgrammingMessages();
   const navigate = useNavigate();
-  const [text, setText] = useState(filter.text ?? "");
+  const editable = can(company, "programming.edit");
+  const listFilter = {
+    ...(filter.cursor ? { cursor: filter.cursor } : {}),
+    ...(filter.text ? { text: filter.text } : {}),
+  };
   const playlists = useQuery({
-    queryKey: [...playlistsKey(companyId), filter],
-    queryFn: () =>
-      listPlaylists(companyId, {
-        ...(filter.cursor ? { cursor: filter.cursor } : {}),
-        ...(filter.text ? { text: filter.text } : {}),
-      }),
+    queryKey: [...playlistsKey(companyId), listFilter],
+    queryFn: () => listPlaylists(companyId, listFilter),
   });
+  const rows = playlists.data?.items ?? [];
+  const state = useProgrammingDataSet({ companyId, filter, rows, editable });
+  const columns = useMemo<readonly DataSetColumn<Playlist>[]>(
+    () => [
+      {
+        key: "name",
+        header: t.fieldName,
+        width: 300,
+        value: (row) => row.name,
+        render: (row) => (
+          <Link
+            to="/companies/$companyId/programming/playlists/$playlistId"
+            params={{ companyId, playlistId: row.id }}
+          >
+            {row.name}
+          </Link>
+        ),
+      },
+      {
+        key: "scope",
+        header: t.fieldScope,
+        width: 230,
+        value: (row) => scopeName(row.branch, t),
+      },
+      {
+        key: "items",
+        header: t.itemsTitle,
+        width: 110,
+        value: (row) => row.items.length,
+      },
+      {
+        key: "duration",
+        header: t.workspace.durationColumn,
+        width: 140,
+        value: (row) => row.durationMs,
+        format: (value) => formatDuration(Number(value)),
+      },
+      {
+        key: "transition",
+        header: t.transitionLabel,
+        width: 180,
+        value: (row) => t.transitions[row.transition],
+      },
+    ],
+    [companyId, t],
+  );
+  const cancel = () => {
+    void playlists.refetch();
+    state.go({ mode: "grid", record: undefined });
+  };
   return (
-    <section aria-labelledby="playlists-title">
+    <section
+      aria-labelledby="playlists-title"
+      className="dataset-region programming-records"
+    >
       <h2 id="playlists-title">{t.views.playlists}</h2>
       <p className="hint">{t.workspace.playlistsLead}</p>
-      <form
-        role="search"
-        className="programming-filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void navigate({
-            to: "/companies/$companyId/programming",
-            params: { companyId },
-            search: text.trim() ? { text: text.trim() } : {},
-          });
-        }}
-      >
-        <label htmlFor="playlist-text">{t.filterText}</label>{" "}
-        <input
-          id="playlist-text"
-          type="search"
-          maxLength={120}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />{" "}
-        <button type="submit">{t.search}</button>
-      </form>
+      {state.dirty && <p className="hint">{t.unsaved}</p>}
       {playlists.isPending ? (
         <p>{t.loading}</p>
       ) : playlists.isError ? (
@@ -220,47 +275,104 @@ function PlaylistList({
           operation="read"
           onReload={() => void playlists.refetch()}
         />
-      ) : playlists.data.items.length === 0 ? (
-        <p className="empty-state">
-          {filter.cursor ? t.pageEmpty : t.playlistsEmpty}
-        </p>
       ) : (
-        <ul className="programming-list">
-          {playlists.data.items.map((playlist) => (
-            <li key={playlist.id}>
+        <DataSet
+          label={t.workspace.playlistRecords}
+          locale={locale}
+          mode={state.mode}
+          rows={rows}
+          columns={columns}
+          rowId={(row) => row.id}
+          selectedId={state.record}
+          onSelect={
+            !state.dirty
+              ? (id) => state.go({ mode: filter.mode, record: id }, true)
+              : undefined
+          }
+          onModeChange={!state.dirty ? (mode) => state.go({ mode }) : undefined}
+          onAdd={
+            editable && !state.dirty
+              ? () => state.go({ mode: "form", record: "new" })
+              : undefined
+          }
+          onRefresh={!state.dirty ? () => void playlists.refetch() : undefined}
+          refreshing={playlists.isFetching}
+          exportName={t.views.playlists}
+          filters={
+            !state.dirty
+              ? {
+                  active: filter.text ? 1 : 0,
+                  render: (close) => (
+                    <ProgrammingNameFilter
+                      text={filter.text}
+                      onApply={(text) => {
+                        void navigate({
+                          to: "/companies/$companyId/programming",
+                          params: { companyId },
+                          search: text ? { text } : {},
+                        });
+                        close();
+                      }}
+                    />
+                  ),
+                }
+              : undefined
+          }
+          empty={
+            <p className="empty-state">
+              {filter.cursor ? t.pageEmpty : t.playlistsEmpty}
+            </p>
+          }
+        >
+          {state.record === "new" && editable ? (
+            <CreatePlaylistForm
+              companyId={companyId}
+              branches={branches}
+              onCancel={cancel}
+              onDirtyChange={state.setDirty}
+            />
+          ) : state.selected ? (
+            <article className="programming-record-summary">
+              <h3>{state.selected.name}</h3>
+              <p>
+                {scopeName(state.selected.branch, t)} ·{" "}
+                {summary(state.selected, t)}
+              </p>
               <Link
+                className="button-link button-primary"
                 to="/companies/$companyId/programming/playlists/$playlistId"
-                params={{ companyId, playlistId: playlist.id }}
+                params={{ companyId, playlistId: state.selected.id }}
               >
-                {playlist.name}
+                {t.workspace.openContent}
               </Link>
-              <span className="hint">
-                {scopeName(playlist.branch, t)} · {summary(playlist, t)}
-              </span>
-            </li>
-          ))}
-        </ul>
+            </article>
+          ) : (
+            <p>{t.playlistsEmpty}</p>
+          )}
+        </DataSet>
       )}
-      <nav className="pagination" aria-label={t.views.playlists}>
-        {filter.cursor && (
-          <Link
-            to="/companies/$companyId/programming"
-            params={{ companyId }}
-            search={filter.text ? { text: filter.text } : {}}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {playlists.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId/programming"
-            params={{ companyId }}
-            search={{ ...filter, cursor: playlists.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
+      {state.mode === "grid" && (
+        <nav className="pagination" aria-label={t.views.playlists}>
+          {filter.cursor && (
+            <Link
+              to="/companies/$companyId/programming"
+              params={{ companyId }}
+              search={filter.text ? { text: filter.text } : {}}
+            >
+              {t.firstPage}
+            </Link>
+          )}
+          {playlists.data?.nextCursor && (
+            <Link
+              to="/companies/$companyId/programming"
+              params={{ companyId }}
+              search={{ ...listFilter, cursor: playlists.data.nextCursor }}
+            >
+              {t.nextPage}
+            </Link>
+          )}
+        </nav>
+      )}
     </section>
   );
 }
@@ -285,31 +397,26 @@ function SpanFields({
     <fieldset className="programming-choices">
       <legend>{t.spanLabel}</legend>
       <p className="hint">{t.spanHint}</p>
-      <label className="checkbox-row">
-        <input
-          type="checkbox"
-          checked={allBranches}
-          onChange={(event) => onAll(event.target.checked)}
-        />
-        {t.allBranches}
-      </label>
+      <Checkbox
+        label={t.allBranches}
+        checked={allBranches}
+        onChange={(event) => onAll(event.target.checked)}
+      />
       {!allBranches &&
         branches.map((branch) => (
-          <label key={branch.id} className="checkbox-row">
-            <input
-              type="checkbox"
-              id={`${idPrefix}-${branch.id}`}
-              checked={selected.includes(branch.id)}
-              onChange={(event) =>
-                onSelected(
-                  event.target.checked
-                    ? [...selected, branch.id]
-                    : selected.filter((id) => id !== branch.id),
-                )
-              }
-            />
-            {branch.name}
-          </label>
+          <Checkbox
+            key={branch.id}
+            id={`${idPrefix}-${branch.id}`}
+            label={branch.name}
+            checked={selected.includes(branch.id)}
+            onChange={(event) =>
+              onSelected(
+                event.target.checked
+                  ? [...selected, branch.id]
+                  : selected.filter((id) => id !== branch.id),
+              )
+            }
+          />
         ))}
     </fieldset>
   );
@@ -318,9 +425,13 @@ function SpanFields({
 function CreateGroupForm({
   companyId,
   branches,
+  onCancel,
+  onDirtyChange,
 }: {
   companyId: string;
   branches: { id: string; name: string }[];
+  onCancel: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useProgrammingMessages();
   const navigate = useNavigate();
@@ -340,6 +451,24 @@ function CreateGroupForm({
         params: { companyId, groupId: created.id },
       }),
   });
+  useEffect(
+    () =>
+      onDirtyChange(
+        name !== "" ||
+          allBranches ||
+          selected.length > 0 ||
+          create.isPending ||
+          mustReload(create.error),
+      ),
+    [
+      name,
+      allBranches,
+      selected,
+      create.isPending,
+      create.error,
+      onDirtyChange,
+    ],
+  );
   return (
     <form
       className="form-stack"
@@ -350,8 +479,8 @@ function CreateGroupForm({
       }}
     >
       <h2 id="create-group-title">{t.createGroupTitle}</h2>
-      <label htmlFor="group-name">{t.fieldName}</label>
-      <input
+      <TextField
+        label={t.fieldName}
         id="group-name"
         required
         maxLength={80}
@@ -366,18 +495,24 @@ function CreateGroupForm({
         onAll={setAllBranches}
         onSelected={setSelected}
       />
-      {create.error && <Failure error={create.error} operation="write" />}
-      <button
+      {create.error && (
+        <Failure error={create.error} operation="write" onReload={onCancel} />
+      )}
+      <Button
         type="submit"
-        className="button-primary"
+        variant="primary"
         disabled={
           create.isPending ||
+          mustReload(create.error) ||
           !name.trim() ||
           (!allBranches && selected.length === 0)
         }
       >
         {create.isPending ? t.creating : t.create}
-      </button>
+      </Button>
+      <Button disabled={create.isPending} onClick={onCancel}>
+        {t.workspace.backToGrid}
+      </Button>
     </form>
   );
 }
@@ -387,16 +522,68 @@ const spanText = (group: Group, t: Messages) =>
     ? t.spanAll
     : group.branches.map((branch) => branch.name).join(", ");
 
-function GroupList({ companyId }: { companyId: string }) {
-  const { t } = useProgrammingMessages();
+function GroupList({
+  companyId,
+  filter,
+  company,
+  branches,
+}: {
+  companyId: string;
+  filter: ProgrammingFilter;
+  company: CompanyWithAccess;
+  branches: { id: string; name: string }[];
+}) {
+  const { locale, t } = useProgrammingMessages();
+  const editable = can(company, "programming.edit");
   const groups = useQuery({
     queryKey: groupsKey(companyId),
     queryFn: () => listGroups(companyId),
   });
+  const rows = groups.data?.items ?? [];
+  const state = useProgrammingDataSet({ companyId, filter, rows, editable });
+  const columns = useMemo<readonly DataSetColumn<Group>[]>(
+    () => [
+      {
+        key: "name",
+        header: t.fieldName,
+        width: 330,
+        value: (row) => row.name,
+        render: (row) => (
+          <Link
+            to="/companies/$companyId/programming/groups/$groupId"
+            params={{ companyId, groupId: row.id }}
+          >
+            {row.name}
+          </Link>
+        ),
+      },
+      {
+        key: "reach",
+        header: t.workspace.scopeColumn,
+        width: 350,
+        value: (row) => spanText(row, t),
+      },
+      {
+        key: "screens",
+        header: t.workspace.screensColumn,
+        width: 130,
+        value: (row) => row.members.length,
+      },
+    ],
+    [companyId, t],
+  );
+  const cancel = () => {
+    void groups.refetch();
+    state.go({ mode: "grid", record: undefined });
+  };
   return (
-    <section aria-labelledby="groups-title">
+    <section
+      aria-labelledby="groups-title"
+      className="dataset-region programming-records"
+    >
       <h2 id="groups-title">{t.views.groups}</h2>
       <p className="hint">{t.workspace.groupsLead}</p>
+      {state.dirty && <p className="hint">{t.unsaved}</p>}
       {groups.isPending ? (
         <p>{t.loading}</p>
       ) : groups.isError ? (
@@ -405,24 +592,57 @@ function GroupList({ companyId }: { companyId: string }) {
           operation="read"
           onReload={() => void groups.refetch()}
         />
-      ) : groups.data.items.length === 0 ? (
-        <p className="empty-state">{t.groupsEmpty}</p>
       ) : (
-        <ul className="programming-list">
-          {groups.data.items.map((group) => (
-            <li key={group.id}>
+        <DataSet
+          label={t.workspace.groupRecords}
+          locale={locale}
+          mode={state.mode}
+          rows={rows}
+          columns={columns}
+          rowId={(row) => row.id}
+          selectedId={state.record}
+          onSelect={
+            !state.dirty
+              ? (id) => state.go({ mode: filter.mode, record: id }, true)
+              : undefined
+          }
+          onModeChange={!state.dirty ? (mode) => state.go({ mode }) : undefined}
+          onAdd={
+            editable && !state.dirty
+              ? () => state.go({ mode: "form", record: "new" })
+              : undefined
+          }
+          onRefresh={!state.dirty ? () => void groups.refetch() : undefined}
+          refreshing={groups.isFetching}
+          exportName={t.views.groups}
+          empty={<p className="empty-state">{t.groupsEmpty}</p>}
+        >
+          {state.record === "new" && editable ? (
+            <CreateGroupForm
+              companyId={companyId}
+              branches={branches}
+              onCancel={cancel}
+              onDirtyChange={state.setDirty}
+            />
+          ) : state.selected ? (
+            <article className="programming-record-summary">
+              <h3>{state.selected.name}</h3>
+              <p>
+                {spanText(state.selected, t)} ·{" "}
+                {t.memberCount(state.selected.members.length)}
+              </p>
               <Link
+                className="button-link button-primary"
                 to="/companies/$companyId/programming/groups/$groupId"
-                params={{ companyId, groupId: group.id }}
+                params={{ companyId, groupId: state.selected.id }}
               >
-                {group.name}
+                {t.workspace.openProgram}
               </Link>
-              <span className="hint">
-                {spanText(group, t)} · {t.memberCount(group.members.length)}
-              </span>
-            </li>
-          ))}
-        </ul>
+            </article>
+          ) : (
+            <p>{t.groupsEmpty}</p>
+          )}
+        </DataSet>
       )}
     </section>
   );
@@ -486,26 +706,19 @@ export function ProgrammingPage({
               filter={filter}
             />
           ) : view === "playlists" ? (
-            <>
-              {can(company, "programming.edit") && (
-                <ProgrammingCreate title={t.createPlaylistTitle}>
-                  <CreatePlaylistForm
-                    companyId={companyId}
-                    branches={choices}
-                  />
-                </ProgrammingCreate>
-              )}
-              <PlaylistList companyId={companyId} filter={filter} />
-            </>
+            <PlaylistList
+              companyId={companyId}
+              filter={filter}
+              company={company}
+              branches={choices}
+            />
           ) : (
-            <>
-              {can(company, "programming.edit") && (
-                <ProgrammingCreate title={t.createGroupTitle}>
-                  <CreateGroupForm companyId={companyId} branches={choices} />
-                </ProgrammingCreate>
-              )}
-              <GroupList companyId={companyId} />
-            </>
+            <GroupList
+              companyId={companyId}
+              filter={filter}
+              company={company}
+              branches={choices}
+            />
           )}
         </>
       )}
@@ -592,9 +805,9 @@ function PlaylistSettings({
           }}
         />
       )}
-      <button
+      <Button
         type="submit"
-        className="button-primary"
+        variant="primary"
         disabled={
           save.isPending ||
           mustReload(save.error) ||
@@ -602,7 +815,7 @@ function PlaylistSettings({
         }
       >
         {save.isPending ? t.saving : t.save}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -675,7 +888,7 @@ function MediaPicker({
           value={text}
           onChange={(event) => setText(event.target.value)}
         />{" "}
-        <button type="submit">{t.search}</button>
+        <Button type="submit">{t.search}</Button>
       </form>
       {media.isPending ? (
         <p>{t.loading}</p>
@@ -697,7 +910,7 @@ function MediaPicker({
                 loading="lazy"
               />
               <span>{item.name}</span>
-              <button
+              <Button
                 type="button"
                 onClick={() =>
                   onAdd({
@@ -711,24 +924,24 @@ function MediaPicker({
                 }
               >
                 {t.add(item.name)}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       )}
       <nav className="pagination" aria-label={t.pickerTitle}>
         {cursor && (
-          <button type="button" onClick={() => setCursor(undefined)}>
+          <Button type="button" onClick={() => setCursor(undefined)}>
             {t.firstPage}
-          </button>
+          </Button>
         )}
         {media.data?.nextCursor && (
-          <button
+          <Button
             type="button"
             onClick={() => setCursor(media.data?.nextCursor ?? undefined)}
           >
             {t.nextPage}
-          </button>
+          </Button>
         )}
       </nav>
     </section>
@@ -849,23 +1062,23 @@ function ItemsEditor({
                     )}
                   </div>
                   <span className="programming-item-actions">
-                    <button
+                    <Button
                       type="button"
                       disabled={index === 0}
                       aria-label={`${t.moveUp}: ${t.itemPosition(index + 1, item.name)}`}
                       onClick={() => move(index, -1)}
                     >
                       <UiIcon name="sortAscending" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       disabled={index === items.length - 1}
                       aria-label={`${t.moveDown}: ${t.itemPosition(index + 1, item.name)}`}
                       onClick={() => move(index, 1)}
                     >
                       <UiIcon name="sortDescending" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       aria-label={`${t.remove}: ${t.itemPosition(index + 1, item.name)}`}
                       onClick={() =>
@@ -873,7 +1086,7 @@ function ItemsEditor({
                       }
                     >
                       <UiIcon name="delete" />
-                    </button>
+                    </Button>
                   </span>
                 </li>
               ))}
@@ -891,9 +1104,9 @@ function ItemsEditor({
             }}
           />
         )}
-        <button
+        <Button
           type="button"
-          className="button-primary"
+          variant="primary"
           disabled={
             !dirty ||
             !valid ||
@@ -904,7 +1117,7 @@ function ItemsEditor({
           onClick={() => save.mutate()}
         >
           {save.isPending ? t.saving : t.saveItems}
-        </button>
+        </Button>
       </div>
       <fieldset
         className="programming-library"
@@ -1396,7 +1609,7 @@ function LayoutChoice({
           {save.error && pending.length === 0 && (
             <Failure error={save.error} operation="write" />
           )}
-          <button
+          <Button
             type="button"
             disabled={
               save.isPending ||
@@ -1407,7 +1620,7 @@ function LayoutChoice({
             onClick={() => save.mutate()}
           >
             {t.useLayout}
-          </button>
+          </Button>
         </>
       )}
       {program.layout?.name && (
@@ -1590,7 +1803,7 @@ function ScheduleForm({
                     { label: t.workspace.workdays, days: [1, 2, 3, 4, 5] },
                     { label: t.workspace.weekend, days: [6, 7] },
                   ].map((preset) => (
-                    <button
+                    <Button
                       type="button"
                       key={preset.label}
                       onClick={() =>
@@ -1598,7 +1811,7 @@ function ScheduleForm({
                       }
                     >
                       {preset.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {[1, 2, 3, 4, 5, 6, 7].map((day) => (
@@ -1689,7 +1902,7 @@ function ScheduleForm({
                 </ul>
               )}
               {editable && (
-                <button
+                <Button
                   type="button"
                   onClick={() =>
                     setRules((current) =>
@@ -1698,13 +1911,13 @@ function ScheduleForm({
                   }
                 >
                   {t.removeRule(position)}
-                </button>
+                </Button>
               )}
             </fieldset>
           );
         })}
         {editable && (
-          <button
+          <Button
             type="button"
             disabled={rules.length >= 200}
             onClick={() =>
@@ -1724,7 +1937,7 @@ function ScheduleForm({
             }
           >
             {t.addRule}
-          </button>
+          </Button>
         )}
       </fieldset>
       {save.error && (
@@ -1735,14 +1948,14 @@ function ScheduleForm({
         />
       )}
       {editable && (
-        <button
+        <Button
           type="button"
-          className="button-primary"
+          variant="primary"
           disabled={save.isPending || mustReload(save.error)}
           onClick={() => save.mutate()}
         >
           {save.isPending ? t.saving : t.saveSchedules}
-        </button>
+        </Button>
       )}
     </section>
   );
@@ -1960,9 +2173,9 @@ function GroupSettings({
           }}
         />
       )}
-      <button
+      <Button
         type="submit"
-        className="button-primary"
+        variant="primary"
         disabled={
           save.isPending ||
           mustReload(save.error) ||
@@ -1971,7 +2184,7 @@ function GroupSettings({
         }
       >
         {save.isPending ? t.saving : t.save}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -2314,9 +2527,9 @@ function AssignmentForm({
           }}
         />
       )}
-      <button
+      <Button
         type="submit"
-        className="button-primary"
+        variant="primary"
         disabled={
           unchanged ||
           (!latest && !confirmed) ||
@@ -2325,7 +2538,7 @@ function AssignmentForm({
         }
       >
         {assign.isPending ? t.saving : t.assign}
-      </button>
+      </Button>
     </form>
   );
 }

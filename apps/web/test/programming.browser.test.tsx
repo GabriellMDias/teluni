@@ -33,6 +33,7 @@ const base = `/companies/${companyId}/programming`;
 const locale = browserLocale();
 const t = programmingMessages[locale];
 const organizations = organizationMessages[locale];
+const addRecord = locale === "pt-BR" ? "Adicionar" : "Add";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -260,9 +261,7 @@ test("lists playlists for viewers without the create form", async () => {
     .element(screen.getByRole("link", { name: "Manhã" }))
     .toHaveAttribute("href", `${base}/playlists/${playlistId}`);
   await expect
-    .element(
-      screen.getByText(t.playlistSummary(1, "0:10", 0), { exact: false }),
-    )
+    .element(screen.getByRole("gridcell", { name: "0:10", exact: true }))
     .toBeVisible();
   await expect
     .element(screen.getByRole("heading", { name: t.createPlaylistTitle }))
@@ -283,8 +282,8 @@ test("creates a playlist and opens it", async () => {
   });
   const { screen, router } = await open(base);
   await screen
-    .getByText(t.createPlaylistTitle, { exact: true })
-    .first()
+    .getByRole("region", { name: t.workspace.playlistRecords })
+    .getByRole("button", { name: addRecord, exact: true })
     .click();
   await screen.getByLabelText(t.fieldName).fill("Manhã");
   await screen.getByLabelText(t.fieldScope).selectOptions("Centro");
@@ -1245,4 +1244,88 @@ test("blocks an unknown schedule write until a successful authoritative reload, 
     .toHaveValue("");
   await expect.element(save).toBeEnabled();
   expect(sentCount("PUT", "/outputs/screen")).toBe(1);
+});
+
+test("uses URL-owned DataSet selection, guards a new draft and applies server name filters", async () => {
+  respond(editor, (url) => {
+    if (url.pathname.endsWith("/programming/playlists"))
+      return {
+        body: {
+          items: [
+            playlist(),
+            playlist({ id: otherPlaylistId, name: "Tarde", durationMs: 25000 }),
+          ],
+          nextCursor: null,
+        },
+      };
+    return undefined;
+  });
+  const { screen, router } = await open(base);
+  const records = screen.getByRole("region", {
+    name: t.workspace.playlistRecords,
+  });
+  await records.getByRole("gridcell", { name: "0:25", exact: true }).dblClick();
+  await expect
+    .element(screen.getByRole("heading", { name: "Tarde", exact: true }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    mode: "form",
+    record: otherPlaylistId,
+  });
+  await records
+    .getByRole("button", {
+      name: locale === "pt-BR" ? "Modo grade" : "Grid mode",
+      exact: true,
+    })
+    .click();
+  await records.getByRole("button", { name: addRecord, exact: true }).click();
+  await screen.getByLabelText(t.fieldName).fill("Unsaved playlist");
+  await expect
+    .element(
+      records.getByRole("button", {
+        name: locale === "pt-BR" ? "Modo grade" : "Grid mode",
+        exact: true,
+      }),
+    )
+    .toBeDisabled();
+  await expect
+    .element(records.getByRole("button", { name: addRecord, exact: true }))
+    .toBeDisabled();
+  await screen
+    .getByRole("button", { name: t.workspace.backToGrid, exact: true })
+    .click();
+  await records
+    .getByRole("button", {
+      name: locale === "pt-BR" ? "Filtrar" : "Filter",
+      exact: true,
+    })
+    .click();
+  await screen.getByLabelText(t.filterText).fill("Tarde");
+  await screen.getByRole("button", { name: t.search, exact: true }).click();
+  await expect
+    .poll(() => router.state.location.search)
+    .toEqual({ text: "Tarde" });
+  expect(sentCount("POST", "/programming/playlists")).toBe(0);
+});
+
+test("does not open dataset creation from a forged viewer URL", async () => {
+  respond(["programming.view"], (url) =>
+    url.pathname.endsWith("/programming/playlists")
+      ? { body: { items: [playlist()], nextCursor: null } }
+      : undefined,
+  );
+  const { screen } = await open(`${base}?mode=form&record=new`);
+  await expect
+    .element(screen.getByRole("heading", { name: "Manhã", exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("form", { name: t.createPlaylistTitle }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(
+      screen
+        .getByRole("region", { name: t.workspace.playlistRecords })
+        .getByRole("button", { name: addRecord, exact: true }),
+    )
+    .toBeDisabled();
 });
