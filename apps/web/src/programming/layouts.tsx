@@ -1851,6 +1851,31 @@ function LayoutEditor({
           save.mutate();
       }}
     >
+      {save.error && (
+        <LayoutFailure
+          error={save.error}
+          operation="write"
+          areas={draft.areas}
+          outputs={layout.areas}
+          onReload={() => {
+            setRecoveryError(null);
+            void onChanged(null).catch(setRecoveryError);
+          }}
+        />
+      )}
+      {Boolean(recoveryError) && (
+        <LayoutFailure error={recoveryError} operation="read" />
+      )}
+      {removalPending && (
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={confirmRemoval}
+            onChange={(event) => setConfirmRemoval(event.target.checked)}
+          />
+          {l.confirmRemoval}
+        </label>
+      )}
       <fieldset className="layout-editable" disabled={blocked}>
         <div className="layout-editor-heading">
           <TextField
@@ -2096,31 +2121,6 @@ function LayoutEditor({
         <p role="status" className="visually-hidden">
           {announcement}
         </p>
-      )}
-      {save.error && (
-        <LayoutFailure
-          error={save.error}
-          operation="write"
-          areas={draft.areas}
-          outputs={layout.areas}
-          onReload={() => {
-            setRecoveryError(null);
-            void onChanged(null).catch(setRecoveryError);
-          }}
-        />
-      )}
-      {Boolean(recoveryError) && (
-        <LayoutFailure error={recoveryError} operation="read" />
-      )}
-      {removalPending && (
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={confirmRemoval}
-            onChange={(event) => setConfirmRemoval(event.target.checked)}
-          />
-          {l.confirmRemoval}
-        </label>
       )}
     </form>
   );
