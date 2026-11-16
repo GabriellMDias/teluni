@@ -1,5 +1,14 @@
 [
   {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Alternatives considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives considered\n**`sharp` (libvips) for images.** Fast and well maintained, but it parses untrusted images inside the API process and adds a native dependency next to FFmpeg, which the videos need anyway. FFmpeg 6.1 applies EXIF orientation and strips metadata, so one isolated tool covers both kinds.\n**Object storage (S3-compatible, for example MinIO) now.** It would separate storage from the host, but adds a service to operate on a single-host pilot with no budget. ADR-0021 already keeps the interface replaceable.\n**Storing media in PostgreSQL large objects.** Transactional, but it inflates backups and database I/O with gigabytes of video and makes range reads and streaming harder.\n**Global deduplication across companies.** Saves space but lets one company infer that another holds a given file and couples tenant deletion; per-company deduplication keeps tenants independent.\n**Resumable uploads (tus) now.** Better for unstable connections, but adds a protocol and its state; deferred until measurements show the need.\n**Sending originals to screens and relying on device decoders.** Avoids conversion, but makes playback depend on every device's codec support, which FR-04 and the release policies rule out.\n**A separate processing service or queue broker.** Stronger isolation and scaling, but the pilot runs one process on one host (ADR-0021); child processes with timeouts and limits give isolation now, and a separate container is the deployment-level step in PJ-13.\n"
+  },
+  {
     "id": "repository/docs/project/mvp",
     "title": "Teluni Initial Release Requirements and Acceptance",
     "group": "Project guides",
@@ -574,14 +583,5 @@
     "heading": "Preview",
     "anchor": "preview",
     "text": "Preview\n`GET /companies/{companyId}/programming/devices/{deviceId}/timeline?from=&to=` evaluates the screen's current draft source in its zone. `GET /companies/{companyId}/programming/groups/{groupId}/timeline?timeZone=&from=&to=` evaluates a group program for a zone the caller chooses (the panel offers its branches' and members' zones), so a group can be previewed before it has screens. A range covers at most 31 days and returns at most 2,000 segments; the panel shows the next seven days by default, in local time, with the resolution notes. The response names the source (group or individual) and, for each segment, the playlist's name, total duration and item count as the caller may see them.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Lifecycle and references",
-    "anchor": "lifecycle-and-references",
-    "text": "Lifecycle and references\nMedia: the programming module registers a media reference guard. An asset used by a playlist item cannot be deleted; the refusal names the playlists the caller may see and counts the others. Archived assets remain in playlists.\nPlaylists: a playlist used by a rule or a default cannot be deleted (`PLAYLIST_IN_USE`); otherwise deletion removes it and its items after a confirmation naming it. A playlist cannot change its owning scope.\nGroups: deletable when they have no members; their program is deleted with them.\nDevices: an unlinked screen's settings and individual program are kept with the device record for audit and are no longer evaluated or editable. A screen moved to another branch outside its group's span leaves the group in the same transaction as the move, which the devices module calls through a hook the programming module registers; the screen's programming then shows its own program.\nBranches: archiving a branch is refused while a group's span names it explicitly. Branch playlists of an archived branch stay, like its media.\nMoved screens: rules of a moved screen's own program that use the previous branch's playlists stay as drafts; saving that output again, or publishing it (PJ-11), is refused until they are replaced.\nPublication (PJ-11) adds protection for references from published, staged and retained generations.\n"
   }
 ]

@@ -1,5 +1,50 @@
 [
   {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nProve the intended service, security, or data state through relevant health, errors, latency, progress, integrity, authorization, revocation, or application behavior. A successful command or cleared alert alone is insufficient. Name any justified post-recovery observation period and signals.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Rollback / Recovery",
+    "anchor": "rollback--recovery",
+    "text": "Rollback / Recovery\nDescribe safe reversal and its compatibility prerequisites, or the actual forward-recovery path when rollback is unsafe/impossible. Identify irreversible effects. Remove this section only when it does not apply.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Escalation",
+    "anchor": "escalation",
+    "text": "Escalation\nStop when evidence does not match, scope exceeds bounds, access/preconditions cannot be verified, destructive impact is unknown, corruption/compromise is suspected, recovery fails, or postconditions cannot be verified. Preserve safe evidence and identify the real escalation owner when one exists.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Follow-Up",
+    "anchor": "follow-up",
+    "text": "Follow-Up\nRecord needed permanent correction, regression tests, alert/observability changes, automation, temporary-measure removal, runbook update, ADR, or post-incident review. Give follow-up work an owner; keep incident history outside this current procedure.\n"
+  },
+  {
+    "id": "repository/docs/security/authentication",
+    "title": "Authentication",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Authentication",
+    "anchor": "authentication",
+    "text": "Authentication\nThis policy owns trusted identity, credential, and session requirements. [Authorization](authorization.md) owns permission decisions; [secrets management](secrets-management.md) owns credential lifecycle and [redaction](telemetry-redaction.md) owns telemetry handling. Start with the [task index](../README.md) for other concerns.\n"
+  },
+  {
     "id": "repository/docs/security/authentication",
     "title": "Authentication",
     "group": "Security",
