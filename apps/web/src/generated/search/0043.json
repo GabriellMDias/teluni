@@ -207,6 +207,42 @@
     "text": "Examples\n**Programming composition** (`programmingpanel-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingPanel active={section === \"preview\"}>{preview}</ProgrammingPanel>\n\n"
   },
   {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "LayoutCanvas",
+    "anchor": "layoutcanvas",
+    "text": "LayoutCanvas\nSchematic freeform layout canvas with component drop, movement and eight resize handles.\nCategory: Layout. Scope: feature-specific. Owner: Programming.\nSource: [apps/web/src/programming/layout-canvas.tsx](../../../apps/web/src/programming/layout-canvas.tsx) (export `LayoutCanvas`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-17",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`name, canvas, areas`\n`string; Size; readonly CanvasArea[]`\nLayout label, canonical orientation size and freeform rectangles with kind, color and stacking order.\nYes\n—\n`selected, flagged`\n`string | null; ReadonlySet<number>`\nSelected editor identity and validation issue indices.\nSee type\n—\n`onSelect, onMove`\n`callbacks`\nFeature-owned selection and geometry updates; omit for read-only rendering.\nSee type\n—\n`onGestureStart, onGestureEnd`\n`callbacks`\nBracket one pointer gesture so undo restores the whole movement or resize.\nSee type\n—\n`dragging, onInsert`\n`\"media\" | \"catalog\" | null; callback`\nOnly an active, feature-owned component drag with the matching internal MIME payload may insert. The feature enforces the area limit.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-17",
+    "text": "States\nRead-only structure\nSelected area and covered layers\nPointer move or edge/corner resize\nComponent drop preview\nValidation issue highlight\nAccessibility: Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.\nUsage: Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-17",
+    "text": "Examples\n**Layout editor canvas** (`layoutcanvas-composition`): Feature-owned schematic composition; no live authenticated requests.\n<LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />\n\n"
+  },
+  {
     "id": "repository/docs/generated/configuration/api",
     "title": "API Configuration Reference",
     "group": "Generated references",
@@ -682,23 +718,5 @@
     "heading": "branches",
     "anchor": "branches",
     "text": "branches\nBranch of a company: a location with its own business time zone, assigned members and, later, devices.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; archived rather than deleted so references remain valid.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable branch UUID; public resource ID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nOwning company; immutable (tenant key).\n—\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nBranch name, unique among the company's active branches regardless of case.\n—\n—\n`time_zone`\n`character varying(64)`\nno\n—\nINTERNAL\nIANA scheduling zone derived atomically from a confirmed map point. Legacy branches retain their existing zone until location selection; an explicit device zone can override this branch zone.\n—\n—\n`status`\n`\"BranchStatus\"`\nno\n`'ACTIVE'::\"BranchStatus\"`\nINTERNAL\nACTIVE branches are usable; ARCHIVED branches are retained for references.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token incremented once per successful change.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change; not audit history.\n—\nUTC instant, millisecond precision\n`location`\n`jsonb`\nyes\n—\nCONFIDENTIAL\nConfirmed branch map point, storing latitude and longitude rounded to six decimals. The API derives time_zone from geographic boundaries; clients cannot override the zone of a selected location.\nNo map point confirmed; preserve the existing legacy time zone until selection.\n—\n`address`\n`character varying(300)`\nyes\n—\nCONFIDENTIAL\nFull branch address entered by an authorized company administrator. Required when a map point is selected; never sent to a geocoding service or treated as independently verified.\nNo optional street address supplied.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-25",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`branches_address_nonblank`\n`CHECK (((address IS NULL) OR (length(btrim((address)::text)) > 0)))`\nAn optional address cannot be blank.\n`branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA branch belongs to an existing company.\n`branches_located_address_required`\n`CHECK (((location IS NULL) OR ((address IS NOT NULL) AND (length(btrim((address)::text)) > 0))))`\nA branch with a confirmed map point also has a full address.\n`branches_location_coordinates`\n`CHECK (((location IS NULL) OR ((location ?& ARRAY['latitude'::text, 'longitude'::text]) AND (jsonb_typeof((location -> 'latitude'::text)) = 'number'::text) AND (jsonb_typeof((location -> 'longitude'::text)) = 'number'::text) AND ((((location ->> 'latitude'::text))::numeric >= ('-90'::integer)::numeric) AND (((location ->> 'latitude'::text))::numeric <= (90)::numeric)) AND ((((location ->> 'longitude'::text))::numeric >= ('-180'::integer)::numeric) AND (((location ->> 'longitude'::text))::numeric <= (180)::numeric)))))`\nSelected map points carry numeric latitude and longitude within geographic bounds.\n`branches_location_object`\n`CHECK (((location IS NULL) OR (jsonb_typeof(location) = 'object'::text)))`\nA selected location is a structured map point.\n`branches_name_nonblank`\n`CHECK (((name)::text ~ '[^[:space:]]'::text))`\nBranch name cannot be blank.\n`branches_pkey`\n`PRIMARY KEY (id)`\nUnique branch identity.\n`branches_time_zone_nonblank`\n`CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))`\nTime zone has the IANA identifier shape.\n`branches_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`branches_company_active_name_unique`\n`CREATE UNIQUE INDEX branches_company_active_name_unique ON public.branches USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"BranchStatus\")`\nActive branch names are unique within a company, ignoring case, including racing creations.\n`branches_company_id_id_key`\n`CREATE UNIQUE INDEX branches_company_id_id_key ON public.branches USING btree (company_id, id)`\nTenant key that tenant references target.\n`branches_company_status_name_idx`\n`CREATE INDEX branches_company_status_name_idx ON public.branches USING btree (company_id, status, name)`\nSupports listing a company's branches by state and name.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "memberships",
-    "anchor": "memberships",
-    "text": "memberships\nA principal's membership in one company; access comes only from its unexpired grants.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; company administrators may suspend, reactivate or terminally remove membership with an observed version. Responsibility and the last active administrator are protected. Historical attribution is retained; no runtime deletion.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated membership UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the membership; immutable (tenant key).\n—\n—\n`principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nMember principal; a principal may hold memberships in several companies that never see each other.\n—\n—\n`status`\n`\"MembershipStatus\"`\nno\n`'ACTIVE'::\"MembershipStatus\"`\nINTERNAL\nOnly ACTIVE memberships grant access.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token for membership changes.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change.\n—\nUTC instant, millisecond precision\n"
   }
 ]

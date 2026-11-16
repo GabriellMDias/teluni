@@ -122,6 +122,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
     .getByRole("button", { name: "Adicionar área de catálogo" })
     .click();
   await page.getByLabel("Nome da área").fill("Cardápio");
+  await page.getByText("Identificador da programação", { exact: true }).click();
   await page.getByLabel("Chave", { exact: true }).fill("cardapio");
   await page.getByLabel("X", { exact: true }).fill("1280");
   await page.getByLabel("Y", { exact: true }).fill("0");

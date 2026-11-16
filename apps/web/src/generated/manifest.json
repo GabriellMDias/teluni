@@ -3026,6 +3026,20 @@
       "file": "pages/components/ErrorNotice.json"
     },
     {
+      "id": "components/LayoutCanvas",
+      "kind": "component",
+      "title": "LayoutCanvas",
+      "group": "Layout",
+      "category": "Layout",
+      "scope": "feature-specific",
+      "owner": "Programming",
+      "metadataSource": "apps/web/src/programming/components.docs.json",
+      "source": "apps/web/src/programming/layout-canvas.tsx",
+      "summary": "Schematic freeform layout canvas with component drop, movement and eight resize handles.",
+      "headings": [],
+      "file": "pages/components/LayoutCanvas.json"
+    },
+    {
       "id": "components/MediaBrowser",
       "kind": "component",
       "title": "MediaBrowser",
@@ -4665,26 +4679,26 @@
         "count": 47,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0035.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 125, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 126, "kinds": ["repository"] },
       { "file": "search/0038.json", "count": 174, "kinds": ["repository"] },
       { "file": "search/0039.json", "count": 162, "kinds": ["repository"] },
       { "file": "search/0040.json", "count": 115, "kinds": ["repository"] },
       { "file": "search/0041.json", "count": 114, "kinds": ["repository"] },
       { "file": "search/0042.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 78, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 80, "kinds": ["repository"] },
       { "file": "search/0044.json", "count": 72, "kinds": ["repository"] },
       { "file": "search/0045.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 39, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 52, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 37, "kinds": ["repository"] },
+      { "file": "search/0049.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0050.json", "count": 68, "kinds": ["repository"] },
       { "file": "search/0051.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0052.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0053.json", "count": 70, "kinds": ["repository"] }
+      { "file": "search/0052.json", "count": 104, "kinds": ["repository"] },
+      { "file": "search/0053.json", "count": 78, "kinds": ["repository"] }
     ],
-    "count": 2171
+    "count": 2177
   }
 }
