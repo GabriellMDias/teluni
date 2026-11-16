@@ -221,6 +221,22 @@ describe("public widget sources", () => {
     const body = `<rss><channel><!--${literal}--><title>Source</title><item><title><![CDATA[${literal}Headline]]></title></item></channel></rss>`;
     expect(parseWidgetRss(body).items[0].title).toBe("Headline");
   });
+  it("enforces XML depth through the parser for quoted attributes and Unicode names", () => {
+    const envelope = (nested: string) =>
+      `<rss><channel><title>Source</title><item><title>Headline</title></item>${nested}</channel></rss>`;
+    expect(
+      parseWidgetRss(envelope("<n>".repeat(30) + "Text" + "</n>".repeat(30)))
+        .items,
+    ).toHaveLength(1);
+    for (const nested of [
+      "<n>".repeat(31) + "Text" + "</n>".repeat(31),
+      '<n a="/>">'.repeat(31) + '<ghost a=">" /></n>'.repeat(31),
+      "<ñ>".repeat(31) + "Text" + "</ñ>".repeat(31),
+    ])
+      expect(() => parseWidgetRss(envelope(nested))).toThrow(
+        WidgetSourceFailure,
+      );
+  });
   it("fits twelve maximum-size Unicode feeds in the device budget without mutating preview links", async () => {
     const url =
       "https://example.org/" + "a".repeat(2048 - "https://example.org/".length);

@@ -4,6 +4,15 @@
     "title": "Teluni Tenant Data Ownership and Access Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Row-level security evaluation",
+    "anchor": "row-level-security-evaluation",
+    "text": "Row-level security evaluation\nADR-0018 requires evaluating PostgreSQL row-level security (RLS) before relying on it or rejecting it. The evaluated mechanism was: enable RLS on each tenant-owned table with a policy such as `USING (company_id = current_setting('teluni.company_id', true)::uuid)`, keep the runtime role a non-owner (already true, because migrations own the tables), and set the tenant per transaction with `set_config('teluni.company_id', $1, true)`.\nConcern\nFinding\nMixed-tenant references\nPostgreSQL performs foreign-key checks without applying RLS policies, so RLS alone does not prevent a row from referencing another company's identifier. Composite tenant keys are required either way\nConnection pooling\nThe tenant setting is safe with the pooled Prisma/`pg` adapter only when transaction-local, so every tenant request must run inside an interactive transaction: extra `BEGIN`/`set_config`/`COMMIT` round trips and a pooled connection held for the whole callback\nPrincipal-centric flows\nListing a principal's companies, accepting an invitation before a membership exists and public signup creating a company need extra policy keys or `SECURITY DEFINER` functions, enlarging the reviewed surface\nRoles and migrations\nThe runtime role is not the owner, so policies apply without `FORCE`; the migration owner bypasses them for migrations/backfills. Integration tests already run as the runtime role, so policies would be exercised\nFailure mode\nA missing setting yields no rows, which fails closed\n**Approved outcome: do not adopt RLS for the first slice.** The compensating controls are the composite tenant keys, immutable `company_id` grants, the mandatory scope parameter, per-request access resolution, the structural catalog test and the two-company adversarial suite below. **Reevaluate before PJ-14 admits real customer data or public signup**, when a second database consumer (worker, report or raw SQL path) appears, or immediately after any cross-tenant defect. Adapters already receive the scope, so adopting RLS later needs a new ADR, policy migrations and a transaction-local context in adapters, not contract changes.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Platform and administrative scope",
     "anchor": "platform-and-administrative-scope",
     "text": "Platform and administrative scope\nPlatform administration is a separate capability held by individually provisioned platform accounts (P11), not a company membership and not a bypass of tenant predicates. The first slice exposes no platform routes. When added, platform operations may manage company lifecycle and commercial metadata; customer content requires an explicit, expiring, company-authorized support grant (P33/P34, IA-14) stored as tenant-owned data. Database, migration and backup access are operational access under [production access](../security/production-access.md), never product authorization.\n"
@@ -826,50 +835,5 @@
     "heading": "Mitigation / Procedure",
     "anchor": "mitigation--procedure",
     "text": "Mitigation / Procedure\nWrite ordered, bounded, copyable actions with consequences, expected output, decision points, and temporary-measure removal needs. Before a destructive, irreversible, or high-risk action, explain the exact affected scope and consequences. Stop when observed state differs from the documented scope.\nState whether actions are safe to repeat and how to inspect an unknown outcome before retrying. For long-running work, specify supported batch size, progress, monitoring, pause/resume, failure recovery, and concurrent-execution limits.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Verification",
-    "anchor": "verification",
-    "text": "Verification\nProve the intended service, security, or data state through relevant health, errors, latency, progress, integrity, authorization, revocation, or application behavior. A successful command or cleared alert alone is insufficient. Name any justified post-recovery observation period and signals.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Rollback / Recovery",
-    "anchor": "rollback--recovery",
-    "text": "Rollback / Recovery\nDescribe safe reversal and its compatibility prerequisites, or the actual forward-recovery path when rollback is unsafe/impossible. Identify irreversible effects. Remove this section only when it does not apply.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Escalation",
-    "anchor": "escalation",
-    "text": "Escalation\nStop when evidence does not match, scope exceeds bounds, access/preconditions cannot be verified, destructive impact is unknown, corruption/compromise is suspected, recovery fails, or postconditions cannot be verified. Preserve safe evidence and identify the real escalation owner when one exists.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Follow-Up",
-    "anchor": "follow-up",
-    "text": "Follow-Up\nRecord needed permanent correction, regression tests, alert/observability changes, automation, temporary-measure removal, runbook update, ADR, or post-incident review. Give follow-up work an owner; keep incident history outside this current procedure.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Authentication",
-    "anchor": "authentication",
-    "text": "Authentication\nThis policy owns trusted identity, credential, and session requirements. [Authorization](authorization.md) owns permission decisions; [secrets management](secrets-management.md) owns credential lifecycle and [redaction](telemetry-redaction.md) owns telemetry handling. Start with the [task index](../README.md) for other concerns.\n"
   }
 ]

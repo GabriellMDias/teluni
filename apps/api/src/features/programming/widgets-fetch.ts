@@ -229,23 +229,22 @@ export function parseWidgetRss(body: string): RssData {
     /<!\s*(?:DOCTYPE|ENTITY)/i.test(body)
   )
     throw new WidgetSourceFailure();
-  let depth = 0;
-  for (const tag of body
-    .replace(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->/g, " ")
-    .matchAll(/<\/?[\w:][^>]*>/g)) {
-    if (tag[0].startsWith("</")) depth--;
-    else if (!tag[0].endsWith("/>")) depth++;
-    if (depth > 32 || depth < 0) throw new WidgetSourceFailure();
-  }
   if (XMLValidator.validate(body) !== true) throw new WidgetSourceFailure();
-  const root = record(
-    new XMLParser({
-      ignoreAttributes: false,
-      parseTagValue: false,
-      processEntities: false,
-      removeNSPrefix: true,
-    }).parse(body),
-  );
+  let root: Record<string, unknown>;
+  try {
+    root = record(
+      new XMLParser({
+        ignoreAttributes: false,
+        parseTagValue: false,
+        processEntities: false,
+        removeNSPrefix: true,
+        // The parser counts open ancestors; 31 permits at most 32 open elements.
+        maxNestedTags: 31,
+      }).parse(body),
+    );
+  } catch {
+    throw new WidgetSourceFailure();
+  }
   const feed = root.feed ? record(root.feed) : record(record(root.rss).channel);
   const items = list(feed.item ?? feed.entry)
     .slice(0, 100)
