@@ -74,6 +74,11 @@
       "Purpose": "One stable link per company, layout and area key."
     },
     {
+      "Object": "layout_qr_links_company_id_id_key",
+      "Physical definition": "UNIQUE (company_id, id)",
+      "Purpose": "Tenant-safe identity key, consistent with every company-owned table."
+    },
+    {
       "Object": "layout_qr_links_id_shape",
       "Physical definition": "CHECK (((id)::text ~ '^[0-9a-f]{32}$'::text))",
       "Purpose": "A lowercase 128-bit hexadecimal identity."

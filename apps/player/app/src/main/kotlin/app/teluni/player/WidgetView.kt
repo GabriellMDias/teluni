@@ -21,7 +21,9 @@ internal class WidgetView(context: Context, private var plan: AreaPlan.Widget) :
     private val paint = TextPaint(Paint.ANTI_ALIAS_FLAG)
     private val blocks = Paint().apply { isAntiAlias = false }
     private val started = SystemClock.uptimeMillis()
-    fun update(next: AreaPlan.Widget) { plan = next; invalidate() }
+    init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES; describe() }
+    private fun describe() { contentDescription = listOf(plan.text.primary, plan.text.secondary, plan.text.footer).filter { it.isNotBlank() }.joinToString(". ") }
+    fun update(next: AreaPlan.Widget) { plan = next; describe(); invalidate() }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val widget = requireNotNull(plan.area.widget)

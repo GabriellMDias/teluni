@@ -295,6 +295,7 @@ model LayoutQrLink {
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
   layout    Layout   @relation(fields: [companyId, layoutId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict, map: "layout_qr_links_layout_fkey")
 
+  @@unique([companyId, id], map: "layout_qr_links_company_id_id_key")
   @@unique([companyId, layoutId, areaKey], map: "layout_qr_links_area_key")
   @@map("layout_qr_links")
 }

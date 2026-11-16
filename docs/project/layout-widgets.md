@@ -40,7 +40,7 @@ Widget layouts publish protocol 3. Protocols 1/2 retain exact serialized content
 
 The portable core validates all configuration and live data, derives text/item selection, and applies the existing statement/trusted-clock gate before composing output. Native Android views draw text and QR modules without WebView. Updating a clock or forecast does not restart unrelated media or ticker animation. A generation-specific `widgets.json` cache uses AtomicFiles, preserves at most three generations, and is erased with the identity. It is an independent versioned record, so existing credential/state formats remain readable.
 
-After activation and successful sync, live data refresh at most every 15 minutes, retrying failed transport after one minute. Freshness follows `validUntil`; source failures retain clearly stale data only until 24 hours after `fetchedAt`. Missing/expired data show an unavailable placeholder and report degraded playback while other authorized content continues. Caches never extend authorization or turn the device clock into trusted time.
+After activation and successful sync, live data refresh at most every 15 minutes, retrying failed transport and stale/unavailable sources after one minute. A newly activated generation refreshes immediately, independently of the previous generation’s interval. Freshness follows `validUntil`; source failures retain clearly stale data only until 24 hours after `fetchedAt`. Missing/expired data show an unavailable placeholder and report degraded playback while other authorized content continues. Caches never extend authorization or turn the device clock into trusted time.
 
 ## Verification and local examples
 

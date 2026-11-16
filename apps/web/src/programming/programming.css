@@ -1048,3 +1048,9 @@ fieldset.programming-rules {
 @keyframes widget-scroll { from { transform: translateX(5%); } to { transform: translateX(-100%); } }
 @media (prefers-reduced-motion: reduce) { .widget-ticker .widget-primary { animation: none; white-space: normal; } }
 .widget-public-qr { max-width: 34rem; margin: 15vh auto; padding: 2rem; }
+
+.layout-canvas:has(.layout-widget-face) { background: #000; }
+.layout-area:has(.layout-widget-face) .layout-area-label { z-index: 1; opacity: 0; }
+.layout-area:has(.layout-widget-face):hover .layout-area-label,
+.layout-area:has(.layout-widget-face):focus-visible .layout-area-label,
+.layout-area.selected:has(.layout-widget-face) .layout-area-label { opacity: 1; }

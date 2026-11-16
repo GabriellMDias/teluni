@@ -141,6 +141,7 @@ public class PlayerEngine(
     private var lastScrubbed: String? = null
     @Volatile private var widgetCache: WidgetCacheRecord = readRecord(PlayerStore.Record.WIDGETS, WidgetCacheRecord.serializer()) ?: WidgetCacheRecord()
     private var nextWidgets: Long = Long.MIN_VALUE
+    private var widgetsGeneration: String? = null
 
     @Volatile
     private var progress: SyncReport.Staging? = null
@@ -223,6 +224,7 @@ public class PlayerEngine(
             lastScrubbed = null
             widgetCache = WidgetCacheRecord()
             nextWidgets = Long.MIN_VALUE
+            widgetsGeneration = null
             progress = null
         }
     }
@@ -907,23 +909,22 @@ public class PlayerEngine(
             snapshot.unavailable, snapshot.versions, snapshot.active?.let { active -> clock.now().instantOrNull?.let { WidgetCache.data(widgetCache, active, it) } }.orEmpty())
     }
 
-    /**
-     * Re-hashes one referenced file per call, or the file a decoder rejected.
-     * The app runs this off the UI thread at low priority. Sharing the staging
-     * lock prevents a failed check from deleting a replacement just committed
-     * by a download. Hashing never holds the playback/state lock.
-     * Returns true only when a missing, unreadable or mismatched file was removed
-     * from usable output; decoder failures with intact bytes need no download.
-     */
+    /** Refreshes only approved active-generation sources; failures retry without extending freshness. */
     public fun refreshWidgets(): Boolean {
         if (!staging.tryLock()) return false
         try {
             return synchronized(syncing) {
                 val now = clock.now().instantOrNull ?: return@synchronized false
-                if (erasing || clearingCredential != null || clockSource.monotonicMillis() < nextWidgets) return@synchronized false
+                if (erasing || clearingCredential != null) return@synchronized false
                 val state = store.state()
                 val active = state.active?.let(::parsed) ?: return@synchronized false
                 if (active.header.protocol != 3 || syncRecord()?.desired?.publicationId != active.header.publicationId || latestStatement()?.authorizes(active.header.publicationId, active.sha256) != true) return@synchronized false
+                if (active.layout?.areas?.none { it.widget is app.teluni.player.core.protocol.Widget.Weather || it.widget is app.teluni.player.core.protocol.Widget.Rss } != false) return@synchronized false
+                if (widgetsGeneration != active.header.publicationId) {
+                    widgetsGeneration = active.header.publicationId
+                    nextWidgets = Long.MIN_VALUE
+                }
+                if (clockSource.monotonicMillis() < nextWidgets) return@synchronized false
                 val secret = credential() ?: return@synchronized false
                 nextWidgets = clockSource.monotonicMillis() + 60_000
                 try {
@@ -933,13 +934,21 @@ public class PlayerEngine(
                     val updated = WidgetCache.merge(widgetCache, batch, active, now, keep)
                     saveRecord(PlayerStore.Record.WIDGETS, WidgetCacheRecord.serializer(), updated)
                     widgetCache = updated
-                    nextWidgets = clockSource.monotonicMillis() + 15 * 60_000
+                    nextWidgets = clockSource.monotonicMillis() + if (batch.items.any { it.live.status != "ready" }) 60_000 else 15 * 60_000
                     true
                 } catch (_: IOException) { false }
             }
         } finally { staging.unlock() }
     }
 
+    /**
+     * Re-hashes one referenced file per call, or the file a decoder rejected.
+     * The app runs this off the UI thread at low priority. Sharing the staging
+     * lock prevents a failed check from deleting a replacement just committed
+     * by a download. Hashing never holds the playback/state lock.
+     * Returns true only when a missing, unreadable or mismatched file was removed
+     * from usable output; decoder failures with intact bytes need no download.
+     */
     public fun scrubMedia(failedSha256: String? = null): Boolean = staging.withLock {
         if (erasing || clearingCredential != null) return false
         val candidate = synchronized(lock) {
@@ -1012,6 +1021,7 @@ public class PlayerEngine(
                         lastScrubbed = null
                         widgetCache = WidgetCacheRecord()
                         nextWidgets = Long.MIN_VALUE
+                        widgetsGeneration = null
                         progress = null
                     }
                     if (credential == null) return false

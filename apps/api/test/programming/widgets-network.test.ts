@@ -118,3 +118,30 @@ it("bounds source bytes and refuses encoded responses", async () => {
     fetchWidgetSource("https://source.example.org/feed"),
   ).rejects.toBeInstanceOf(WidgetSourceFailure);
 });
+
+it("does not turn an intentionally closed redirect body into a failed next hop", async () => {
+  mocks.lookup.mockResolvedValue([{ address: "1.1.1.1", family: 4 }]);
+  answer();
+  const success = mocks.request.getMockImplementation()!;
+  mocks.request.mockImplementationOnce((url, options, received) => {
+    const req = success(url, options, (response) => {
+      response.statusCode = 301;
+      response.headers.location = "https://canonical.example.org/feed";
+      received(response);
+      queueMicrotask(() =>
+        req.emit(
+          "error",
+          Object.assign(new Error("Closed redirect body"), {
+            code: "ECONNRESET",
+          }),
+        ),
+      );
+    });
+    return req;
+  });
+  expect(await fetchWidgetSource("https://source.example.org/feed")).toEqual({
+    body: "feed",
+    expires: null,
+  });
+  expect(mocks.request).toHaveBeenCalledTimes(2);
+});

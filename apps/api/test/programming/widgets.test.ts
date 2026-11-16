@@ -206,6 +206,15 @@ describe("public widget sources", () => {
       WidgetSourceFailure,
     );
   });
+  it("decodes bounded text entities and extracts Atom XHTML titles without rendering markup", () => {
+    const rss =
+      "<rss><channel><title>Science</title><item><title>NASA&#8217;s &lt;b&gt;news&lt;/b&gt;</title></item></channel></rss>";
+    expect(parseWidgetRss(rss).items[0].title).toBe("NASA’s news");
+    const atom =
+      '<feed><title>Science</title><entry><title type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">A <b>discovery</b></div></title></entry></feed>';
+    expect(parseWidgetRss(atom).items[0].title).toContain("discovery");
+    expect(parseWidgetRss(atom).items[0].title).not.toContain("<");
+  });
   it("uses identified forecasts and rejects malformed or stale weather", () => {
     const now = Date.parse("2026-11-16T12:00:00Z");
     const body = JSON.stringify({

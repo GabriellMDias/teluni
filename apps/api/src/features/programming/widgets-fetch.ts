@@ -86,7 +86,10 @@ export const fetchWidgetSource: WidgetFetcher = async (source) => {
       throw new WidgetSourceFailure();
     const selected = addresses[0];
     return new Promise<SourceResponse>((resolve, reject) => {
-      const fail = () => reject(new WidgetSourceFailure());
+      let redirecting = false;
+      const fail = () => {
+        if (!redirecting) reject(new WidgetSourceFailure());
+      };
       const req = request(
         url,
         {
@@ -109,6 +112,9 @@ export const fetchWidgetSource: WidgetFetcher = async (source) => {
             [301, 302, 303, 307, 308].includes(response.statusCode ?? 0) &&
             response.headers.location
           ) {
+            // Closing a redirect body can emit ECONNRESET on its request. Only the next hop decides the result.
+            redirecting = true;
+            response.on("error", () => undefined);
             response.destroy();
             try {
               fetch(
@@ -116,7 +122,7 @@ export const fetchWidgetSource: WidgetFetcher = async (source) => {
                 redirects + 1,
               ).then(resolve, reject);
             } catch {
-              fail();
+              reject(new WidgetSourceFailure());
             }
             return;
           }
@@ -163,30 +169,46 @@ export const fetchWidgetSource: WidgetFetcher = async (source) => {
   return fetch(source, 0);
 };
 const plain = (value: unknown, max: number): string => {
-  const nested =
-    value && typeof value === "object"
-      ? (value as Record<string, unknown>)["#text"]
-      : undefined;
-  const text =
-    typeof value === "string"
-      ? value
-      : typeof nested === "string"
-        ? nested
-        : "";
+  let visited = 0;
+  const collect = (node: unknown, depth = 0): string => {
+    if (++visited > 128 || depth > 8) return "";
+    if (typeof node === "string") return node;
+    if (Array.isArray(node))
+      return node.map((item: unknown) => collect(item, depth + 1)).join(" ");
+    if (node && typeof node === "object")
+      return Object.entries(node)
+        .filter(([key]) => !key.startsWith("@"))
+        .map(([, item]: [string, unknown]) => collect(item, depth + 1))
+        .join(" ");
+    return "";
+  };
+  const text = collect(value);
   return [
     ...text
-      .replace(/<[^>]*>/g, " ")
       .replace(
-        /&(?:amp|lt|gt|quot|apos);/g,
-        (entity) =>
-          ({
-            "&amp;": "&",
-            "&lt;": "<",
-            "&gt;": ">",
-            "&quot;": '"',
-            "&apos;": "'",
-          })[entity] ?? "",
+        /&(?:amp|lt|gt|quot|apos|#x[0-9a-f]{1,6}|#[0-9]{1,7});/gi,
+        (entity) => {
+          if (entity.startsWith("&#")) {
+            const code = Number.parseInt(
+              entity.slice(entity[2].toLowerCase() === "x" ? 3 : 2, -1),
+              entity[2].toLowerCase() === "x" ? 16 : 10,
+            );
+            return code <= 0x10ffff && (code < 0xd800 || code > 0xdfff)
+              ? String.fromCodePoint(code)
+              : " ";
+          }
+          return (
+            {
+              "&amp;": "&",
+              "&lt;": "<",
+              "&gt;": ">",
+              "&quot;": '"',
+              "&apos;": "'",
+            }[entity.toLowerCase()] ?? ""
+          );
+        },
       )
+      .replace(/<[^>]*>/g, " ")
       .replace(/[\p{Cc}\s]+/gu, " ")
       .trim(),
   ]

@@ -1691,6 +1691,7 @@ Lifecycle: Created or updated in the publication transaction through the Program
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `layout_qr_links_area_key` | `UNIQUE (company_id, layout_id, area_key)` | One stable link per company, layout and area key. |
+| `layout_qr_links_company_id_id_key` | `UNIQUE (company_id, id)` | Tenant-safe identity key, consistent with every company-owned table. |
 | `layout_qr_links_id_shape` | `CHECK (((id)::text ~ '^[0-9a-f]{32}$'::text))` | A lowercase 128-bit hexadecimal identity. |
 | `layout_qr_links_key_shape` | `CHECK (((area_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))` | The same short lowercase area identifier used by layouts. |
 | `layout_qr_links_layout_fkey` | `FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | Tenant-safe owning layout; deletion cascades its links. |

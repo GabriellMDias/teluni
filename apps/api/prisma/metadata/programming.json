@@ -773,7 +773,8 @@
         "layout_qr_links_layout_fkey": "Tenant-safe owning layout; deletion cascades its links.",
         "layout_qr_links_id_shape": "A lowercase 128-bit hexadecimal identity.",
         "layout_qr_links_key_shape": "The same short lowercase area identifier used by layouts.",
-        "layout_qr_links_target_shape": "Public HTTPS destination; application validation also refuses credentials and nonstandard ports."
+        "layout_qr_links_target_shape": "Public HTTPS destination; application validation also refuses credentials and nonstandard ports.",
+        "layout_qr_links_company_id_id_key": "Tenant-safe identity key, consistent with every company-owned table."
       }
     }
   },

@@ -1458,12 +1458,10 @@ export class PublicationService {
     for (let index = 0; index < areas.length; index += 4) {
       items.push(
         ...(await Promise.all(
-          areas
-            .slice(index, index + 4)
-            .map(async (area) => ({
-              areaKey: area.key,
-              live: await this.#programming.widgetData(area.widget!),
-            })),
+          areas.slice(index, index + 4).map(async (area) => ({
+            areaKey: area.key,
+            live: await this.#programming.widgetData(area.widget!),
+          })),
         )),
       );
     }

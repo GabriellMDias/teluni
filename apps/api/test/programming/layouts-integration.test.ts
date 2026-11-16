@@ -806,7 +806,7 @@ describe("layouts: areas, catalog views, pages and their guards", () => {
     expect(
       issues(
         await call("aAdmin", "POST", `${base}/import`, {
-          body: { branchId: null, document: { ...exported.body, schema: 2 } },
+          body: { branchId: null, document: { ...exported.body, schema: 3 } },
         }),
       ),
     ).toEqual(["/document/schema FORMAT_UNSUPPORTED"]);
