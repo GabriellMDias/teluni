@@ -216,6 +216,11 @@ describe("public widget sources", () => {
     expect(parseWidgetRss(atom).items[0].title).toContain("discovery");
     expect(parseWidgetRss(atom).items[0].title).not.toContain("<");
   });
+  it("ignores literal tags inside XML comments and CDATA when bounding depth", () => {
+    const literal = "<nested>".repeat(40);
+    const body = `<rss><channel><!--${literal}--><title>Source</title><item><title><![CDATA[${literal}Headline]]></title></item></channel></rss>`;
+    expect(parseWidgetRss(body).items[0].title).toBe("Headline");
+  });
   it("uses identified forecasts and rejects malformed or stale weather", () => {
     const now = Date.parse("2026-11-16T12:00:00Z");
     const body = JSON.stringify({

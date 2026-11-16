@@ -231,7 +231,7 @@ export function parseWidgetRss(body: string): RssData {
     throw new WidgetSourceFailure();
   let depth = 0;
   for (const tag of body
-    .replace(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->/g, "")
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->/g, " ")
     .matchAll(/<\/?[\w:][^>]*>/g)) {
     if (tag[0].startsWith("</")) depth--;
     else if (!tag[0].endsWith("/>")) depth++;
