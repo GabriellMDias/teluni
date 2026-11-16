@@ -523,3 +523,205 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.company-members-panel {
+  max-width: 70rem;
+}
+.members-workspace {
+  margin-top: 1.35rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+.members-header,
+.members-controls,
+.member-detail-heading,
+.member-card-heading,
+.member-management-actions,
+.member-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+}
+.members-header {
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.members-header > div {
+  flex: 1 1 17rem;
+  min-width: 0;
+}
+.members-header h2,
+.members-header p,
+.member-detail-heading h3,
+.member-detail-heading p,
+.member-card-heading h4,
+.member-card-heading p,
+.member-grants p {
+  margin: 0;
+}
+.members-header h2 + p,
+.member-detail-heading h3 + p,
+.member-card-heading h4 + p,
+.member-grants strong + p {
+  margin-top: 0.25rem;
+}
+.members-invite,
+.members-person,
+.member-back,
+.member-card-heading .ui-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.members-controls {
+  align-items: end;
+  padding: 0.75rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-muted);
+}
+.members-controls > .ui-field:first-child {
+  flex: 1 1 12rem;
+}
+.members-controls > .ui-field {
+  min-width: 0;
+}
+.members-controls .ui-field-control {
+  min-width: 0;
+}
+.members-count {
+  margin: 0.65rem 0;
+}
+.members-dataset .ui-datagrid-scroll {
+  max-height: min(60vh, 34rem);
+}
+.members-dataset .ui-dataset[data-mode="form"] > .ui-dataset-toolbar,
+.members-dataset .ui-dataset-toolbar .ui-dataset-action-primary:disabled {
+  display: none;
+}
+.members-dataset .ui-dataset-toolbar .ui-dataset-group:has(> .ui-dataset-action-primary:disabled) > .ui-dataset-action:first-child {
+  border-radius: var(--radius-control);
+}
+.members-person {
+  max-width: 100%;
+  line-height: 1.14;
+  font-size: 0.87rem;
+  text-decoration: none;
+}
+.members-person:hover strong {
+  text-decoration: underline;
+}
+.members-person > span:last-child {
+  min-width: 0;
+}
+.members-person strong,
+.members-person > span > small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.members-person small {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+.member-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  color: var(--color-link);
+  background: var(--color-selected);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.member-avatar svg {
+  width: 1rem;
+  height: 1rem;
+}
+.member-status,
+.member-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.23rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.member-status[data-state="ACTIVE"] {
+  color: var(--color-success-ink);
+  background: var(--color-success-bg);
+}
+.member-status[data-state="SUSPENDED"] {
+  color: var(--color-danger-ink);
+  background: var(--color-danger-bg);
+}
+.member-detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.member-detail-heading {
+  margin-block: 0.85rem 1rem;
+}
+.member-detail-heading .member-avatar {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1rem;
+}
+.member-detail-heading h3 {
+  font-size: clamp(1.2rem, 4vw, 1.55rem);
+}
+.member-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.member-detail-card,
+.members-workspace .member-confirmation {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.member-detail-card > h4 {
+  margin: 0;
+}
+.member-card-heading {
+  align-items: start;
+  justify-content: space-between;
+}
+.member-grants {
+  margin: 0.85rem 0 0;
+}
+.member-grants > li {
+  padding: 0.65rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-muted);
+}
+.member-grants > li > div {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.member-danger-action {
+  color: var(--color-danger-ink);
+  border-color: var(--color-danger-border);
+}
+.members-workspace .member-confirmation {
+  max-width: none;
+  margin-top: 0.85rem;
+  background: var(--color-surface-muted);
+}
+.members-workspace .member-confirmation p,
+.members-workspace .member-confirmation .action-group {
+  margin: 0;
+}
+@media (max-width: 800px) {
+  .member-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

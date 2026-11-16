@@ -1481,6 +1481,7 @@ export function CompanyPage({
   view,
   mode,
   record,
+  memberId,
 }: {
   companyId: string;
   cursor?: string;
@@ -1488,6 +1489,7 @@ export function CompanyPage({
   /** The branches dataset's mode and record, on the company's default view. */
   mode?: DataSetMode;
   record?: string;
+  memberId?: string;
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -1501,6 +1503,7 @@ export function CompanyPage({
     ...(cursor ? { cursor } : {}),
     ...(!view && mode ? { mode } : {}),
     ...(!view && record ? { record } : {}),
+    ...(view === "members" && memberId ? { member: memberId } : {}),
   });
   const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
@@ -1539,7 +1542,7 @@ export function CompanyPage({
   const datasetView = !view && canView;
   return (
     <section
-      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}`}
+      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}`}
       aria-labelledby="company-title"
       lang={locale}
     >
@@ -1568,6 +1571,9 @@ export function CompanyPage({
       {view === "members" ? (
         access.capabilities.includes("members.manage") ? (
           <CompanyMembers
+            key={cursor ?? "first"}
+            memberId={memberId}
+            canInvite={access.capabilities.includes("invitations.manage")}
             companyId={companyId}
             principalId={session.data.principalId}
             viewerResponsible={access.responsible}
