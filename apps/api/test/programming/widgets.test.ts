@@ -221,6 +221,39 @@ describe("public widget sources", () => {
     const body = `<rss><channel><!--${literal}--><title>Source</title><item><title><![CDATA[${literal}Headline]]></title></item></channel></rss>`;
     expect(parseWidgetRss(body).items[0].title).toBe("Headline");
   });
+  it("fits twelve maximum-size Unicode feeds in the device budget without mutating preview links", async () => {
+    const url =
+      "https://example.org/" + "a".repeat(2048 - "https://example.org/".length);
+    const title = "😀".repeat(200);
+    const source = "😀".repeat(120);
+    const body = `<rss><channel><title>${source}</title>${`<item><title>${title}</title><link>${url}</link></item>`.repeat(20)}</channel></rss>`;
+    const widgets = service({
+      fetch: () => Promise.resolve({ body, expires: null }),
+    });
+    const config = { ...rss, maxItems: 20 };
+    const preview = await widgets.data(config);
+    const live = await widgets.deviceData(config);
+    expect(live.status).toBe("ready");
+    expect(
+      live.data?.type === "rss" &&
+        live.data.items.every((item) => item.url === null),
+    ).toBe(true);
+    const batch = (data: typeof live) => ({
+      publicationId: layoutId,
+      items: Array.from({ length: 12 }, (_, i) => ({
+        areaKey: `rss-${i}`,
+        live: data,
+      })),
+    });
+    expect(Buffer.byteLength(JSON.stringify(batch(preview)))).toBeGreaterThan(
+      256 * 1024,
+    );
+    expect(Buffer.byteLength(JSON.stringify(batch(live)))).toBeLessThan(
+      256 * 1024,
+    );
+    const after = await widgets.data(config);
+    expect(after.data?.type === "rss" && after.data.items[0].url).toBe(url);
+  });
   it("uses identified forecasts and rejects malformed or stale weather", () => {
     const now = Date.parse("2026-11-16T12:00:00Z");
     const body = JSON.stringify({

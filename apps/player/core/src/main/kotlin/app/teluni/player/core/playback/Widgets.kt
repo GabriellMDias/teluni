@@ -33,7 +33,7 @@ public object WidgetCache {
             if (live.status !in setOf("ready", "stale") || fetched > now.plusSeconds(120) || expires < fetched || expires > fetched.plus(maxAge) || now >= fetched.plus(maxAge)) return@mapNotNull null
             val valid = when (val source = live.data) {
                 is WidgetSourceData.Weather -> widget is Widget.Weather && source.temperatureC.isFinite() && source.temperatureC in -100.0..100.0 && source.humidity.isFinite() && source.humidity in 0.0..100.0 && Regex("[a-z0-9_]{1,64}").matches(source.symbol) && instant(source.forecastAt) != null
-                is WidgetSourceData.Rss -> widget is Widget.Rss && source.source.length in 1..120 && source.items.size in 1..widget.maxItems && source.items.all { it.title.length in 1..400 && it.title.none { character -> character.code < 32 } && (it.url == null || it.url.length <= 2048) }
+                is WidgetSourceData.Rss -> widget is Widget.Rss && source.source.codePointCount(0, source.source.length) in 1..120 && source.source.isNotBlank() && source.source.none { it.code < 32 || it.code == 127 } && source.items.size in 1..widget.maxItems && source.items.all { it.title.codePointCount(0, it.title.length) in 1..200 && it.title.none { character -> character.code < 32 || character.code == 127 } && (it.url == null || it.url.length <= 2048) }
                 null -> false
             }
             if (!valid) null else item.areaKey to live.copy(status = if (now >= expires) "stale" else live.status)

@@ -155,6 +155,19 @@ export class WidgetService {
       throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
     return { url: link.url };
   }
+  /** Screens render headlines only; omitting article URLs keeps twelve full feeds within 256 KiB. */
+  async deviceData(widget: WidgetDefinition): Promise<WidgetData> {
+    const live = await this.data(widget);
+    return live.data?.type === "rss"
+      ? {
+          ...live,
+          data: {
+            ...live.data,
+            items: live.data.items.map((item) => ({ ...item, url: null })),
+          },
+        }
+      : live;
+  }
   async data(widget: WidgetDefinition): Promise<WidgetData> {
     if (widget.type !== "weather" && widget.type !== "rss") return unavailable;
     const source =

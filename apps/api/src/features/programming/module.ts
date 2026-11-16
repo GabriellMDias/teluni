@@ -50,7 +50,7 @@ export function createProgrammingModule(options: {
   const programming: ProgrammingPort = {
     widgetData: (widget) => {
       if (!widgets) throw new Error("The programming module is not active");
-      return widgets.data(widget);
+      return widgets.deviceData(widget);
     },
     activateWidgetLinks: (tx, companyId, areas, mode) => {
       if (!widgets) throw new Error("The programming module is not active");

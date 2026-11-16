@@ -235,7 +235,7 @@ export type PublicationFacts = (
 ) => Promise<boolean>;
 
 export type ProgrammingPort = Readonly<{
-  /** Live data for a published configuration; callers enforce publication access. */
+  /** Display-only live data without RSS article URLs; callers enforce publication access. */
   widgetData(widget: WidgetDefinition): Promise<WidgetData>;
   /** Called only in the successful publication transaction. */
   activateWidgetLinks(

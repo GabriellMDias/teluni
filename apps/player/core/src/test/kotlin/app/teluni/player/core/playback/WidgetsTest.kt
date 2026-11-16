@@ -76,6 +76,22 @@ class WidgetsTest {
     }
 
     @Test
+    fun `feed text bounds count Unicode code points consistently with the API`() {
+        val source = "😀".repeat(120)
+        val title = "😀".repeat(200)
+        fun accepted(label: String, headline: String): Boolean {
+            val live = headlines.copy(data = WidgetSourceData.Rss(label, listOf(WidgetSourceData.Headline(headline, null))))
+            val batch = WidgetBatch(publication.header.publicationId, listOf(WidgetBatch.Item("rss", live)))
+            return "rss" in WidgetCache.data(WidgetCacheRecord(batches = listOf(batch)), publication, now)
+        }
+        assertTrue(accepted(source, title))
+        assertTrue(!accepted(source + "a", title))
+        assertTrue(!accepted(source, title + "a"))
+        assertTrue(!accepted("Source\n", title))
+        assertTrue(!accepted(source, "Headline\u007f"))
+    }
+
+    @Test
     fun `headlines cycle by trusted epoch and missing sources produce explicit placeholders`() {
         val rss = assertIs<Widget.Rss>(publication.layout!!.areas[4].widget)
         val first = WidgetPresentation.text(rss, headlines, Instant.EPOCH, LocalDateTime.of(2026, 11, 16, 0, 0))
