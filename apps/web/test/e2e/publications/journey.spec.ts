@@ -177,13 +177,22 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
 
   await page.goto(`${companyUrl}/media`);
   await page
+    .getByRole("button", { name: "Enviar arquivos", exact: true })
+    .click();
+  await page
     .getByLabel("Arquivos", { exact: true })
     .setInputFiles(join(fixtures, "vitrine.png"));
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
+  await expect(
+    page.getByText("Enviado. Preparando para as telas."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await afterProcessing(
     page
       .getByRole("listitem")
-      .filter({ has: page.getByRole("link", { name: "vitrine" }) }),
+      .filter({
+        has: page.getByRole("button", { name: "vitrine", exact: true }),
+      }),
   ).toContainText("Pronta");
 
   await page.goto(`${companyUrl}/programming`);

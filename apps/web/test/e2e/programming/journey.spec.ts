@@ -104,13 +104,20 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
 
   await page.goto(`${companyUrl}/media`);
   await page
+    .getByRole("button", { name: "Enviar arquivos", exact: true })
+    .click();
+  await page
     .getByLabel("Arquivos", { exact: true })
     .setInputFiles(join(fixtures, "logo.png"));
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
+  await expect(
+    page.getByText("Enviado. Preparando para as telas."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await afterProcessing(
     page
       .getByRole("listitem")
-      .filter({ has: page.getByRole("link", { name: "logo" }) }),
+      .filter({ has: page.getByRole("button", { name: "logo", exact: true }) }),
   ).toContainText("Pronta");
 
   // A company playlist with the image shown for 15 seconds.
