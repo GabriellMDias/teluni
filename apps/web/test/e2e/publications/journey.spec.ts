@@ -188,11 +188,9 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   ).toBeVisible();
   await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await afterProcessing(
-    page
-      .getByRole("listitem")
-      .filter({
-        has: page.getByRole("button", { name: "vitrine", exact: true }),
-      }),
+    page.getByRole("listitem").filter({
+      has: page.getByRole("button", { name: "vitrine", exact: true }),
+    }),
   ).toContainText("Pronta");
 
   await page.goto(`${companyUrl}/programming`);
