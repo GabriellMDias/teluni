@@ -105,6 +105,23 @@ for (const theme of ["light", "dark"] as const)
         page.getByRole("heading", { name: l.builderTitle, exact: true }),
       ).toBeVisible();
       await accessible(page);
+      if (width === 1440) {
+        const library = (await page
+          .getByRole("complementary", { name: l.componentsTitle, exact: true })
+          .boundingBox())!;
+        const canvas = (await page
+          .getByRole("group", { name: l.canvasLabel("Vitrine"), exact: true })
+          .boundingBox())!;
+        const inspector = (await page
+          .getByRole("region", {
+            name: l.selectedTitle("Principal"),
+            exact: true,
+          })
+          .boundingBox())!;
+        expect(canvas.x).toBeGreaterThan(library.x + library.width);
+        expect(inspector.x).toBeGreaterThan(canvas.x + canvas.width);
+        expect(canvas.width).toBeGreaterThan(250);
+      }
       await page
         .getByRole("button", { name: l.splitDirections.right, exact: true })
         .click();
