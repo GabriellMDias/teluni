@@ -241,13 +241,24 @@ test("creates a company and manages branches, settings, members, responsibility 
     ).toBe(403);
 
     await openCompanySection(page, "Membros");
-    const memberRow = page
-      .locator(".branch-list > li")
-      .filter({ hasText: stack.member.email });
-    await afterNavigation(memberRow).toBeVisible();
+    await page
+      .getByRole("row")
+      .filter({ hasText: stack.user.email })
+      .getByRole("link")
+      .click();
     await expect(
       page.getByText("Responsável pela empresa. Transfira", { exact: false }),
     ).toBeVisible();
+    await page.getByRole("link", { name: "Voltar para membros" }).click();
+    await page
+      .getByRole("row")
+      .filter({ hasText: stack.member.email })
+      .getByRole("link")
+      .click();
+    const memberRow = page
+      .getByRole("article")
+      .filter({ hasText: stack.member.email });
+    await afterNavigation(memberRow).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await memberRow.getByRole("button", { name: /^Suspender:/ }).click();
     await memberRow
@@ -319,8 +330,13 @@ test("creates a company and manages branches, settings, members, responsibility 
     );
     const independentUrl = `${stack.webUrl}/companies/${independentId}`;
     await memberPage.goto(`${independentUrl}?view=members`);
+    await memberPage
+      .getByRole("row")
+      .filter({ hasText: stack.user.email })
+      .getByRole("link")
+      .click();
     const userRow = memberPage
-      .locator(".branch-list > li")
+      .getByRole("article")
       .filter({ hasText: stack.user.email });
     await afterNavigation(userRow).toBeVisible();
     await userRow.getByRole("button", { name: /^Adicionar papel:/ }).click();
@@ -346,7 +362,14 @@ test("creates a company and manages branches, settings, members, responsibility 
     await expect(
       userRow.getByRole("button", { name: /^Revogar papel: Operador/ }),
     ).toHaveCount(0);
-    await expect(userRow).toContainText("Ativo · Administrador");
+    await expect(userRow.getByText("Ativo", { exact: true })).toBeVisible();
+    const remainingGrants = userRow.getByRole("list", {
+      name: /^Papéis de /,
+    });
+    await expect(remainingGrants.getByRole("listitem")).toHaveCount(1);
+    await expect(
+      remainingGrants.getByText("Administrador", { exact: true }),
+    ).toBeVisible();
 
     await userRow
       .getByRole("button", { name: /^Transferir responsabilidade:/ })

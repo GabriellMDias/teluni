@@ -413,6 +413,10 @@ The owner authorized [layout information components](implementation-plan.md#layo
 
 The [settings workspace refinement](implementation-plan.md#company-settings-workspace-refinement) uses existing company permissions, metadata and configuration. It introduces no new credential, deployment step or owner blocker.
 
+## Members workspace refinement of 2026-11-16
+
+The [members workspace refinement](implementation-plan.md#members-workspace-refinement) introduces no new access requirement, external provider or human blocker. Existing responsible-administrator protection and recent-authentication requirements remain in force.
+
 ## Catalog workspace refinement of 2026-11-16
 
 The [catalog workspace increment](implementation-plan.md#catalog-workspace-refinement) introduces no new access, credential, provider or pilot requirement. On the development host, Docker could not create its bridge interfaces with the running kernel's modules unavailable; restoring a matching booted kernel and modules is needed for the persistent local stack. Its existing volumes were preserved. This local environment limitation does not change the deployment requirements.

@@ -1,7 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
+import { Button, DataSet, TextField } from "../components.js";
+import type { DataSetColumn } from "../dataset.js";
+import { NavigationIcon } from "../navigation-icon.js";
+import { UiIcon } from "../ui-icon.js";
 import { loginHref } from "../identity/api.js";
 import type { Locale } from "../locale.js";
 import {
@@ -386,19 +390,63 @@ function GrantForm({
   );
 }
 
+const memberName = (member: Member, t: OrganizationMessages) =>
+  member.displayName ?? member.email ?? t.memberUnknown;
+
+function accessNames(member: Member, t: OrganizationMessages) {
+  return [
+    ...member.roles.map((role) => t.roles[role]),
+    ...new Set(
+      member.grants.flatMap((grant) =>
+        grant.profile ? [grant.profile.name] : [],
+      ),
+    ),
+  ];
+}
+
+function MemberStatus({
+  status,
+  t,
+}: {
+  status: Member["status"];
+  t: OrganizationMessages;
+}) {
+  return (
+    <span className="member-status" data-state={status}>
+      {t.memberStatuses[status]}
+    </span>
+  );
+}
+
+function MemberAvatar({ member }: { member: Member }) {
+  const initials = (member.displayName ?? "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => [...part][0] ?? "")
+    .join("")
+    .toLocaleUpperCase();
+  return (
+    <span className="member-avatar" aria-hidden="true">
+      {initials || <NavigationIcon name="members" />}
+    </span>
+  );
+}
+
 type Intent =
   | { kind: "status"; status: Member["status"]; expectedVersion: number }
   | { kind: "revoke"; grant: Grant }
   | { kind: "grant" }
   | { kind: "transfer" };
 
-function MemberRow({
+function MemberDetail({
   companyId,
   member,
   principalId,
   viewerResponsible,
   transferPending,
   returnTo,
+  cursor,
   locale,
   t,
 }: {
@@ -408,6 +456,7 @@ function MemberRow({
   viewerResponsible: boolean;
   transferPending: boolean;
   returnTo: string;
+  cursor?: string;
   locale: Locale;
   t: OrganizationMessages;
 }) {
@@ -440,7 +489,7 @@ function MemberRow({
     (!(write.error instanceof ApiFailure) ||
       write.error.status >= 500 ||
       write.error.code === "RESOURCE_VERSION_CONFLICT");
-  const label = member.displayName ?? member.email ?? t.memberUnknown;
+  const label = memberName(member, t);
   const removed = member.status === "REMOVED";
   const administratorGrants = member.grants.filter(
     (grant) => grant.role === "COMPANY_ADMINISTRATOR",
@@ -471,87 +520,188 @@ function MemberRow({
         : intent?.kind === "transfer"
           ? { text: t.transferConfirmation, action: t.transferConfirm }
           : null;
+  const copy = t.memberWorkspace;
+  const canChange = !removed && !member.responsible;
+  const roles = accessNames(member, t);
   return (
-    <li className="branch-item">
-      <div>
-        <strong>{label}</strong>
-        {member.principalId === principalId && (
-          <span className="hint"> · {t.memberYou}</span>
-        )}
-      </div>
-      {member.email && member.email !== label && <span>{member.email}</span>}
-      {!member.displayName && !member.email && (
-        <span className="hint">
-          {t.memberReference}: {member.id}
-        </span>
+    <article className="member-detail" aria-labelledby="member-detail-title">
+      {intent ? (
+        <Button disabled>
+          <UiIcon name="previous" /> {copy.back}
+        </Button>
+      ) : (
+        <Link
+          className="member-back"
+          to="/companies/$companyId"
+          params={{ companyId }}
+          search={{ view: "members", cursor }}
+        >
+          <UiIcon name="previous" /> {copy.back}
+        </Link>
       )}
-      <span>
-        {t.memberStatuses[member.status]} ·{" "}
-        {[
-          ...member.roles.map((role) => t.roles[role]),
-          ...new Set(
-            member.grants.flatMap((grant) =>
-              grant.profile ? [grant.profile.name] : [],
-            ),
-          ),
-        ].join(", ") || t.memberNoRoles}
-      </span>
-      {member.grants.length > 0 && (
-        <ul className="grant-list" aria-label={`${t.grantsOf} ${label}`}>
-          {member.grants.map((grant) => (
-            <li key={grant.id}>
-              <span>
-                <strong>{grantLabel(grant, t)}</strong>
-                {" · "}
-                {grant.scope === "COMPANY"
-                  ? t.grantCompanyWide
-                  : `${t.grantBranches}: ${grant.branches.map((branch) => branch.name).join(", ")}`}
-                {grant.expiresAt &&
-                  ` · ${t.grantUntil} ${formatInstant(locale, grant.expiresAt)}`}
-              </span>
-              {!removed &&
-                !intent &&
-                !(
-                  member.responsible &&
-                  grant.role === "COMPANY_ADMINISTRATOR" &&
-                  administratorGrants <= 1
-                ) && (
-                  <button
-                    type="button"
-                    aria-label={`${t.grantRevoke}: ${grantLabel(grant, t)} · ${label}`}
-                    onClick={() => begin({ kind: "revoke", grant })}
+      <header className="member-detail-heading">
+        <MemberAvatar member={member} />
+        <div>
+          <h3 id="member-detail-title">{label}</h3>
+          {member.email && member.email !== label && (
+            <p className="hint">{member.email}</p>
+          )}
+          {!member.displayName && !member.email && (
+            <p className="hint">
+              {t.memberReference}: {member.id}
+            </p>
+          )}
+        </div>
+        <div className="member-badges">
+          <MemberStatus status={member.status} t={t} />
+          {member.principalId === principalId && (
+            <span className="member-badge">{t.memberYou}</span>
+          )}
+          {member.responsible && (
+            <span className="member-badge">{t.responsible}</span>
+          )}
+        </div>
+      </header>
+      <div className="member-detail-grid">
+        <section
+          className="member-detail-card"
+          aria-labelledby="member-access-title"
+        >
+          <div className="member-card-heading">
+            <div>
+              <h4 id="member-access-title">{copy.access}</h4>
+              <p className="hint">{copy.accessLead}</p>
+            </div>
+            {canChange && !intent && (
+              <Button
+                variant="primary"
+                onClick={() => begin({ kind: "grant" })}
+                aria-label={`${t.grantAdd}: ${label}`}
+              >
+                <UiIcon name="add" /> {t.grantAdd}
+              </Button>
+            )}
+          </div>
+          {member.grants.length ? (
+            <ul
+              className="grant-list member-grants"
+              aria-label={`${t.grantsOf} ${label}`}
+            >
+              {member.grants.map((grant) => (
+                <li key={grant.id}>
+                  <div>
+                    <strong>{grantLabel(grant, t)}</strong>
+                    <p className="hint">
+                      {grant.scope === "COMPANY"
+                        ? t.grantCompanyWide
+                        : `${t.grantBranches}: ${grant.branches.map((branch) => branch.name).join(", ")}`}
+                      {grant.expiresAt &&
+                        ` · ${t.grantUntil} ${formatInstant(locale, grant.expiresAt)}`}
+                    </p>
+                  </div>
+                  {!removed &&
+                    !intent &&
+                    !(
+                      member.responsible &&
+                      grant.role === "COMPANY_ADMINISTRATOR" &&
+                      administratorGrants <= 1
+                    ) && (
+                      <Button
+                        aria-label={`${t.grantRevoke}: ${grantLabel(grant, t)} · ${label}`}
+                        onClick={() => begin({ kind: "revoke", grant })}
+                      >
+                        {t.grantRevoke}
+                      </Button>
+                    )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty-state">{roles.join(", ") || t.memberNoRoles}</p>
+          )}
+          {intent?.kind === "grant" && (
+            <GrantForm
+              {...{ companyId, member, label, viewerResponsible, returnTo, t }}
+              onClose={() => setIntent(null)}
+            />
+          )}
+        </section>
+        <section
+          className="member-detail-card"
+          aria-labelledby="member-management-title"
+        >
+          <h4 id="member-management-title">{copy.management}</h4>
+          <p className="hint">{copy.managementLead}</p>
+          {member.responsible && (
+            <p className="notice notice-info">{t.memberResponsibleProtected}</p>
+          )}
+          {removed && <p className="hint">{copy.removed}</p>}
+          {!intent && (canChange || canTransfer) && (
+            <div className="member-management-actions">
+              {canChange && (
+                <>
+                  <Button
+                    aria-label={`${member.status === "ACTIVE" ? t.memberSuspend : t.memberReactivate}: ${label}`}
+                    onClick={() =>
+                      begin({
+                        kind: "status",
+                        status:
+                          member.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
+                        expectedVersion: member.version,
+                      })
+                    }
                   >
-                    {t.grantRevoke}
-                  </button>
-                )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {member.responsible && (
-        <p className="hint">{t.memberResponsibleProtected}</p>
-      )}
-      {intent?.kind === "grant" ? (
-        <GrantForm
-          {...{ companyId, member, label, viewerResponsible, returnTo, t }}
-          onClose={() => setIntent(null)}
-        />
-      ) : intent && confirmation ? (
+                    {member.status === "ACTIVE"
+                      ? t.memberSuspend
+                      : t.memberReactivate}
+                  </Button>
+                  <Button
+                    className="member-danger-action"
+                    aria-label={`${t.memberRemove}: ${label}`}
+                    onClick={() =>
+                      begin({
+                        kind: "status",
+                        status: "REMOVED",
+                        expectedVersion: member.version,
+                      })
+                    }
+                  >
+                    {t.memberRemove}
+                  </Button>
+                </>
+              )}
+              {canTransfer && (
+                <Button
+                  aria-label={`${t.transferPropose}: ${label}`}
+                  onClick={() => begin({ kind: "transfer" })}
+                >
+                  {t.transferPropose}
+                </Button>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+      {intent && confirmation && (
         <form
-          className="form-stack"
+          className="form-stack member-confirmation"
           aria-label={`${confirmation.action}: ${label}`}
           onSubmit={(event) => {
             event.preventDefault();
-            if (!mustReload) write.mutate(intent);
+            if (!mustReload && !write.isPending) write.mutate(intent);
           }}
         >
           <p>{confirmation.text}</p>
           <div className="action-group">
-            <button type="submit" disabled={write.isPending || mustReload}>
+            <Button
+              type="submit"
+              variant="primary"
+              pending={write.isPending}
+              disabled={mustReload}
+            >
               {write.isPending ? t.saving : confirmation.action}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
               disabled={write.isPending}
               onClick={() => {
                 if (mustReload) void reload();
@@ -562,54 +712,9 @@ function MemberRow({
               }}
             >
               {t.cancel}
-            </button>
+            </Button>
           </div>
         </form>
-      ) : (
-        !removed && (
-          <div className="action-group">
-            {!member.responsible && (
-              <>
-                <button
-                  type="button"
-                  onClick={() =>
-                    begin({
-                      kind: "status",
-                      status:
-                        member.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
-                      expectedVersion: member.version,
-                    })
-                  }
-                >
-                  {member.status === "ACTIVE"
-                    ? t.memberSuspend
-                    : t.memberReactivate}
-                  : {label}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    begin({
-                      kind: "status",
-                      status: "REMOVED",
-                      expectedVersion: member.version,
-                    })
-                  }
-                >
-                  {t.memberRemove}: {label}
-                </button>
-                <button type="button" onClick={() => begin({ kind: "grant" })}>
-                  {t.grantAdd}: {label}
-                </button>
-              </>
-            )}
-            {canTransfer && (
-              <button type="button" onClick={() => begin({ kind: "transfer" })}>
-                {t.transferPropose}: {label}
-              </button>
-            )}
-          </div>
-        )
       )}
       {write.error && (
         <WriteFailure
@@ -620,16 +725,25 @@ function MemberRow({
           onReload={() => void reload()}
         />
       )}
-    </li>
+    </article>
   );
 }
+
+const lookupText = (value: string, locale: Locale) =>
+  value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase(locale)
+    .trim();
 
 export function CompanyMembers({
   companyId,
   principalId,
   viewerResponsible,
   transferPending,
+  canInvite,
   cursor,
+  memberId,
   returnTo,
   locale,
   t,
@@ -638,69 +752,263 @@ export function CompanyMembers({
   principalId: string;
   viewerResponsible: boolean;
   transferPending: boolean;
+  canInvite: boolean;
   cursor?: string;
+  memberId?: string;
   returnTo: string;
   locale: Locale;
   t: OrganizationMessages;
 }) {
+  const navigate = useNavigate();
+  const copy = t.memberWorkspace;
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState<Member["status"] | "all">("all");
+  const [selectedId, setSelectedId] = useState<string>();
+  const selection = useRef<string | undefined>(undefined);
   const members = useQuery({
     queryKey: [...membersKey(companyId), cursor ?? null],
     queryFn: () => listMembers(companyId, cursor),
   });
+  const term = lookupText(text, locale);
+  const items = members.data?.items ?? [];
+  const rows = items.filter(
+    (item) =>
+      (status === "all" || item.status === status) &&
+      (!term ||
+        [item.displayName, item.email].some(
+          (value) => value && lookupText(value, locale).includes(term),
+        )),
+  );
+  const detail = memberId
+    ? items.find((item) => item.id === memberId)
+    : undefined;
+  const openMember = (id: string) => {
+    void navigate({
+      to: "/companies/$companyId",
+      params: { companyId },
+      search: { view: "members", cursor, member: id },
+    });
+  };
+  const columns = useMemo<readonly DataSetColumn<Member>[]>(
+    () => [
+      {
+        key: "person",
+        header: copy.person,
+        width: 320,
+        value: (row) => memberName(row, t),
+        render: (row) => (
+          <Link
+            className="members-person"
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "members", cursor, member: row.id }}
+          >
+            <MemberAvatar member={row} />
+            <span>
+              <strong>
+                {memberName(row, t)}
+                {row.principalId === principalId && (
+                  <small> · {t.memberYou}</small>
+                )}
+              </strong>
+              {row.email && row.email !== memberName(row, t) && (
+                <small>{row.email}</small>
+              )}
+            </span>
+          </Link>
+        ),
+      },
+      {
+        key: "status",
+        header: copy.status,
+        width: 145,
+        value: (row) => t.memberStatuses[row.status],
+        render: (row) => <MemberStatus status={row.status} t={t} />,
+      },
+      {
+        key: "access",
+        header: copy.access,
+        width: 285,
+        value: (row) => accessNames(row, t).join(", ") || t.memberNoRoles,
+      },
+      {
+        key: "responsible",
+        header: copy.responsibility,
+        width: 186,
+        value: (row) => (row.responsible ? copy.responsible : "—"),
+      },
+    ],
+    [copy, t, companyId, principalId, cursor],
+  );
   return (
-    <section aria-labelledby="company-members-title">
-      <h2 id="company-members-title">{t.membersTitle}</h2>
-      <p>{t.membersLead}</p>
+    <section
+      className="members-workspace"
+      aria-labelledby="company-members-title"
+    >
+      <header className="members-header">
+        <div>
+          <h2 id="company-members-title">{t.membersTitle}</h2>
+          <p className="hint">{t.membersLead}</p>
+        </div>
+        {canInvite && !memberId && (
+          <Link
+            className="button-link button-primary members-invite"
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "invitations" }}
+          >
+            <NavigationIcon name="invitations" /> {t.inviteTitle}
+          </Link>
+        )}
+      </header>
       {members.isPending ? (
         <p>{t.loading}</p>
       ) : members.isError ? (
         <div role="alert" className="notice notice-error">
           {describe(members.error, t, "read")}
-          <button type="button" onClick={() => void members.refetch()}>
-            {t.reload}
-          </button>
+          <Button onClick={() => void members.refetch()}>{t.reload}</Button>
         </div>
-      ) : members.data.items.length === 0 ? (
-        <p className="empty-state">{t.membersEmpty}</p>
       ) : (
-        <ul className="branch-list">
-          {members.data.items.map((member) => (
-            <MemberRow
-              key={member.id}
-              {...{
-                companyId,
-                principalId,
-                member,
-                viewerResponsible,
-                transferPending,
-                returnTo,
-                locale,
-                t,
-              }}
-            />
-          ))}
-        </ul>
+        <>
+          {!memberId && (
+            <>
+              <div className="members-controls">
+                <TextField
+                  label={copy.search}
+                  placeholder={copy.searchPlaceholder}
+                  type="search"
+                  maxLength={120}
+                  value={text}
+                  onChange={(event) => setText(event.target.value)}
+                />
+                <div className="ui-field">
+                  <label htmlFor="members-status">{copy.status}</label>
+                  <select
+                    id="members-status"
+                    className="ui-field-control"
+                    value={status}
+                    onChange={(event) =>
+                      setStatus(event.target.value as typeof status)
+                    }
+                  >
+                    <option value="all">{copy.allStatuses}</option>
+                    {(["ACTIVE", "SUSPENDED", "REMOVED"] as const).map(
+                      (value) => (
+                        <option value={value} key={value}>
+                          {t.memberStatuses[value]}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+                {(text || status !== "all") && (
+                  <Button
+                    onClick={() => {
+                      setText("");
+                      setStatus("all");
+                    }}
+                  >
+                    {copy.clear}
+                  </Button>
+                )}
+              </div>
+              <p className="hint members-count" role="status">
+                {copy.pageResults(rows.length, items.length)}
+              </p>
+            </>
+          )}
+          <div className="members-dataset">
+            <DataSet
+              label={copy.listLabel}
+              locale={locale}
+              mode={memberId ? "form" : "grid"}
+              rows={rows}
+              columns={columns}
+              rowId={(row) => row.id}
+              selectedId={
+                rows.some((row) => row.id === selectedId)
+                  ? selectedId
+                  : undefined
+              }
+              onSelect={
+                memberId
+                  ? undefined
+                  : (id) => {
+                      selection.current = id;
+                      setSelectedId(id);
+                    }
+              }
+              onModeChange={
+                memberId || rows.length === 0
+                  ? undefined
+                  : () => {
+                      const row =
+                        rows.find((item) => item.id === selection.current) ??
+                        rows[0];
+                      openMember(row.id);
+                    }
+              }
+              onRefresh={memberId ? undefined : () => void members.refetch()}
+              refreshing={members.isFetching}
+              empty={
+                <p className="empty-state">
+                  {items.length ? copy.noResults : t.membersEmpty}
+                </p>
+              }
+            >
+              {detail ? (
+                <MemberDetail
+                  key={detail.id}
+                  {...{
+                    companyId,
+                    principalId,
+                    viewerResponsible,
+                    transferPending,
+                    returnTo,
+                    cursor,
+                    locale,
+                    t,
+                  }}
+                  member={detail}
+                />
+              ) : (
+                <>
+                  <p className="empty-state">{copy.noDetail}</p>
+                  <Link
+                    to="/companies/$companyId"
+                    params={{ companyId }}
+                    search={{ view: "members", cursor }}
+                  >
+                    {copy.back}
+                  </Link>
+                </>
+              )}
+            </DataSet>
+          </div>
+        </>
       )}
-      <nav className="pagination" aria-label={t.membersTitle}>
-        {cursor && (
-          <Link
-            to="/companies/$companyId"
-            params={{ companyId }}
-            search={{ view: "members" }}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {members.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId"
-            params={{ companyId }}
-            search={{ view: "members", cursor: members.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
+      {!memberId && (cursor || members.data?.nextCursor) && (
+        <nav className="pagination" aria-label={t.membersTitle}>
+          {cursor && (
+            <Link
+              to="/companies/$companyId"
+              params={{ companyId }}
+              search={{ view: "members" }}
+            >
+              {t.firstPage}
+            </Link>
+          )}
+          {members.data?.nextCursor && (
+            <Link
+              to="/companies/$companyId"
+              params={{ companyId }}
+              search={{ view: "members", cursor: members.data.nextCursor }}
+            >
+              {t.nextPage}
+            </Link>
+          )}
+        </nav>
+      )}
     </section>
   );
 }

@@ -622,6 +622,7 @@ test.each(["settings", "history", "members"])(
 );
 
 const memberId = "00000000-0000-4000-8000-000000000009";
+const memberPath = `${companyPath}?view=members&member=${memberId}`;
 const memberAccess = {
   ...administratorAccess,
   capabilities: [...administratorAccess.capabilities, "members.manage"],
@@ -655,6 +656,57 @@ const memberCompany = {
   access: memberAccess,
 };
 
+test("filters members on the current page and restores the filters after viewing a person", async () => {
+  const hiddenId = "00000000-0000-4000-8000-000000000010";
+  respond((url) => ({
+    body: url.pathname.endsWith("/members")
+      ? {
+          items: [
+            { ...memberPage().items[0], displayName: "João Lima" },
+            {
+              ...memberPage("SUSPENDED").items[0],
+              id: hiddenId,
+              displayName: "Other person",
+              email: "other@example.test",
+            },
+          ],
+          nextCursor: null,
+        }
+      : memberCompany,
+  }));
+  const { screen, router } = await open(`${companyPath}?view=members`);
+  const search = screen.getByRole("searchbox", {
+    name: t.memberWorkspace.search,
+  });
+  await search.fill("joao");
+  await expect
+    .element(screen.getByRole("link", { name: /João Lima/ }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: /Other person/ }))
+    .not.toBeInTheDocument();
+  await screen.getByRole("link", { name: /João Lima/ }).click();
+  expect(router.state.location.search).toMatchObject({
+    view: "members",
+    member: memberId,
+  });
+  await expect
+    .element(screen.getByRole("article", { name: "João Lima" }))
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.memberWorkspace.back }).click();
+  await expect.element(search).toHaveValue("joao");
+  await screen.getByRole("button", { name: t.memberWorkspace.clear }).click();
+  await screen
+    .getByRole("combobox", { name: t.memberWorkspace.status })
+    .selectOptions("SUSPENDED");
+  await expect
+    .element(screen.getByRole("link", { name: /Other person/ }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: /João Lima/ }))
+    .not.toBeInTheDocument();
+});
+
 test("captures the member version before confirmation and reviews a conflict", async () => {
   let version = 1;
   respond((url, request) =>
@@ -671,7 +723,7 @@ test("captures the member version before confirmation and reviews a conflict", a
             : memberCompany,
         },
   );
-  const { screen, client } = await open(`${companyPath}?view=members`);
+  const { screen, client } = await open(memberPath);
   await screen
     .getByRole("button", { name: `${t.memberSuspend}: Synthetic member` })
     .click();
@@ -719,7 +771,7 @@ test("reconciles a lost member-change response without repeating the write", asy
         : memberCompany,
     };
   });
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(memberPath);
   await screen
     .getByRole("button", { name: `${t.memberSuspend}: Synthetic member` })
     .click();
@@ -761,7 +813,7 @@ test("offers recent step-up when restoring an administrator", async () => {
             : memberCompany,
         },
   );
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(memberPath);
   await screen
     .getByRole("button", { name: `${t.memberReactivate}: Synthetic member` })
     .click();
@@ -772,7 +824,7 @@ test("offers recent step-up when restoring an administrator", async () => {
     .element(screen.getByRole("link", { name: t.memberReauthenticate }))
     .toHaveAttribute(
       "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(`${companyPath}?view=members`)}&reauthenticate=true`,
+      `/api/auth/login?returnTo=${encodeURIComponent(memberPath)}&reauthenticate=true`,
     );
 });
 
@@ -793,7 +845,7 @@ test("preserves member pagination and hides lifecycle actions for the responsibl
         }
       : memberCompany,
   }));
-  const { screen, router } = await open(`${companyPath}?view=members`);
+  const { screen, router } = await open(memberPath);
   await expect
     .element(screen.getByText(t.memberResponsibleProtected))
     .toBeVisible();
@@ -804,6 +856,7 @@ test("preserves member pagination and hides lifecycle actions for the responsibl
       }),
     )
     .not.toBeInTheDocument();
+  await screen.getByRole("link", { name: t.memberWorkspace.back }).click();
   await screen.getByRole("link", { name: t.nextPage }).click();
   await expect
     .element(screen.getByText("Older member", { exact: true }))
@@ -873,7 +926,7 @@ test("grants a temporary branch-scoped role over selected active branches", asyn
       body: url.pathname.endsWith("/members") ? memberPage() : memberCompany,
     };
   });
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(memberPath);
   await screen
     .getByRole("button", { name: `${t.grantAdd}: Synthetic member` })
     .click();
@@ -927,7 +980,7 @@ test("keeps administration out of a non-responsible administrator's grant form",
             access: { ...memberAccess, responsible: false },
           },
   }));
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(memberPath);
   await screen
     .getByRole("button", { name: `${t.grantAdd}: Synthetic member` })
     .click();
@@ -1003,7 +1056,7 @@ test("grants a customized access profile and names it on the member", async () =
     }
     return { body: memberCompany };
   });
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(memberPath);
   await expect
     .element(screen.getByText(`${t.grantProfile}: Auditor`))
     .toBeVisible();
@@ -1240,14 +1293,11 @@ test("revokes a role after confirmation and keeps the responsible administrator'
             : memberCompany,
         },
   );
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(
+    `${companyPath}?view=members&member=00000000-0000-4000-8000-000000000008`,
+  );
   await expect
-    .element(
-      screen.getByText(
-        `${t.grantBranches}: Norte · ${t.grantUntil} ${formatInstant(locale, expiresAt)}`,
-        { exact: false },
-      ),
-    )
+    .element(screen.getByText(t.memberResponsibleProtected))
     .toBeVisible();
   await expect
     .element(
@@ -1256,6 +1306,18 @@ test("revokes a role after confirmation and keeps the responsible administrator'
       }),
     )
     .not.toBeInTheDocument();
+  await screen.getByRole("link", { name: t.memberWorkspace.back }).click();
+  await screen
+    .getByRole("link", { name: "Synthetic member", exact: false })
+    .click();
+  await expect
+    .element(
+      screen.getByText(
+        `${t.grantBranches}: Norte · ${t.grantUntil} ${formatInstant(locale, expiresAt)}`,
+        { exact: false },
+      ),
+    )
+    .toBeVisible();
   await screen
     .getByRole("button", {
       name: `${t.grantRevoke}: ${t.roles.BRANCH_MANAGER} · Synthetic member`,
@@ -1301,7 +1363,7 @@ test("proposes a responsibility transfer and lets the proposer cancel it", async
           },
     };
   });
-  const { screen } = await open(`${companyPath}?view=members`);
+  const { screen } = await open(memberPath);
   await screen
     .getByRole("button", { name: `${t.transferPropose}: Synthetic member` })
     .click();
