@@ -39,6 +39,8 @@ The owner subsequently requested correction of PR #26's CI failure. The [CI qual
 
 2026-11-16: the owner requested the [Access Profiles workspace refinement](implementation-plan.md#access-profiles-workspace-refinement). It uses existing organization administration and profile grants, with no new provider, credential or human decision. Existing production and pilot prerequisites retain their original triggers.
 
+2026-11-16: the owner requested the [Invitations workspace refinement](implementation-plan.md#invitations-workspace-refinement) after Access Profiles. It uses existing invitation delivery, local test mail and organization permissions. No new provider, credential or human decision is required; existing production delivery and pilot prerequisites are unchanged.
+
 ## Safe configuration handoff
 
 2026-11-15: the owner requested a comprehensive local Home-page improvement. The [Home workspace refinement](implementation-plan.md#home-workspace-refinement) continues PJ-41 using existing API capabilities and the approved product identity. This work requires no new credentials, external account action or human blocker; existing pilot and production prerequisites retain their original triggers.

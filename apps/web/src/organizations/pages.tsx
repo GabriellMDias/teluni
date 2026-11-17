@@ -1483,6 +1483,7 @@ export function CompanyPage({
   record,
   memberId,
   profileId,
+  invitationId,
 }: {
   companyId: string;
   cursor?: string;
@@ -1492,6 +1493,7 @@ export function CompanyPage({
   record?: string;
   memberId?: string;
   profileId?: string;
+  invitationId?: string;
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -1507,6 +1509,9 @@ export function CompanyPage({
     ...(!view && record ? { record } : {}),
     ...(view === "members" && memberId ? { member: memberId } : {}),
     ...(view === "profiles" && profileId ? { profile: profileId } : {}),
+    ...(view === "invitations" && invitationId
+      ? { invitation: invitationId }
+      : {}),
   });
   const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
@@ -1545,7 +1550,7 @@ export function CompanyPage({
   const datasetView = !view && canView;
   return (
     <section
-      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}${view === "profiles" ? " company-profiles-panel" : ""}`}
+      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}${view === "profiles" ? " company-profiles-panel" : ""}${view === "invitations" ? " company-invitations-panel" : ""}`}
       aria-labelledby="company-title"
       lang={locale}
     >
@@ -1608,6 +1613,7 @@ export function CompanyPage({
       ) : view === "invitations" ? (
         access.capabilities.includes("invitations.manage") ? (
           <CompanyInvitations
+            invitationId={invitationId}
             companyId={companyId}
             administrator={access.capabilities.includes("members.manage")}
             viewerResponsible={access.responsible}
