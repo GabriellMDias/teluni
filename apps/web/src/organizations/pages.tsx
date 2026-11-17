@@ -1483,6 +1483,8 @@ export function CompanyPage({
   record,
   memberId,
   profileId,
+  profileQuery,
+  profileStatus,
 }: {
   companyId: string;
   cursor?: string;
@@ -1492,6 +1494,8 @@ export function CompanyPage({
   record?: string;
   memberId?: string;
   profileId?: string;
+  profileQuery?: string;
+  profileStatus?: "ACTIVE" | "ARCHIVED";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -1507,6 +1511,8 @@ export function CompanyPage({
     ...(!view && record ? { record } : {}),
     ...(view === "members" && memberId ? { member: memberId } : {}),
     ...(view === "profiles" && profileId ? { profile: profileId } : {}),
+    ...(view === "profiles" && profileQuery ? { profileQuery } : {}),
+    ...(view === "profiles" && profileStatus ? { profileStatus } : {}),
   });
   const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
@@ -1596,6 +1602,8 @@ export function CompanyPage({
           <CompanyProfiles
             companyId={companyId}
             profileId={profileId}
+            profileQuery={profileQuery}
+            profileStatus={profileStatus}
             returnTo={returnTo}
             locale={locale}
             t={t}

@@ -2296,3 +2296,58 @@ test("shows profile holder scope, expiry and membership status and denies unauth
     .element(screen.getByRole("heading", { name: "Auditor", exact: true }))
     .not.toBeInTheDocument();
 });
+
+test("restores profile filters from a shared link and keeps them through detail navigation", async () => {
+  const archived = accessProfile({ status: "ARCHIVED", name: "Recepção" });
+  respond((url) => {
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return {
+        body: { profile: archived, holders: [], holdersTruncated: false },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return {
+        body: {
+          items: [
+            archived,
+            accessProfile({
+              id: "00000000-0000-4000-8000-000000000042",
+              name: "Outro perfil",
+            }),
+          ],
+        },
+      };
+    return { body: memberCompany };
+  });
+  const { screen, router } = await open(
+    `${companyPath}?view=profiles&profileQuery=recepcao&profileStatus=ARCHIVED`,
+  );
+  await expect
+    .element(screen.getByRole("searchbox", { name: t.profileWorkspace.search }))
+    .toHaveValue("recepcao");
+  await expect
+    .element(
+      screen.getByRole("combobox", {
+        name: t.profileWorkspace.status,
+        exact: true,
+      }),
+    )
+    .toHaveValue("ARCHIVED");
+  await expect
+    .element(screen.getByRole("link", { name: "Outro perfil", exact: true }))
+    .not.toBeInTheDocument();
+  await screen.getByRole("link", { name: "Recepção", exact: true }).click();
+  expect(router.state.location.search).toEqual({
+    view: "profiles",
+    profileQuery: "recepcao",
+    profileStatus: "ARCHIVED",
+    profile: profileId,
+  });
+  await screen.getByRole("link", { name: t.profileWorkspace.back }).click();
+  expect(router.state.location.search).toEqual({
+    view: "profiles",
+    profileQuery: "recepcao",
+    profileStatus: "ARCHIVED",
+  });
+  await screen.getByRole("button", { name: t.profileWorkspace.clear }).click();
+  expect(router.state.location.search).toEqual({ view: "profiles" });
+});
