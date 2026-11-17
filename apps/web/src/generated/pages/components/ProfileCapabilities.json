@@ -1,0 +1,52 @@
+{
+  "name": "ProfileCapabilities",
+  "source": "apps/web/src/organizations/profiles.tsx",
+  "category": "Forms",
+  "scope": "feature-specific",
+  "owner": "Organizations",
+  "summary": "Groups delegable access-profile permissions by business area.",
+  "usage": "Use in company profile create/edit forms. It edits the caller-owned draft and keeps viewing prerequisites with dependent actions. It does not submit, grant access or offer company administration.",
+  "accessibility": "Native fieldsets label each area, shared checkboxes keep keyboard semantics, and a status announces the selection count. The caller disables the fields during confirmation, writes and reconciliation.",
+  "props": [
+    {
+      "name": "value",
+      "type": "readonly DelegableCapability[]",
+      "meaning": "The selected permission draft."
+    },
+    {
+      "name": "onChange",
+      "type": "(value: DelegableCapability[]) => void",
+      "meaning": "Receives the normalized selection including prerequisites."
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "meaning": "Freezes selection while the owning form cannot accept changes."
+    },
+    {
+      "name": "t",
+      "type": "OrganizationMessages",
+      "meaning": "Localized labels and business-area descriptions."
+    }
+  ],
+  "states": [
+    "Empty: Requires at least one permission before the surrounding form can submit.",
+    "Selected: Includes a viewing prerequisite when an action is selected; removing viewing removes dependent actions.",
+    "Disabled: Keeps the draft visible during confirmation and recovery."
+  ],
+  "examples": [
+    {
+      "id": "profile-permission-draft",
+      "label": "Access profile permissions",
+      "description": "Compose the selector with the feature-owned draft and submission controls.",
+      "code": "<ProfileCapabilities value={permissions} onChange={setPermissions} disabled={saving} t={t} />",
+      "live": false
+    }
+  ],
+  "id": "ProfileCapabilities",
+  "exportName": "ProfileCapabilities",
+  "metadataSource": "apps/web/src/organizations/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/organizations/profiles.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/organizations/components.docs.json"
+}

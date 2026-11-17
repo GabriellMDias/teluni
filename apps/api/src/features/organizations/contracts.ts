@@ -1,3 +1,4 @@
+import { delegableCapabilities } from "./domain.js";
 import { logoMaxLength } from "./logo.js";
 import { Type } from "typebox";
 import { errorEnvelopeSchema } from "../../errors.js";
@@ -167,7 +168,7 @@ const profileDetailSchema = Type.Object(
 );
 const profileCapabilities = Type.Array(delegableCapability, {
   minItems: 1,
-  maxItems: 5,
+  maxItems: delegableCapabilities.length,
   uniqueItems: true,
 });
 export const transferSchema = Type.Object(

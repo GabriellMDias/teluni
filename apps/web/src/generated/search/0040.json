@@ -1,5 +1,68 @@
 [
   {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nStaging plus recovery versions consume additional storage and need safe garbage collection.\nCached content cannot be immediately recalled from unreachable devices; expiry/revocation rules need explicit review.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nAtomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Player/release qualification under PJ-11/PJ-12/PJ-14 requires representative network/power-cut and stale/reordered message cases, not only unit tests.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0020: Adopt a Native Android TV Player",
+    "anchor": "adr-0020-adopt-a-native-android-tv-player",
+    "text": "ADR-0020: Adopt a Native Android TV Player\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web foundations but deliberately does not select a mobile/native stack. No Android application or hardware validation exists in Teluni.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.\nMinimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. Architecture acceptance does not imply every Android TV or Smart TV is supported.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThis is the owner's preferred initial direction and matches the requested native device lifecycle and local-playback responsibilities. There are no completed benchmarks or device tests establishing that it meets the reliability envelope. A separate runtime is justified by installation and hardware lifecycle, while backend distribution is not.\n"
+  },
+  {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
     "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
@@ -1501,41 +1564,5 @@
     "heading": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
     "anchor": "adr-0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
     "text": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual\n**Status:** accepted\n**Date:** 2026-10-27\n**Acceptance scope:** On 2026-10-27 the owner asked for sorting, column filters, column resizing and configurable multiple selection in the shared `DataSet`, designed for very many rows, and asked the agent to use the best available technology. The agent accepted this decision under that request and the delegation recorded with [PH-25](../project/human-actions.md#ph-25); merging the pull request that adds it is the repository review. It selects the web panel's grid libraries. It does not add server-side sorting or filtering to any API.\n"
-  },
-  {
-    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
-    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md) chose React, Vite and TanStack Router and Query, and deferred data grids and virtualization until their requirements were understood. The companies page's `DataSet` now needs a grid that:\nsorts by clicking a header or from a header menu, and filters a column by choosing among its values with search and select-all;\nresizes columns and supports single or multiple selection;\nstays responsive with tens of thousands of rows in the body and in a column's value list.\nRendering every row as DOM does not scale to that size, and sorting, value faceting and resizing have subtle edge cases (blank values, filters that interact, live resizing). The product owns its markup, styles, accessibility and theme through `--ui-*` tokens, so a grid must not impose its own look. The React Compiler is enabled.\n"
-  },
-  {
-    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
-    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nThe web panel builds grids on two headless libraries, pinned exactly in `apps/web`:\n**TanStack Table v9** (`@tanstack/react-table`) owns the grid model: sorting, column filtering, value faceting and column sizing/resizing, with only those features registered.\n**TanStack Virtual v3** (`@tanstack/react-virtual`) renders only the rows, and filter options, in view.\nTeluni renders all markup itself in the shared `DataGrid`, which `DataSet` composes, and the shared `MultiSelectList`. Row selection remains caller-owned rather than table state, so features keep selection next to their URL and API state. Sorting and filtering run in the browser over the rows the caller supplies; a list that cannot load all its rows needs server-side sorting and filtering added to its API first.\n"
-  },
-  {
-    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
-    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nBoth libraries are headless, so the product keeps its semantic markup, ARIA grid roles, keyboard model and token-based styling.\nThey belong to the TanStack family already selected by ADR-0008, are MIT-licensed and widely used, and add only the registered features to the bundle.\nTanStack Table's faceting gives each column's distinct values while applying the other columns' filters, which is the behavior a value filter needs. Its row models are memoized and recompute only when data or state change.\nVirtualization keeps the DOM to a few dozen rows regardless of size. In a development build, 10,000 rows sorted in about 75 ms and a filter with 10,000 distinct values opened in about 80 ms rendering 14 options.\nTanStack Table v9's React adapter returns a new table reference when its state changes, so components compiled by the React Compiler update. The virtualizer keeps one instance whose output changes while scrolling, so the components that read it opt out with the `\"use no memo\"` directive.\n"
-  },
-  {
-    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
-    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
   }
 ]

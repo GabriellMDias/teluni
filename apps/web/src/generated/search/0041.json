@@ -4,6 +4,42 @@
     "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md) chose React, Vite and TanStack Router and Query, and deferred data grids and virtualization until their requirements were understood. The companies page's `DataSet` now needs a grid that:\nsorts by clicking a header or from a header menu, and filters a column by choosing among its values with search and select-all;\nresizes columns and supports single or multiple selection;\nstays responsive with tens of thousands of rows in the body and in a column's value list.\nRendering every row as DOM does not scale to that size, and sorting, value faceting and resizing have subtle edge cases (blank values, filters that interact, live resizing). The product owns its markup, styles, accessibility and theme through `--ui-*` tokens, so a grid must not impose its own look. The React Compiler is enabled.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nThe web panel builds grids on two headless libraries, pinned exactly in `apps/web`:\n**TanStack Table v9** (`@tanstack/react-table`) owns the grid model: sorting, column filtering, value faceting and column sizing/resizing, with only those features registered.\n**TanStack Virtual v3** (`@tanstack/react-virtual`) renders only the rows, and filter options, in view.\nTeluni renders all markup itself in the shared `DataGrid`, which `DataSet` composes, and the shared `MultiSelectList`. Row selection remains caller-owned rather than table state, so features keep selection next to their URL and API state. Sorting and filtering run in the browser over the rows the caller supplies; a list that cannot load all its rows needs server-side sorting and filtering added to its API first.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nBoth libraries are headless, so the product keeps its semantic markup, ARIA grid roles, keyboard model and token-based styling.\nThey belong to the TanStack family already selected by ADR-0008, are MIT-licensed and widely used, and add only the registered features to the bundle.\nTanStack Table's faceting gives each column's distinct values while applying the other columns' filters, which is the behavior a value filter needs. Its row models are memoized and recompute only when data or state change.\nVirtualization keeps the DOM to a few dozen rows regardless of size. In a development build, 10,000 rows sorted in about 75 ms and a filter with 10,000 distinct values opened in about 80 ms rendering 14 options.\nTanStack Table v9's React adapter returns a new table reference when its state changes, so components compiled by the React Compiler update. The virtualizer keeps one instance whose output changes while scrolling, so the components that read it opt out with the `\"use no memo\"` directive.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "A complete data grid component (for example AG Grid or MUI X Data Grid)",
     "anchor": "a-complete-data-grid-component-for-example-ag-grid-or-mui-x-data-grid",
     "text": "A complete data grid component (for example AG Grid or MUI X Data Grid)\nThese provide sorting, filtering and virtualization, but bring their own markup, styling system and theming, are much larger, and reserve some features for commercial licenses. Adapting them to the product's tokens and accessibility choices would fight the library.\n"
@@ -1114,23 +1150,5 @@
     "heading": "API development and build",
     "anchor": "api-development-and-build",
     "text": "API development and build\nKeep the API as an ESM TypeScript workspace application under `apps/api`. Use pnpm package scripts as the stable interface and native workspace filtering for orchestration; no dedicated monorepo task runner or backend bundler is needed initially.\nThe `apps/api` scripts expose `dev` (Node's optional root `.env.local` loading and watch mode with pinned `tsx`), `typecheck` (`tsc --noEmit`), `build` (`tsc` emitting Node-compatible ESM JavaScript to an ignored `dist/` directory), and `start` (`node dist/main.js`). The [setup guide](../setup.md) owns local environment-file instructions. Source imports and compiler settings resolve in the emitted Node.js ESM output. `tsx` is an execution convenience, never a substitute for TypeScript checking or a production runtime dependency.\nInstall dependencies from the shared frozen lockfile. Generate tool-managed Prisma client code before typecheck/build when required; keep its cache/output out of hand-edited source and commit history. Build and start must work without a development transpiler at runtime. The existing process and feature smokes exercise the emitted application.\nRoot `pnpm validate` and CI include application typechecks, tests, builds, smokes, and generated-output freshness. Integrate new capabilities into that same gate. Keep validation non-mutating with respect to tracked source; generation is a separate explicit write command. Update [validation availability](../validation.md) when scripts change.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Artifact ownership and storage",
-    "anchor": "artifact-ownership-and-storage",
-    "text": "Artifact ownership and storage\nDerived artifact\nCanonical input\nOutput and handling\nOpenAPI 3.1 description\nExecutable TypeBox wire schemas and stable route `operationId` metadata owned by the API\nCommitted `docs/generated/api/openapi.json` is regenerated and checked; clients and documentation consume that file, with no independently authored copy.\nTypeScript API client types\nCommitted generated OpenAPI\nCommitted `packages/sdk/src/generated/api-types.ts` comes from `openapi-typescript`; a thin `openapi-fetch` client lives outside the generated file. `pnpm -C packages/sdk generate` writes it and `references:check` verifies it without editing tracked files. The web app does not import API implementation types.\nAPI configuration reference\nAPI-owned TypeBox bootstrap configuration schema and metadata\nCommitted `docs/generated/configuration/api.md` is regenerated and checked from the API source. It contains safe types/defaults, never secrets or a real `.env`.\nAPI error registry reference\nAPI-owned registry and envelope schema\nCommitted `docs/generated/api/errors.md` is regenerated and checked from the API source. Feature errors join the same registry when their routes exist.\nDatabase reference\nMigrated PostgreSQL plus canonical schema-adjacent semantic metadata; Prisma schema and reviewed migrations are inputs\nCommitted `docs/generated/database/schema.md` is generated and checked from a fresh Testcontainers PostgreSQL, including custom SQL constraints and indexes; it is not authored independently. With no application tables it states that explicitly.\nPortal catalog, pages, search, and component reference\nRepository Markdown, current generated API/database/error references, and web-owned component source/examples/metadata\nCommitted `apps/web/src/generated/manifest.json`, page/search assets, and `docs/generated/components/web.md` are written/checked by `pnpm docs:references:write` / `pnpm docs:references:check`. [Living documentation](living-documentation.md) owns portal behavior and limitations.\nPrisma Client and emitted JavaScript\nPrisma schema and TypeScript source\nGenerate into ignored, tool-managed outputs for each build; do not commit platform/tool-generated client code or `dist/`. Reviewed SQL migrations are authored release history, not disposable generated output.\nMark generated files clearly and never edit them to repair a source defect. A generation command may update tracked derived artifacts intentionally; a separate check must regenerate in a temporary location or compare deterministically without changing tracked files. The current gate fails on generated drift. Rebuildability does not waive public API or SDK compatibility responsibilities under [versioning](versioning-and-compatibility.md), nor the independent [migration-history rules](../database/migrations.md).\nDo not create planned files or directories as placeholders. Each artifact belongs with its canonical source, generator, validation check, and actual consumer. Each module's implementation conventions describe its data and contract metadata.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration",
-    "anchor": "configuration",
-    "text": "Configuration\n[Documentation index](../README.md) · [Local setup](../setup.md) · [Secrets management](../security/secrets-management.md)\nConfiguration is an explicit application dependency: validate it before use, expose only safe projections, and keep its meaning discoverable without access to secret values. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects TypeBox for bootstrap schemas. This page owns configuration policy; application sources own their settings and the setup guide owns loading commands.\n"
   }
 ]

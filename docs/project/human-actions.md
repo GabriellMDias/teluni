@@ -37,6 +37,8 @@ The owner subsequently requested correction of PR #26's CI failure. The [CI qual
 
 2026-11-15: the owner requested [interactive layout authoring](implementation-plan.md#interactive-layout-authoring), using the existing media/catalog model and permissions. This panel refinement requires no new provider account, credential or human decision. Suggested future components remain unimplemented; existing pilot and production prerequisites remain in force.
 
+2026-11-16: the owner requested the [Access Profiles workspace refinement](implementation-plan.md#access-profiles-workspace-refinement). It uses existing organization administration and profile grants, with no new provider, credential or human decision. Existing production and pilot prerequisites retain their original triggers.
+
 ## Safe configuration handoff
 
 2026-11-15: the owner requested a comprehensive local Home-page improvement. The [Home workspace refinement](implementation-plan.md#home-workspace-refinement) continues PJ-41 using existing API capabilities and the approved product identity. This work requires no new credentials, external account action or human blocker; existing pilot and production prerequisites retain their original triggers.

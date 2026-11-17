@@ -7,7 +7,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/app.js";
 import { createDatabase, type Database } from "../../src/database.js";
 import { PrismaClient } from "../../src/generated/prisma/client.js";
-import { OrganizationFailure } from "../../src/features/organizations/domain.js";
+import {
+  delegableCapabilities,
+  OrganizationFailure,
+} from "../../src/features/organizations/domain.js";
 import { PrismaOrganizationRepository } from "../../src/features/organizations/prisma-repository.js";
 import type { HumanSessionPort } from "../../src/features/identity/public.js";
 import { createOrganizationsModule } from "../../src/features/organizations/module.js";
@@ -2134,6 +2137,29 @@ describe("organizations: two-company isolation", () => {
     await sql.query("UPDATE companies SET status = 'ACTIVE' WHERE id = $1", [
       companyB,
     ]);
+  });
+
+  it("accepts all delegable profile permissions through create and update contracts", async () => {
+    const company = await createCompany("aAdmin", "Full profile permissions");
+    const path = `/companies/${company}/access-profiles`;
+    const created = await call("aAdmin", "POST", path, {
+      body: {
+        name: "All business areas",
+        capabilities: [...delegableCapabilities],
+      },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.capabilities).toEqual(delegableCapabilities);
+    const profileId = created.body.id as string;
+    const reduced = await call("aAdmin", "PATCH", `${path}/${profileId}`, {
+      body: { expectedVersion: 1, capabilities: ["branches.view"] },
+    });
+    expect(reduced.status).toBe(200);
+    const restored = await call("aAdmin", "PATCH", `${path}/${profileId}`, {
+      body: { expectedVersion: 2, capabilities: [...delegableCapabilities] },
+    });
+    expect(restored.status).toBe(200);
+    expect(restored.body.capabilities).toEqual(delegableCapabilities);
   });
 
   it("lets administrators define access profiles whose current capabilities and assurance bind every holder", async () => {

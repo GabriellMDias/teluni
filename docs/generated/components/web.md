@@ -618,6 +618,42 @@ Usage: Use with the owning company form, which saves the result through the Orga
 ```
 
 
+## ProfileCapabilities
+
+Groups delegable access-profile permissions by business area.
+
+Category: Forms. Scope: feature-specific. Owner: Organizations.
+
+Source: [apps/web/src/organizations/profiles.tsx](../../../apps/web/src/organizations/profiles.tsx) (export `ProfileCapabilities`). Metadata: [apps/web/src/organizations/components.docs.json](../../../apps/web/src/organizations/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `value` | `readonly DelegableCapability[]` | The selected permission draft. | See type | — |
+| `onChange` | `(value: DelegableCapability[]) => void` | Receives the normalized selection including prerequisites. | See type | — |
+| `disabled` | `boolean` | Freezes selection while the owning form cannot accept changes. | See type | — |
+| `t` | `OrganizationMessages` | Localized labels and business-area descriptions. | See type | — |
+
+### States
+
+- Empty: Requires at least one permission before the surrounding form can submit.
+- Selected: Includes a viewing prerequisite when an action is selected; removing viewing removes dependent actions.
+- Disabled: Keeps the draft visible during confirmation and recovery.
+
+Accessibility: Native fieldsets label each area, shared checkboxes keep keyboard semantics, and a status announces the selection count. The caller disables the fields during confirmation, writes and reconciliation.
+
+Usage: Use in company profile create/edit forms. It edits the caller-owned draft and keeps viewing prerequisites with dependent actions. It does not submit, grant access or offer company administration.
+
+### Examples
+
+- **Access profile permissions** (`profile-permission-draft`): Compose the selector with the feature-owned draft and submission controls.
+
+```tsx
+<ProfileCapabilities value={permissions} onChange={setPermissions} disabled={saving} t={t} />
+```
+
+
 ## ProgrammingGuide
 
 Explains the existing content-to-screen workflow.

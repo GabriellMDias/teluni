@@ -51,6 +51,7 @@ const companyRoute = createRoute({
     mode?: "grid" | "form";
     record?: string;
     member?: string;
+    profile?: string;
   } => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
@@ -67,6 +68,10 @@ const companyRoute = createRoute({
     ...(search.view === "members" && isUuid(search.member)
       ? { member: search.member }
       : {}),
+    ...(search.view === "profiles" &&
+    (search.profile === "new" || isUuid(search.profile))
+      ? { profile: search.profile }
+      : {}),
     // The default view's branches dataset owns its mode and record.
     ...(search.view === undefined &&
     (search.mode === "grid" || search.mode === "form")
@@ -79,7 +84,8 @@ const companyRoute = createRoute({
   }),
   component: function CompanyRoute() {
     const { companyId } = companyRoute.useParams();
-    const { cursor, view, mode, record, member } = companyRoute.useSearch();
+    const { cursor, view, mode, record, member, profile } =
+      companyRoute.useSearch();
     return (
       <CompanyPage
         key={companyId}
@@ -89,6 +95,7 @@ const companyRoute = createRoute({
         mode={mode}
         record={record}
         memberId={member}
+        profileId={profile}
       />
     );
   },

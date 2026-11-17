@@ -589,6 +589,42 @@
     "title": "Web Component Reference",
     "group": "Generated references",
     "kind": "repository",
+    "heading": "ProfileCapabilities",
+    "anchor": "profilecapabilities",
+    "text": "ProfileCapabilities\nGroups delegable access-profile permissions by business area.\nCategory: Forms. Scope: feature-specific. Owner: Organizations.\nSource: [apps/web/src/organizations/profiles.tsx](../../../apps/web/src/organizations/profiles.tsx) (export `ProfileCapabilities`). Metadata: [apps/web/src/organizations/components.docs.json](../../../apps/web/src/organizations/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-15",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`value`\n`readonly DelegableCapability[]`\nThe selected permission draft.\nSee type\n—\n`onChange`\n`(value: DelegableCapability[]) => void`\nReceives the normalized selection including prerequisites.\nSee type\n—\n`disabled`\n`boolean`\nFreezes selection while the owning form cannot accept changes.\nSee type\n—\n`t`\n`OrganizationMessages`\nLocalized labels and business-area descriptions.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-15",
+    "text": "States\nEmpty: Requires at least one permission before the surrounding form can submit.\nSelected: Includes a viewing prerequisite when an action is selected; removing viewing removes dependent actions.\nDisabled: Keeps the draft visible during confirmation and recovery.\nAccessibility: Native fieldsets label each area, shared checkboxes keep keyboard semantics, and a status announces the selection count. The caller disables the fields during confirmation, writes and reconciliation.\nUsage: Use in company profile create/edit forms. It edits the caller-owned draft and keeps viewing prerequisites with dependent actions. It does not submit, grant access or offer company administration.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-15",
+    "text": "Examples\n**Access profile permissions** (`profile-permission-draft`): Compose the selector with the feature-owned draft and submission controls.\n<ProfileCapabilities value={permissions} onChange={setPermissions} disabled={saving} t={t} />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
     "heading": "ProgrammingGuide",
     "anchor": "programmingguide",
     "text": "ProgrammingGuide\nExplains the existing content-to-screen workflow.\nCategory: Layout. Scope: feature-specific. Owner: Programming.\nSource: [apps/web/src/programming/workspace.tsx](../../../apps/web/src/programming/workspace.tsx) (export `ProgrammingGuide`). Metadata: [apps/web/src/programming/components.docs.json](../../../apps/web/src/programming/components.docs.json).\n"
@@ -599,7 +635,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-15",
+    "anchor": "props-16",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n"
   },
   {
@@ -608,7 +644,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-15",
+    "anchor": "states-16",
     "text": "States\nLocalized Portuguese/English\nLight/dark and narrow/wide screens\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use above the programming overview. Static guidance explains playlists, shared/individual schedules and the separate publish action without inferring task completion.\n"
   },
   {
@@ -617,7 +653,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-15",
+    "anchor": "examples-16",
     "text": "Examples\n**Programming composition** (`programmingguide-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingGuide />\n\n"
   },
   {
@@ -635,7 +671,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-16",
+    "anchor": "props-17",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId`\n`string`\nAuthorized company identifier.\nYes\n—\n`source`\n`ProgramSource`\nGroup or screen identity.\nYes\n—\n`section`\n`ProgrammingSection`\nCurrent validated URL section; omitted means Program.\nNo\n—\n`editable`\n`boolean`\nCurrent programming edit capability.\nYes\n—\n`assignable`\n`boolean`\nCurrent screen assignment capability.\nNo\n—\n"
   },
   {
@@ -644,7 +680,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-16",
+    "anchor": "states-17",
     "text": "States\nDefault schedule\nPreview\nGroup screens\nPublication\nPermitted settings or destination\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use within the authorized programming details page. Native router links separate schedule, preview, group membership, publication and permitted settings/destination; API permissions remain authoritative.\n"
   },
   {
@@ -653,7 +689,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-16",
+    "anchor": "examples-17",
     "text": "Examples\n**Programming composition** (`programnavigation-composition`): Feature-owned composition without live authenticated requests.\n<ProgramNavigation companyId={companyId} source={source} section={section} editable={editable} assignable={assignable} />\n\n"
   },
   {
@@ -671,7 +707,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-17",
+    "anchor": "props-18",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`active`\n`boolean`\nWhether the validated URL selects this section.\nYes\n—\n`children`\n`ReactNode`\nOwning workflow and local form state.\nYes\n—\n"
   },
   {
@@ -680,7 +716,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-17",
+    "anchor": "states-18",
     "text": "States\nUnvisited\nActive\nVisited and hidden\nAccessibility: Native navigation, aria-current and hidden semantics preserve keyboard navigation and remove inactive controls from the accessibility tree. Product semantic colors support both themes; layouts wrap at narrow widths.\nUsage: Use for sections of the same resource. Initial content mounts on demand; visited children remain mounted under native hidden. Key the resource and write forms by authoritative identity/version; this preserves temporary state, not persistence across reloads.\n"
   },
   {
@@ -689,7 +725,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-17",
+    "anchor": "examples-18",
     "text": "Examples\n**Programming composition** (`programmingpanel-composition`): Feature-owned composition without live authenticated requests.\n<ProgrammingPanel active={section === \"preview\"}>{preview}</ProgrammingPanel>\n\n"
   },
   {
@@ -707,7 +743,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-18",
+    "anchor": "props-19",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`name, canvas, areas`\n`string; Size; readonly CanvasArea[]`\nLayout label, canonical orientation size and freeform rectangles with kind, color and stacking order.\nYes\n—\n`selected, flagged`\n`string | null; ReadonlySet<number>`\nSelected editor identity and validation issue indices.\nSee type\n—\n`onSelect, onMove`\n`callbacks`\nFeature-owned selection and geometry updates; omit for read-only rendering.\nSee type\n—\n`onGestureStart, onGestureEnd`\n`callbacks`\nBracket one pointer gesture so undo restores the whole movement or resize.\nSee type\n—\n`dragging, onInsert`\n`\"media\" | \"catalog\" | null; callback`\nOnly an active, feature-owned component drag with the matching internal MIME payload may insert. The feature enforces the area limit.\nSee type\n—\n"
   },
   {
@@ -716,7 +752,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-18",
+    "anchor": "states-19",
     "text": "States\nRead-only structure\nSelected area and covered layers\nPointer move or edge/corner resize\nComponent drop preview\nValidation issue highlight\nAccessibility: Each editable area is a native labeled button with pressed selection and visible focus. Arrow keys move by ten canvas units; Shift with arrow keys resizes. The editor supplies equivalent add, select, split and numeric controls for keyboard and touch users. Pointer geometry stays within canvas bounds. Preview colors represent screen content; surrounding controls inherit the product theme.\nUsage: Compose inside the authorized Layout editor, or omit callbacks for a read-only preview. The feature owns drafts, permission checks, history, area limits, catalog bindings and persistence. Reuse Button and TextField around this domain-specific canvas; DataSet remains the layout overview. Widget faces are illustrative; authenticated live previews belong to the inspector. Clock playback uses screen offsets rather than the browser preview time.\n"
   },
   {
@@ -725,7 +761,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-18",
+    "anchor": "examples-19",
     "text": "Examples\n**Layout editor canvas** (`layoutcanvas-composition`): Feature-owned schematic composition; no live authenticated requests.\n<LayoutCanvas name={draft.name} canvas={layout.canvas} areas={draft.areas} selected={selected} onSelect={setSelected} onMove={moveArea} />\n\n"
   },
   {
@@ -743,7 +779,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-19",
+    "anchor": "props-20",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`companyId, layout, areaKey`\n`string; Layout; string`\nAuthorized layout context.\nYes\n—\n`widget, background`\n`Widget; string`\nCurrent draft configuration and area background.\nYes\n—\n`onChange`\n`(widget: Widget) => void`\nDraft update, guarded by the owning editor.\nYes\n—\n"
   },
   {
@@ -752,7 +788,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-19",
+    "anchor": "states-20",
     "text": "States\nClock, QR, ticker, weather and RSS variants\nPreview pending, ready, stale, unavailable or denied\nUnsaved changes invalidate previous preview\nAccessibility: Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.\nUsage: Use only inside an authorized layout draft. Reuses TextField/Button and branch choices; the API remains authoritative for scope, validation, provider access and publish-only QR activation.\n"
   },
   {
@@ -761,7 +797,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-19",
+    "anchor": "examples-20",
     "text": "Examples\n**WidgetSettings composition** (`widgetsettings-composition`): Feature-owned composition without live authenticated requests.\n<WidgetSettings companyId={companyId} layout={layout} areaKey={area.key} widget={area.widget} background={area.background} onChange={updateWidget} />\n\n"
   },
   {
@@ -779,7 +815,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-20",
+    "anchor": "props-21",
     "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`widget, width`\n`Widget; number`\nDraft configuration and logical area width.\nYes\n—\n`live, modules`\n`WidgetLive?; string[]?`\nOptional explicitly loaded API preview.\nNo\n—\n"
   },
   {
@@ -788,7 +824,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-20",
+    "anchor": "states-21",
     "text": "States\nIllustrative clock/ticker and configuration-only weather/RSS\nActual QR matrix and cached source preview\nReduced-motion preference\nAccessibility: Labeled native controls support keyboard input. Canvas content has no interactive descendants. Provider status is explicit, source text is rendered as text, and ticker animation respects reduced-motion preferences.\nUsage: Use with a validated draft, optional server live data and QR modules. It has no provider networking, publication authority or interactive descendants; real playback is Android-owned.\n"
   },
   {
@@ -797,7 +833,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-20",
+    "anchor": "examples-21",
     "text": "Examples\n**WidgetFace composition** (`widgetface-composition`): Feature-owned composition without live authenticated requests.\n<WidgetFace widget={widget} width={area.width} />\n\n"
   },
   {
@@ -1051,23 +1087,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-12",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`device_audit_events_actor_pair`\n`CHECK (((actor_principal_id IS NULL) = (actor_membership_id IS NULL)))`\nA person and their membership are recorded together or not at all.\n`device_audit_events_actor_principal_id_fkey`\n`FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe actor is an existing principal.\n`device_audit_events_company_id_actor_membership_id_fkey`\n`FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe acting membership belongs to the same company.\n`device_audit_events_company_id_device_id_fkey`\n`FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe device belongs to the same company.\n`device_audit_events_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn event belongs to an existing company.\n`device_audit_events_details_object`\n`CHECK ((jsonb_typeof(details) = 'object'::text))`\nDetails are a JSON object.\n`device_audit_events_pkey`\n`PRIMARY KEY (id)`\nUnique event identity.\n`device_audit_events_company_id_id_key`\n`CREATE UNIQUE INDEX device_audit_events_company_id_id_key ON public.device_audit_events USING btree (company_id, id)`\nTenant key of device audit events.\n`device_audit_events_device_time_idx`\n`CREATE INDEX device_audit_events_device_time_idx ON public.device_audit_events USING btree (company_id, device_id, occurred_at DESC, id DESC)`\nLists a device's events newest first.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "device_audit_event_branches",
-    "anchor": "device_audit_event_branches",
-    "text": "device_audit_event_branches\nImmutable event-time branch scope of a device lifecycle event. A move concerns both branches; unknown legacy scope has no rows and is visible only to company administrators.\nOwner: Devices. Classification: CONFIDENTIAL.\nLifecycle: Inserted with its event in the same transaction; append-only. Backfill uses only branch IDs explicitly recorded in immutable pairing, move or unlink details.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany shared by the event and the branch.\n—\n—\n`event_id`\n`uuid`\nno\n—\nINTERNAL\nAudit event that concerns the branch.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch the event concerns.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-13",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`device_audit_event_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company audit scopes are unrepresentable.\n`device_audit_event_branches_company_id_event_id_fkey`\n`FOREIGN KEY (company_id, event_id) REFERENCES device_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe event belongs to the same company.\n`device_audit_event_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe row belongs to an existing company.\n`device_audit_event_branches_pkey`\n`PRIMARY KEY (event_id, branch_id)`\nA branch appears at most once per event.\n`device_audit_event_branches_branch_idx`\n`CREATE INDEX device_audit_event_branches_branch_idx ON public.device_audit_event_branches USING btree (company_id, branch_id)`\nSupports finding the events that concern a branch.\n"
   }
 ]
