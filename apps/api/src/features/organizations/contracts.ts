@@ -296,6 +296,7 @@ const auditPageSchema = Type.Object(
           id: uuid,
           occurredAt: instant,
           actorPrincipalId: uuid,
+          actorDisplayName: Type.Union([Type.String(), Type.Null()]),
           action: Type.String(),
           targetType: Type.String(),
           targetId: uuid,

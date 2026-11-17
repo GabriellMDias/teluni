@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createRoute, Link, useRouterState } from "@tanstack/react-router";
+import { historyCategories, type HistorySearch } from "./history.js";
 import type { Invitation } from "./api.js";
 import { sessionQuery } from "../identity/api.js";
 import { NavigationIcon } from "../navigation-icon.js";
@@ -46,7 +47,7 @@ const companyRoute = createRoute({
   path: "/companies/$companyId",
   validateSearch: (
     search: Record<string, unknown>,
-  ): {
+  ): HistorySearch & {
     cursor?: string;
     view?: "settings" | "history" | "members" | "invitations" | "profiles";
     mode?: "grid" | "form";
@@ -106,6 +107,31 @@ const companyRoute = createRoute({
     (search.profileStatus === "ACTIVE" || search.profileStatus === "ARCHIVED")
       ? { profileStatus: search.profileStatus }
       : {}),
+    historyEvent:
+      search.view === "history" && isUuid(search.historyEvent)
+        ? search.historyEvent
+        : undefined,
+    historyQuery:
+      search.view === "history" &&
+      typeof search.historyQuery === "string" &&
+      search.historyQuery.length > 0 &&
+      search.historyQuery.length <= 160
+        ? search.historyQuery
+        : undefined,
+    historyCategory:
+      search.view === "history" &&
+      historyCategories.some((category) => category === search.historyCategory)
+        ? (search.historyCategory as HistorySearch["historyCategory"])
+        : undefined,
+    historyActor:
+      search.view === "history" &&
+      (search.historyActor === "me" || search.historyActor === "others")
+        ? search.historyActor
+        : undefined,
+    historyMode:
+      search.view === "history" && search.historyMode === "grid"
+        ? "grid"
+        : undefined,
     // The default view's branches dataset owns its mode and record.
     ...(search.view === undefined &&
     (search.mode === "grid" || search.mode === "form")
@@ -130,6 +156,11 @@ const companyRoute = createRoute({
       invitation,
       invitationQuery,
       invitationStatus,
+      historyEvent,
+      historyQuery,
+      historyCategory,
+      historyActor,
+      historyMode,
     } = companyRoute.useSearch();
     return (
       <CompanyPage
@@ -146,6 +177,13 @@ const companyRoute = createRoute({
         invitationId={invitation}
         invitationQuery={invitationQuery}
         invitationStatus={invitationStatus}
+        historySearch={{
+          ...(historyEvent ? { historyEvent } : {}),
+          ...(historyQuery ? { historyQuery } : {}),
+          ...(historyCategory ? { historyCategory } : {}),
+          ...(historyActor ? { historyActor } : {}),
+          ...(historyMode ? { historyMode } : {}),
+        }}
       />
     );
   },

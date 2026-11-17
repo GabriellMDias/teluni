@@ -559,7 +559,9 @@ test("paginates localized history and resets the cursor when changing views", as
     .element(screen.getByText(t.historyActions["company.updated"]))
     .toBeVisible();
   await expect
-    .element(screen.getByText(t.historyYou, { exact: false }))
+    .element(
+      screen.getByRole("article").getByText(t.historyYou, { exact: false }),
+    )
     .toBeVisible();
   await screen.getByRole("link", { name: t.nextPage }).click();
   await expect.element(screen.getByText(t.historyUnknown)).toBeVisible();
@@ -2743,4 +2745,325 @@ test("restores profile filters from a shared link and keeps them through detail 
   });
   await screen.getByRole("button", { name: t.profileWorkspace.clear }).click();
   expect(router.state.location.search).toEqual({ view: "profiles" });
+});
+
+const historyEventId = "00000000-0000-4000-8000-000000000081";
+const historyEvent = (overrides: Record<string, unknown> = {}) => ({
+  id: historyEventId,
+  occurredAt: "2026-11-15T15:00:00.000Z",
+  actorPrincipalId: "another-person",
+  actorDisplayName: "Ana Operadora",
+  action: "profile.updated",
+  targetType: "access_profile",
+  targetId: profileId,
+  details: {
+    profileName: "Recepção",
+    fields: ["name", "capabilities"],
+    addedCapabilities: ["media.view", "media.upload"],
+    removedCapabilities: ["audit.view"],
+    affectedGrants: 3,
+  },
+  ...overrides,
+});
+
+test("restores history filters and presentation from the URL and keeps them through detail navigation", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              historyEvent(),
+              historyEvent({
+                id: "00000000-0000-4000-8000-000000000082",
+                action: "company.created",
+                targetType: "company",
+                details: {},
+              }),
+            ],
+            nextCursor: "older-history",
+          },
+        }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen, router } = await open(
+    `${companyPath}?view=history&historyQuery=recepcao&historyCategory=profiles&historyActor=others&historyMode=grid`,
+  );
+  await expect
+    .element(screen.getByRole("searchbox", { name: t.historyWorkspace.search }))
+    .toHaveValue("recepcao");
+  await expect
+    .element(
+      screen.getByRole("combobox", { name: t.historyWorkspace.category }),
+    )
+    .toHaveValue("profiles");
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: t.historyWorkspace.grid,
+        exact: true,
+      }),
+    )
+    .toHaveAttribute("aria-pressed", "true");
+  await screen
+    .getByRole("link", {
+      name: t.historyActions["profile.updated"],
+      exact: true,
+    })
+    .click();
+  expect(router.state.location.search).toMatchObject({
+    historyEvent: historyEventId,
+    historyQuery: "recepcao",
+    historyCategory: "profiles",
+    historyActor: "others",
+    historyMode: "grid",
+  });
+  await expect
+    .element(
+      screen.getByRole("heading", {
+        name: t.historyActions["profile.updated"],
+        exact: true,
+      }),
+    )
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.historyWorkspace.back }).click();
+  await expect
+    .element(screen.getByRole("searchbox", { name: t.historyWorkspace.search }))
+    .toHaveValue("recepcao");
+  await screen.getByRole("link", { name: t.nextPage }).click();
+  expect(router.state.location.search).toMatchObject({
+    cursor: "older-history",
+    historyQuery: "recepcao",
+    historyCategory: "profiles",
+    historyMode: "grid",
+  });
+});
+
+test("groups history dates, searches authors and switches between timeline and compact records", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              historyEvent(),
+              historyEvent({
+                id: "00000000-0000-4000-8000-000000000082",
+                occurredAt: "2026-11-14T15:00:00.000Z",
+                actorPrincipalId: "synthetic",
+                action: "branch.created",
+                targetType: "branch",
+                details: { branchName: "Norte" },
+              }),
+            ],
+            nextCursor: null,
+          },
+        }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen, router } = await open(`${companyPath}?view=history`);
+  const day = new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
+    new Date("2026-11-15T15:00:00.000Z"),
+  );
+  await expect
+    .element(screen.getByRole("heading", { name: day, exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText("Ana Operadora", { exact: true }))
+    .toBeVisible();
+  await screen
+    .getByRole("searchbox", { name: t.historyWorkspace.search })
+    .fill("ana operadora");
+  await expect
+    .element(screen.getByText(`${t.fieldBranchName}: Norte`))
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("button", { name: t.historyWorkspace.clear, exact: true })
+    .click();
+  await screen
+    .getByRole("combobox", { name: t.historyWorkspace.who })
+    .selectOptions("me");
+  await expect
+    .element(screen.getByText("Ana Operadora", { exact: true }))
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("button", { name: t.historyWorkspace.grid, exact: true })
+    .click();
+  expect(router.state.location.search).toMatchObject({
+    historyActor: "me",
+    historyMode: "grid",
+  });
+  await expect
+    .element(screen.getByRole("region", { name: t.historyWorkspace.gridLabel }))
+    .toBeVisible();
+});
+
+test("explains profile permission changes without rendering arbitrary audit payloads", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              historyEvent({
+                details: {
+                  profileName: "Recepção",
+                  fields: [
+                    "name",
+                    "capabilities",
+                    "__proto__",
+                    { unsafe: true },
+                  ],
+                  addedCapabilities: [
+                    "media.view",
+                    "__proto__",
+                    "media.upload",
+                  ],
+                  removedCapabilities: ["audit.view"],
+                  affectedGrants: 3,
+                  secret: "do-not-display-this-field",
+                },
+              }),
+            ],
+            nextCursor: null,
+          },
+        }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen } = await open(
+    `${companyPath}?view=history&historyEvent=${historyEventId}`,
+  );
+  await expect
+    .element(
+      screen.getByText(t.historyWorkspace.permissionsAdded, { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.capabilities["media.upload"], { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(t.historyWorkspace.permissionsRemoved, { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.capabilities["audit.view"], { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(t.historyWorkspace.affectedGrants, { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.historyFields.profileName, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText("do-not-display-this-field"))
+    .not.toBeInTheDocument();
+  await expect
+    .element(screen.getByText("__proto__", { exact: true }))
+    .not.toBeInTheDocument();
+  await screen
+    .getByText(t.historyWorkspace.references, { exact: true })
+    .click();
+  await expect
+    .element(screen.getByText(historyEventId, { exact: true }))
+    .toBeVisible();
+});
+
+test("keeps both invitation and grant expiry explicit in history context", async () => {
+  const accessExpiry = "2026-12-01T12:00:00.000Z";
+  const linkExpiry = "2026-11-22T12:00:00.000Z";
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              historyEvent({
+                action: "invitation.created",
+                targetType: "invitation",
+                details: {
+                  role: "OPERATOR",
+                  scope: "BRANCHES",
+                  branchCount: 2,
+                  grantExpiresAt: accessExpiry,
+                  expiresAt: linkExpiry,
+                },
+              }),
+            ],
+            nextCursor: null,
+          },
+        }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen } = await open(
+    `${companyPath}?view=history&historyEvent=${historyEventId}`,
+  );
+  await expect
+    .element(screen.getByText(t.historyWorkspace.branchCount(2)))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(formatInstant(locale, accessExpiry), { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(formatInstant(locale, linkExpiry), { exact: true }),
+    )
+    .toBeVisible();
+});
+
+test("hides cached event details on a same-role access refresh and a failed audit read", async () => {
+  let reads = 0;
+  let fail = false;
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      reads++;
+      return fail
+        ? {
+            status: 403,
+            body: { error: { code: "PERMISSION_DENIED", message: "Denied" } },
+          }
+        : { body: { items: [historyEvent()], nextCursor: null } };
+    }
+    return { body: { ...memberCompany, access: administratorAccess } };
+  });
+  const { screen, client } = await open(
+    `${companyPath}?view=history&historyEvent=${historyEventId}`,
+  );
+  await expect
+    .element(screen.getByText("Ana Operadora", { exact: true }))
+    .toBeVisible();
+  fail = true;
+  await client.invalidateQueries({ queryKey: companyKey(companyId) });
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.PERMISSION_DENIED);
+  await expect
+    .element(screen.getByText("Ana Operadora", { exact: true }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(screen.getByRole("link", { name: t.historyWorkspace.back }))
+    .toBeVisible();
+  expect(reads).toBeGreaterThan(1);
+});
+
+test("shows unavailable history records and sanitizes invalid history-only URL state", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? { body: { items: [], nextCursor: null } }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen, router } = await open(
+    `${companyPath}?view=history&historyEvent=${historyEventId}&historyCategory=invalid&historyActor=unknown`,
+  );
+  await expect
+    .element(screen.getByText(t.historyWorkspace.noDetail))
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.historyWorkspace.back }).click();
+  expect(router.state.location.search).toEqual({ view: "history" });
+  await expect
+    .element(
+      screen.getByRole("combobox", { name: t.historyWorkspace.category }),
+    )
+    .toHaveValue("all");
+  await expect.element(screen.getByText(t.historyEmpty)).toBeVisible();
 });

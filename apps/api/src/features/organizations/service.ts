@@ -811,7 +811,10 @@ export class OrganizationService {
     context: HumanContext,
     companyId: string,
     options: { limit: number; cursor?: string },
-  ): Promise<{ items: AuditRecord[]; nextCursor: string | null }> {
+  ): Promise<{
+    items: (AuditRecord & { actorDisplayName: string | null })[];
+    nextCursor: string | null;
+  }> {
     const access = await this.access(context, companyId);
     if (access.companyStatus === "SUSPENDED")
       throw new OrganizationFailure("COMPANY_SUSPENDED");
@@ -843,9 +846,21 @@ export class OrganizationService {
       },
     );
     const page = items.slice(0, options.limit);
+    // Resolve last-verified names only for actors on the authorized page;
+    // the immutable event's historical details remain unchanged.
+    const actors = new Map(
+      (
+        await this.#profiles.getMany([
+          ...new Set(page.map((event) => event.actorPrincipalId)),
+        ])
+      ).map((profile) => [profile.principalId, profile.displayName]),
+    );
     const last = page.at(-1);
     return {
-      items: page,
+      items: page.map((event) => ({
+        ...event,
+        actorDisplayName: actors.get(event.actorPrincipalId) ?? null,
+      })),
       nextCursor:
         items.length > options.limit && last
           ? encodeCursor({

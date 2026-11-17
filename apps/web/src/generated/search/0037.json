@@ -4,6 +4,15 @@
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "npm Workspaces",
+    "anchor": "npm-workspaces",
+    "text": "npm Workspaces\nnpm provides native workspace support and is distributed with Node.js, which reduces the amount of additional tooling required to begin development.\nIt would be capable of supporting a basic Orion workspace.\nIt was not selected because pnpm provides a stronger combination of workspace-oriented capabilities, explicit local package relationships, dependency isolation, dependency-version coordination, and installation efficiency for the type of monorepo Orion intends to become.\nUsing npm primarily because it is bundled with Node.js would reduce one installation concern but would not provide enough architectural benefit to outweigh pnpm's monorepo-oriented capabilities.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Yarn Workspaces",
     "anchor": "yarn-workspaces",
     "text": "Yarn Workspaces\nYarn provides mature workspace functionality and additional dependency-management capabilities suitable for monorepos.\nIt was not selected because pnpm provides the capabilities Orion currently requires with a dependency model and workspace workflow that align well with the project's preference for explicit package relationships and relatively conventional Node.js package semantics.\nSelecting Yarn would not provide a material architectural advantage for Orion sufficient to justify preferring it over pnpm.\n"

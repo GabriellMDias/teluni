@@ -39,6 +39,7 @@ const people = {
   paged: randomUUID(),
 };
 type Person = keyof typeof people;
+const humanProfileRequests: string[][] = [];
 
 const sessions: HumanSessionPort = {
   authenticate: ({ headers }) => {
@@ -82,8 +83,9 @@ beforeAll(async () => {
     const organizations = createOrganizationsModule({
       sessions,
       profiles: {
-        getMany: (ids) =>
-          Promise.resolve(
+        getMany: (ids) => {
+          humanProfileRequests.push([...ids]);
+          return Promise.resolve(
             ids.map((id) => ({
               principalId: id,
               displayName:
@@ -92,7 +94,8 @@ beforeAll(async () => {
                 )?.[0] ?? null,
               email: null,
             })),
-          ),
+          );
+        },
       },
       rateLimit: { max: 10_000, timeWindow: 60_000 },
     });
@@ -2028,6 +2031,35 @@ describe("organizations: two-company isolation", () => {
       const rejected = await call("paged", "GET", `/companies?limit=${limit}`);
       expect(rejected.status).toBe(400);
     }
+  });
+
+  it("enriches audit authors only after selecting the authorized page", async () => {
+    const company = await createCompany("aAdmin", "Audit author presentation");
+    const own = await createBranch("aAdmin", company, "Managed branch");
+    await createBranch("aAdmin", company, "Other branch");
+    await grantBranches("aManager", company, "BRANCH_MANAGER", [own.id]);
+    humanProfileRequests.length = 0;
+    const response = await call(
+      "aManager",
+      "GET",
+      `/companies/${company}/audit-events?limit=1`,
+    );
+    expect(response.status).toBe(200);
+    expect(response.body.items).toMatchObject([
+      {
+        actorPrincipalId: people.aAdmin,
+        actorDisplayName: "aAdmin",
+        details: { branchName: "Managed branch" },
+      },
+    ]);
+    expect(humanProfileRequests).toEqual([[people.aAdmin]]);
+    for (const event of response.body.items as object[])
+      expect(event).not.toHaveProperty("actorEmail");
+    humanProfileRequests.length = 0;
+    expect(
+      code(await call("bAdmin", "GET", `/companies/${company}/audit-events`)),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(humanProfileRequests).toEqual([]);
   });
 
   it("paginates branches with a bound cursor", async () => {

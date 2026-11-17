@@ -175,14 +175,50 @@ test("creates a company and manages branches, settings, members, responsibility 
     page.getByText("Filial arquivada", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.locator(".audit-list > li").filter({ hasText: "Filial arquivada" }),
+    page
+      .locator(".history-event-list > li")
+      .filter({ hasText: "Filial arquivada" }),
   ).toContainText("Centro Histórico");
-  await expect(page.locator(".audit-list > li").first()).toContainText(
+  await expect(page.locator(".history-event-list > li").first()).toContainText(
     "Por você",
   );
-  await expect(page.locator(".audit-list > li").first()).toContainText(
+  await expect(page.locator(".history-event-list > li").first()).toContainText(
     "Idioma padrão",
   );
+  await page
+    .getByRole("link", { name: "Filial arquivada", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("article", { name: "Filial arquivada", exact: true })
+      .getByText("Centro Histórico", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Voltar ao histórico", exact: true })
+    .click();
+  await page
+    .getByRole("searchbox", { name: "Buscar nesta página", exact: true })
+    .fill("centro historico");
+  await page
+    .getByRole("combobox", { name: "Categoria", exact: true })
+    .selectOption("branches");
+  await page.getByRole("button", { name: "Tabela", exact: true }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("combobox", { name: "Categoria", exact: true }),
+  ).toHaveValue("branches");
+  await expect(
+    page.getByRole("searchbox", { name: "Buscar nesta página", exact: true }),
+  ).toHaveValue("centro historico");
+  await expect(
+    page.getByRole("region", { name: "Registros de alterações", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Limpar filtros", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Linha do tempo", exact: true })
+    .click();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
@@ -465,7 +501,9 @@ test("creates a company and manages branches, settings, members, responsibility 
       page.getByText("Responsabilidade transferida", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.locator(".audit-list > li").filter({ hasText: "Papel concedido" }),
+      page
+        .locator(".history-event-list > li")
+        .filter({ hasText: "Papel concedido" }),
     ).toContainText("Papel: Administrador");
 
     await memberPage.reload();
