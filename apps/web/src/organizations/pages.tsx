@@ -1482,6 +1482,9 @@ export function CompanyPage({
   mode,
   record,
   memberId,
+  profileId,
+  profileQuery,
+  profileStatus,
 }: {
   companyId: string;
   cursor?: string;
@@ -1490,6 +1493,9 @@ export function CompanyPage({
   mode?: DataSetMode;
   record?: string;
   memberId?: string;
+  profileId?: string;
+  profileQuery?: string;
+  profileStatus?: "ACTIVE" | "ARCHIVED";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -1504,6 +1510,9 @@ export function CompanyPage({
     ...(!view && mode ? { mode } : {}),
     ...(!view && record ? { record } : {}),
     ...(view === "members" && memberId ? { member: memberId } : {}),
+    ...(view === "profiles" && profileId ? { profile: profileId } : {}),
+    ...(view === "profiles" && profileQuery ? { profileQuery } : {}),
+    ...(view === "profiles" && profileStatus ? { profileStatus } : {}),
   });
   const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
@@ -1542,7 +1551,7 @@ export function CompanyPage({
   const datasetView = !view && canView;
   return (
     <section
-      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}`}
+      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}${view === "profiles" ? " company-profiles-panel" : ""}`}
       aria-labelledby="company-title"
       lang={locale}
     >
@@ -1590,7 +1599,15 @@ export function CompanyPage({
         )
       ) : view === "profiles" ? (
         access.capabilities.includes("members.manage") ? (
-          <CompanyProfiles companyId={companyId} returnTo={returnTo} t={t} />
+          <CompanyProfiles
+            companyId={companyId}
+            profileId={profileId}
+            profileQuery={profileQuery}
+            profileStatus={profileStatus}
+            returnTo={returnTo}
+            locale={locale}
+            t={t}
+          />
         ) : (
           <p role="alert" className="notice notice-error">
             {t.errors.PERMISSION_DENIED}

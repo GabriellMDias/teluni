@@ -192,6 +192,65 @@ const ptBR = {
     "catalogs.manage": "Criar catálogos e alterar seus campos",
     "prices.edit": "Alterar preços e promoções",
   } satisfies Record<DelegableCapability, string>,
+  profileWorkspace: {
+    back: "Voltar aos perfis",
+    search: "Buscar perfil",
+    searchPlaceholder: "Nome do perfil…",
+    status: "Status",
+    allStatuses: "Todos os status",
+    active: "Ativo",
+    archived: "Arquivado",
+    clear: "Limpar filtros",
+    usage: "Membros e acessos",
+    listLabel: "Lista de perfis de acesso",
+    noResults: "Nenhum perfil corresponde aos filtros.",
+    results: (visible: number, total: number) =>
+      `${visible} de ${total} perfis`,
+    permissionCount: (count: number) =>
+      count === 1 ? "1 permissão" : `${count} permissões`,
+    nameHint:
+      "Use um nome que descreva a função, como Recepção ou Equipe de conteúdo.",
+    scopeHint:
+      "O perfil define o que a pessoa pode fazer. A empresa inteira ou as filiais e o prazo são escolhidos ao conceder o acesso em Membros.",
+    scope: "Onde tem acesso",
+    expiry: "Validade do acesso",
+    noExpiry: "Sem prazo definido",
+    updated: "Atualizado em",
+    reviewTitle: "Revise o impacto",
+    reviewSelection: "Revisar seleção",
+    reviewRequired:
+      "Carregue os dados atuais antes de tentar novamente. Confira se a alteração já foi aplicada; o rascunho será substituído após uma leitura bem-sucedida.",
+    archiveTitle: "Arquivamento",
+    archiveHint:
+      "Arquive um perfil que não será mais usado. Ele continuará no histórico e não poderá ser editado ou concedido novamente.",
+    archivedHint:
+      "Este perfil está arquivado. Suas permissões estão disponíveis apenas para consulta.",
+    archiveConfirm: (name: string) =>
+      `Confirmo o arquivamento do perfil “${name}”.`,
+    confirmArchive: "Confirmar arquivamento",
+    groups: {
+      organization: {
+        title: "Organização",
+        description: "Filiais, convites e histórico da empresa.",
+      },
+      screens: {
+        title: "Telas",
+        description: "Consulta, pareamento e gerenciamento de telas.",
+      },
+      media: {
+        title: "Mídia",
+        description: "Biblioteca de arquivos e organização do conteúdo.",
+      },
+      programming: {
+        title: "Programação",
+        description: "Playlists, distribuição e publicação nas telas.",
+      },
+      catalogs: {
+        title: "Catálogos",
+        description: "Itens, campos, preços e promoções.",
+      },
+    },
+  },
   profilesTitle: "Perfis de acesso",
   profilesLead:
     "Combine permissões em perfis com o nome que fizer sentido para a empresa e conceda-os aos membros, para toda a empresa ou para filiais. Administrar a empresa nunca faz parte de um perfil.",
@@ -200,7 +259,7 @@ const ptBR = {
   profileName: "Nome do perfil",
   profileCapabilities: "Permissões",
   profileCapabilitiesHint:
-    "Convidar pessoas, ver o histórico e gerenciar telas exigem verificação em duas etapas de quem recebe o perfil.",
+    "Selecione pelo menos uma permissão. Ao escolher uma ação, a consulta necessária é incluída automaticamente. Remover a consulta também remove as ações que dependem dela.",
   profileCreate: "Criar perfil",
   profileEdit: "Editar perfil",
   profileHolders: "Quem tem este perfil",
@@ -607,6 +666,65 @@ const enUS: OrganizationMessages = {
     "catalogs.manage": "Create catalogs and change their fields",
     "prices.edit": "Change prices and promotions",
   },
+  profileWorkspace: {
+    back: "Back to profiles",
+    search: "Search profiles",
+    searchPlaceholder: "Profile name…",
+    status: "Status",
+    allStatuses: "All statuses",
+    active: "Active",
+    archived: "Archived",
+    clear: "Clear filters",
+    usage: "Members and grants",
+    listLabel: "Access profiles list",
+    noResults: "No profiles match these filters.",
+    results: (visible: number, total: number) =>
+      `${visible} of ${total} profiles`,
+    permissionCount: (count: number) =>
+      count === 1 ? "1 permission" : `${count} permissions`,
+    nameHint:
+      "Choose a name that describes the job, such as Reception or Content team.",
+    scopeHint:
+      "The profile defines what a person can do. Choose the whole company or branches and an expiry when granting access in Members.",
+    scope: "Access scope",
+    expiry: "Grant expiry",
+    noExpiry: "No expiry",
+    updated: "Updated on",
+    reviewTitle: "Review the impact",
+    reviewSelection: "Review selection",
+    reviewRequired:
+      "Load current data before trying again. Check whether the change was already applied; a successful read replaces the draft.",
+    archiveTitle: "Archiving",
+    archiveHint:
+      "Archive a profile that is no longer needed. It stays in history and cannot be edited or granted again.",
+    archivedHint:
+      "This profile is archived. Its permissions are available for reference only.",
+    archiveConfirm: (name: string) =>
+      `I confirm archiving the profile “${name}”.`,
+    confirmArchive: "Confirm archive",
+    groups: {
+      organization: {
+        title: "Organization",
+        description: "Company branches, invitations and history.",
+      },
+      screens: {
+        title: "Screens",
+        description: "Screen viewing, pairing and management.",
+      },
+      media: {
+        title: "Media",
+        description: "File library and content organization.",
+      },
+      programming: {
+        title: "Programming",
+        description: "Playlists, distribution and screen publishing.",
+      },
+      catalogs: {
+        title: "Catalogs",
+        description: "Items, fields, prices and promotions.",
+      },
+    },
+  },
   profilesTitle: "Access profiles",
   profilesLead:
     "Combine permissions into profiles named the way your company works and grant them to members, company-wide or for branches. Company administration is never part of a profile.",
@@ -615,7 +733,7 @@ const enUS: OrganizationMessages = {
   profileName: "Profile name",
   profileCapabilities: "Permissions",
   profileCapabilitiesHint:
-    "Inviting people, viewing the history and managing screens require two-step verification from whoever holds the profile.",
+    "Select at least one permission. Choosing an action automatically includes its required viewing permission. Removing viewing also removes actions that depend on it.",
   profileCreate: "Create profile",
   profileEdit: "Edit profile",
   profileHolders: "Who holds this profile",

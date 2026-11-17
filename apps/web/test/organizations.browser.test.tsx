@@ -17,6 +17,7 @@ import {
   branchesKey,
   companyKey,
   membersKey,
+  profilesKey,
 } from "../src/organizations/api.js";
 
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -1140,14 +1141,21 @@ test("creates profiles and confirms a capability change that reaches members", a
     .element(screen.getByRole("link", { name: t.profilesTitle }))
     .toHaveAttribute("aria-current", "page");
   await expect.element(screen.getByText(t.profileUsage(1, 1))).toBeVisible();
+  await screen.getByRole("link", { name: "Auditor", exact: true }).click();
   await expect
     .element(screen.getByRole("button", { name: `${t.archive}: Auditor` }))
     .toBeDisabled();
   await screen
-    .getByRole("button", { name: `${t.profileEdit}: Auditor` })
+    .getByRole("button", { name: t.profileEdit, exact: true })
     .click();
   await expect
-    .element(screen.getByText(`Synthetic member · ${t.grantBranches}: Norte`))
+    .element(screen.getByText("Synthetic member", { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(`${t.grantBranches}: Norte`, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.profileWorkspace.noExpiry))
     .toBeVisible();
   const editor = screen.getByRole("form", {
     name: `${t.profileEdit}: Auditor`,
@@ -1183,6 +1191,10 @@ test("creates profiles and confirms a capability change that reaches members", a
     capabilities: ["audit.view"],
   });
 
+  await screen.getByRole("link", { name: t.profileWorkspace.back }).click();
+  await screen
+    .getByRole("button", { name: t.profileCreate, exact: true })
+    .click();
   await screen.getByLabelText(t.profileName).fill("Recepção");
   const create = screen.getByRole("form", { name: t.profileCreateTitle });
   await expect
@@ -1206,7 +1218,7 @@ test("keeps each profile capability together with the one it needs", async () =>
       ? { body: { items: [] } }
       : { body: memberCompany },
   );
-  const { screen } = await open(`${companyPath}?view=profiles`);
+  const { screen } = await open(`${companyPath}?view=profiles&profile=new`);
   const create = screen.getByRole("form", { name: t.profileCreateTitle });
   const box = (capability: keyof typeof t.capabilities) =>
     create.getByRole("checkbox", { name: t.capabilities[capability] });
@@ -1989,4 +2001,353 @@ test("discards the entire new branch draft so an existing branch can be opened",
   await expect
     .element(screen.getByText(t.unsavedChanges, { exact: true }))
     .not.toBeInTheDocument();
+});
+
+test("filters profiles by name and state and preserves filters on detail return", async () => {
+  const reception = accessProfile({ name: "Recepção" });
+  const archived = accessProfile({
+    id: "00000000-0000-4000-8000-000000000042",
+    name: "Antigo",
+    status: "ARCHIVED",
+  });
+  respond((url) => {
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return {
+        body: { profile: reception, holders: [], holdersTruncated: false },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [reception, archived] } };
+    return { body: memberCompany };
+  });
+  const { screen, router } = await open(`${companyPath}?view=profiles`);
+  await expect
+    .element(screen.getByRole("form", { name: t.profileCreateTitle }))
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("searchbox", { name: t.profileWorkspace.search })
+    .fill("recepcao");
+  await expect
+    .element(screen.getByRole("link", { name: "Antigo", exact: true }))
+    .not.toBeInTheDocument();
+  await screen.getByRole("link", { name: "Recepção", exact: true }).click();
+  expect(router.state.location.search).toMatchObject({
+    view: "profiles",
+    profile: profileId,
+  });
+  await screen.getByRole("link", { name: t.profileWorkspace.back }).click();
+  await expect
+    .element(screen.getByRole("searchbox", { name: t.profileWorkspace.search }))
+    .toHaveValue("recepcao");
+  await screen.getByRole("button", { name: t.profileWorkspace.clear }).click();
+  await screen
+    .getByRole("combobox", { name: t.profileWorkspace.status, exact: true })
+    .selectOptions("ARCHIVED");
+  await expect
+    .element(screen.getByRole("link", { name: "Antigo", exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: "Recepção", exact: true }))
+    .not.toBeInTheDocument();
+});
+
+test("confirms archiving an unused profile and keeps archived detail read only", async () => {
+  let current = accessProfile();
+  let archives = 0;
+  respond((url, request) => {
+    if (
+      url.pathname.endsWith("/archive") &&
+      request instanceof Request &&
+      request.method === "POST"
+    ) {
+      archives++;
+      current = { ...current, status: "ARCHIVED", version: 2 };
+      return { body: current };
+    }
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return {
+        body: { profile: current, holders: [], holdersTruncated: false },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [current] } };
+    return { body: memberCompany };
+  });
+  const { screen } = await open(
+    `${companyPath}?view=profiles&profile=${profileId}`,
+  );
+  await screen.getByRole("button", { name: `${t.archive}: Auditor` }).click();
+  expect(archives).toBe(0);
+  await expect
+    .element(
+      screen.getByRole("button", { name: t.profileWorkspace.confirmArchive }),
+    )
+    .toBeDisabled();
+  await screen
+    .getByRole("checkbox", {
+      name: t.profileWorkspace.archiveConfirm("Auditor"),
+    })
+    .click();
+  await screen
+    .getByRole("button", { name: t.profileWorkspace.confirmArchive })
+    .click();
+  await expect
+    .element(screen.getByText(t.profileWorkspace.archivedHint))
+    .toBeVisible();
+  expect(archives).toBe(1);
+  expect(
+    await posted(`/access-profiles/${profileId}/archive`)?.clone().json(),
+  ).toEqual({ expectedVersion: 1 });
+  await expect
+    .element(screen.getByRole("button", { name: t.profileEdit }))
+    .not.toBeInTheDocument();
+});
+
+test("keeps a profile draft and observed version across refetch and failed conflict recovery", async () => {
+  let current = accessProfile();
+  let writes = 0;
+  let failRead = false;
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "PATCH") {
+      writes++;
+      return {
+        status: 409,
+        body: {
+          error: { code: "RESOURCE_VERSION_CONFLICT", message: "Changed" },
+        },
+      };
+    }
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return failRead
+        ? {
+            status: 503,
+            body: {
+              error: { code: "SERVICE_UNAVAILABLE", message: "Unavailable" },
+            },
+          }
+        : { body: { profile: current, holders: [], holdersTruncated: false } };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [current] } };
+    return { body: memberCompany };
+  });
+  const { screen, client } = await open(
+    `${companyPath}?view=profiles&profile=${profileId}`,
+  );
+  await screen.getByRole("button", { name: t.profileEdit }).click();
+  await screen.getByLabelText(t.profileName).fill("My profile draft");
+  current = accessProfile({ name: "Concurrent profile", version: 2 });
+  await client.invalidateQueries({
+    queryKey: profilesKey(companyId),
+  });
+  await expect
+    .element(
+      screen.getByRole("heading", { name: "Concurrent profile", exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(screen.getByLabelText(t.profileName))
+    .toHaveValue("My profile draft");
+  await screen.getByRole("button", { name: t.save, exact: true }).click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.RESOURCE_VERSION_CONFLICT);
+  const patch = vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => input)
+    .find(
+      (input): input is Request =>
+        input instanceof Request && input.method === "PATCH",
+    );
+  expect(await patch?.clone().json()).toEqual({
+    expectedVersion: 1,
+    name: "My profile draft",
+  });
+  failRead = true;
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect
+    .element(screen.getByLabelText(t.profileName))
+    .toHaveValue("My profile draft");
+  await expect
+    .element(screen.getByRole("button", { name: t.save, exact: true }))
+    .toBeDisabled();
+  expect(writes).toBe(1);
+  failRead = false;
+  await screen
+    .getByRole("button", { name: t.reload, exact: true })
+    .first()
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.profileName))
+    .toHaveValue("Concurrent profile");
+});
+
+test("reconciles an unknown profile creation before allowing another submission", async () => {
+  let writes = 0;
+  let reads = 0;
+  respond((url, request) => {
+    if (
+      url.pathname.endsWith("/access-profiles") &&
+      request instanceof Request &&
+      request.method === "POST"
+    ) {
+      writes++;
+      throw new TypeError("Synthetic lost profile creation response");
+    }
+    if (url.pathname.endsWith("/access-profiles")) {
+      if (writes && ++reads === 1)
+        return {
+          status: 503,
+          body: {
+            error: { code: "SERVICE_UNAVAILABLE", message: "Unavailable" },
+          },
+        };
+      return {
+        body: {
+          items: writes ? [accessProfile({ name: "Saved profile" })] : [],
+        },
+      };
+    }
+    return { body: memberCompany };
+  });
+  const { screen } = await open(`${companyPath}?view=profiles&profile=new`);
+  await screen.getByLabelText(t.profileName).fill("Saved profile");
+  await screen
+    .getByRole("checkbox", { name: t.capabilities["branches.view"] })
+    .click();
+  await screen
+    .getByRole("button", { name: t.profileCreate, exact: true })
+    .click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.unknownWrite);
+  await expect
+    .element(screen.getByRole("button", { name: t.profileCreate, exact: true }))
+    .toBeDisabled();
+  await screen.getByRole("button", { name: t.reload }).click();
+  await expect
+    .element(screen.getByLabelText(t.profileName))
+    .toHaveValue("Saved profile");
+  await expect
+    .element(screen.getByRole("button", { name: t.profileCreate, exact: true }))
+    .toBeDisabled();
+  expect(writes).toBe(1);
+  await screen.getByRole("button", { name: t.reload }).click();
+  await expect
+    .element(screen.getByRole("link", { name: "Saved profile", exact: true }))
+    .toBeVisible();
+  expect(writes).toBe(1);
+});
+
+test("shows profile holder scope, expiry and membership status and denies unauthorized profiles", async () => {
+  let authorized = true;
+  respond((url) => {
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return {
+        body: {
+          profile: accessProfile({ memberCount: 1, grantCount: 1 }),
+          holders: [
+            {
+              grantId: "grant-1",
+              membershipId: memberId,
+              membershipStatus: "SUSPENDED",
+              displayName: "Synthetic holder",
+              email: "holder@example.test",
+              scope: "COMPANY",
+              branches: [],
+              expiresAt: "2026-12-01T12:00:00.000Z",
+            },
+          ],
+          holdersTruncated: true,
+        },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [] } };
+    return {
+      body: authorized
+        ? memberCompany
+        : {
+            ...memberCompany,
+            access: { ...memberCompany.access, capabilities: ["company.view"] },
+          },
+    };
+  });
+  const { screen, client } = await open(
+    `${companyPath}?view=profiles&profile=${profileId}`,
+  );
+  await expect.element(screen.getByText("holder@example.test")).toBeVisible();
+  await expect
+    .element(screen.getByText(t.memberStatuses.SUSPENDED, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.grantCompanyWide, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(formatInstant(locale, "2026-12-01T12:00:00.000Z")),
+    )
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.profileHoldersTruncated))
+    .toBeVisible();
+  authorized = false;
+  await client.invalidateQueries({ queryKey: companyKey(companyId) });
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.PERMISSION_DENIED);
+  await expect
+    .element(screen.getByRole("heading", { name: "Auditor", exact: true }))
+    .not.toBeInTheDocument();
+});
+
+test("restores profile filters from a shared link and keeps them through detail navigation", async () => {
+  const archived = accessProfile({ status: "ARCHIVED", name: "Recepção" });
+  respond((url) => {
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return {
+        body: { profile: archived, holders: [], holdersTruncated: false },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return {
+        body: {
+          items: [
+            archived,
+            accessProfile({
+              id: "00000000-0000-4000-8000-000000000042",
+              name: "Outro perfil",
+            }),
+          ],
+        },
+      };
+    return { body: memberCompany };
+  });
+  const { screen, router } = await open(
+    `${companyPath}?view=profiles&profileQuery=recepcao&profileStatus=ARCHIVED`,
+  );
+  await expect
+    .element(screen.getByRole("searchbox", { name: t.profileWorkspace.search }))
+    .toHaveValue("recepcao");
+  await expect
+    .element(
+      screen.getByRole("combobox", {
+        name: t.profileWorkspace.status,
+        exact: true,
+      }),
+    )
+    .toHaveValue("ARCHIVED");
+  await expect
+    .element(screen.getByRole("link", { name: "Outro perfil", exact: true }))
+    .not.toBeInTheDocument();
+  await screen.getByRole("link", { name: "Recepção", exact: true }).click();
+  expect(router.state.location.search).toEqual({
+    view: "profiles",
+    profileQuery: "recepcao",
+    profileStatus: "ARCHIVED",
+    profile: profileId,
+  });
+  await screen.getByRole("link", { name: t.profileWorkspace.back }).click();
+  expect(router.state.location.search).toEqual({
+    view: "profiles",
+    profileQuery: "recepcao",
+    profileStatus: "ARCHIVED",
+  });
+  await screen.getByRole("button", { name: t.profileWorkspace.clear }).click();
+  expect(router.state.location.search).toEqual({ view: "profiles" });
 });

@@ -17482,7 +17482,7 @@
                       ]
                     },
                     "minItems": 1,
-                    "maxItems": 5,
+                    "maxItems": 16,
                     "uniqueItems": true
                   }
                 },
@@ -19118,7 +19118,7 @@
                       ]
                     },
                     "minItems": 1,
-                    "maxItems": 5,
+                    "maxItems": 16,
                     "uniqueItems": true
                   }
                 },

@@ -1,5 +1,23 @@
 [
   {
+    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
+    "title": "Backend Execution and Generated Artifacts",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Artifact ownership and storage",
+    "anchor": "artifact-ownership-and-storage",
+    "text": "Artifact ownership and storage\nDerived artifact\nCanonical input\nOutput and handling\nOpenAPI 3.1 description\nExecutable TypeBox wire schemas and stable route `operationId` metadata owned by the API\nCommitted `docs/generated/api/openapi.json` is regenerated and checked; clients and documentation consume that file, with no independently authored copy.\nTypeScript API client types\nCommitted generated OpenAPI\nCommitted `packages/sdk/src/generated/api-types.ts` comes from `openapi-typescript`; a thin `openapi-fetch` client lives outside the generated file. `pnpm -C packages/sdk generate` writes it and `references:check` verifies it without editing tracked files. The web app does not import API implementation types.\nAPI configuration reference\nAPI-owned TypeBox bootstrap configuration schema and metadata\nCommitted `docs/generated/configuration/api.md` is regenerated and checked from the API source. It contains safe types/defaults, never secrets or a real `.env`.\nAPI error registry reference\nAPI-owned registry and envelope schema\nCommitted `docs/generated/api/errors.md` is regenerated and checked from the API source. Feature errors join the same registry when their routes exist.\nDatabase reference\nMigrated PostgreSQL plus canonical schema-adjacent semantic metadata; Prisma schema and reviewed migrations are inputs\nCommitted `docs/generated/database/schema.md` is generated and checked from a fresh Testcontainers PostgreSQL, including custom SQL constraints and indexes; it is not authored independently. With no application tables it states that explicitly.\nPortal catalog, pages, search, and component reference\nRepository Markdown, current generated API/database/error references, and web-owned component source/examples/metadata\nCommitted `apps/web/src/generated/manifest.json`, page/search assets, and `docs/generated/components/web.md` are written/checked by `pnpm docs:references:write` / `pnpm docs:references:check`. [Living documentation](living-documentation.md) owns portal behavior and limitations.\nPrisma Client and emitted JavaScript\nPrisma schema and TypeScript source\nGenerate into ignored, tool-managed outputs for each build; do not commit platform/tool-generated client code or `dist/`. Reviewed SQL migrations are authored release history, not disposable generated output.\nMark generated files clearly and never edit them to repair a source defect. A generation command may update tracked derived artifacts intentionally; a separate check must regenerate in a temporary location or compare deterministically without changing tracked files. The current gate fails on generated drift. Rebuildability does not waive public API or SDK compatibility responsibilities under [versioning](versioning-and-compatibility.md), nor the independent [migration-history rules](../database/migrations.md).\nDo not create planned files or directories as placeholders. Each artifact belongs with its canonical source, generator, validation check, and actual consumer. Each module's implementation conventions describe its data and contract metadata.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Configuration",
+    "anchor": "configuration",
+    "text": "Configuration\n[Documentation index](../README.md) · [Local setup](../setup.md) · [Secrets management](../security/secrets-management.md)\nConfiguration is an explicit application dependency: validate it before use, expose only safe projections, and keep its meaning discoverable without access to secret values. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects TypeBox for bootstrap schemas. This page owns configuration policy; application sources own their settings and the setup guide owns loading commands.\n"
+  },
+  {
     "id": "repository/docs/architecture/configuration",
     "title": "Configuration",
     "group": "Architecture",

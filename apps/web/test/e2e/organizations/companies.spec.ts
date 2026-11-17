@@ -191,6 +191,70 @@ test("creates a company and manages branches, settings, members, responsibility 
   ).toBe(true);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
+  await openCompanySection(page, "Perfis de acesso");
+  await page.getByRole("button", { name: "Criar perfil", exact: true }).click();
+  await page.getByLabel("Nome do perfil").fill("Equipe de conteúdo");
+  for (const permission of [
+    "Parear e gerenciar telas",
+    "Enviar e editar mídia",
+    "Montar playlists e programações",
+    "Editar itens de catálogos",
+  ])
+    await page.getByRole("checkbox", { name: permission, exact: true }).check();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "Criar perfil", exact: true }).click();
+  await expect(page).toHaveURL(/view=profiles&profile=[a-f0-9-]+$/);
+  await expect(
+    page.getByRole("heading", { name: "Equipe de conteúdo", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("8 permissões", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Nenhum membro tem este perfil agora."),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Editar perfil", exact: true })
+    .click();
+  await page.getByLabel("Nome do perfil").fill("Conteúdo e telas");
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Conteúdo e telas", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Arquivar: Conteúdo e telas", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Confirmar arquivamento", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("checkbox", {
+      name: "Confirmo o arquivamento do perfil “Conteúdo e telas”.",
+      exact: true,
+    })
+    .check();
+  await page
+    .getByRole("button", { name: "Confirmar arquivamento", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Este perfil está arquivado. Suas permissões estão disponíveis apenas para consulta.",
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Voltar aos perfis", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Status", exact: true })
+    .selectOption("ARCHIVED");
+  await expect(
+    page.getByRole("link", { name: "Conteúdo e telas", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
   const memberContext = await browser.newContext({ locale: "pt-BR" });
   memberContext.setDefaultTimeout(20_000);
   try {
