@@ -1483,6 +1483,8 @@ export function CompanyPage({
   record,
   memberId,
   profileId,
+  profileQuery,
+  profileStatus,
   invitationId,
   invitationQuery,
   invitationStatus,
@@ -1495,6 +1497,8 @@ export function CompanyPage({
   record?: string;
   memberId?: string;
   profileId?: string;
+  profileQuery?: string;
+  profileStatus?: "ACTIVE" | "ARCHIVED";
   invitationId?: string;
   invitationQuery?: string;
   invitationStatus?:
@@ -1514,6 +1518,8 @@ export function CompanyPage({
     ...(!view && record ? { record } : {}),
     ...(view === "members" && memberId ? { member: memberId } : {}),
     ...(view === "profiles" && profileId ? { profile: profileId } : {}),
+    ...(view === "profiles" && profileQuery ? { profileQuery } : {}),
+    ...(view === "profiles" && profileStatus ? { profileStatus } : {}),
     ...(view === "invitations" && invitationId
       ? { invitation: invitationId }
       : {}),
@@ -1608,6 +1614,8 @@ export function CompanyPage({
           <CompanyProfiles
             companyId={companyId}
             profileId={profileId}
+            profileQuery={profileQuery}
+            profileStatus={profileStatus}
             returnTo={returnTo}
             locale={locale}
             t={t}

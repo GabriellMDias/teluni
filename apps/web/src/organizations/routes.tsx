@@ -53,6 +53,8 @@ const companyRoute = createRoute({
     record?: string;
     member?: string;
     profile?: string;
+    profileQuery?: string;
+    profileStatus?: "ACTIVE" | "ARCHIVED";
     invitation?: string;
     invitationQuery?: string;
     invitationStatus?: Invitation["status"];
@@ -94,6 +96,16 @@ const companyRoute = createRoute({
       search.invitationStatus === "EXPIRED")
       ? { invitationStatus: search.invitationStatus }
       : {}),
+    ...(search.view === "profiles" &&
+    typeof search.profileQuery === "string" &&
+    search.profileQuery.length > 0 &&
+    search.profileQuery.length <= 120
+      ? { profileQuery: search.profileQuery }
+      : {}),
+    ...(search.view === "profiles" &&
+    (search.profileStatus === "ACTIVE" || search.profileStatus === "ARCHIVED")
+      ? { profileStatus: search.profileStatus }
+      : {}),
     // The default view's branches dataset owns its mode and record.
     ...(search.view === undefined &&
     (search.mode === "grid" || search.mode === "form")
@@ -113,6 +125,8 @@ const companyRoute = createRoute({
       record,
       member,
       profile,
+      profileQuery,
+      profileStatus,
       invitation,
       invitationQuery,
       invitationStatus,
@@ -127,6 +141,8 @@ const companyRoute = createRoute({
         record={record}
         memberId={member}
         profileId={profile}
+        profileQuery={profileQuery}
+        profileStatus={profileStatus}
         invitationId={invitation}
         invitationQuery={invitationQuery}
         invitationStatus={invitationStatus}

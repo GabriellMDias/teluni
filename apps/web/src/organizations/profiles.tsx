@@ -594,12 +594,16 @@ function ProfileDetail({
 export function CompanyProfiles({
   companyId,
   profileId,
+  profileQuery,
+  profileStatus,
   returnTo,
   locale,
   t,
 }: {
   companyId: string;
   profileId?: string;
+  profileQuery?: string;
+  profileStatus?: AccessProfile["status"];
   returnTo: string;
   locale: Locale;
   t: OrganizationMessages;
@@ -607,8 +611,28 @@ export function CompanyProfiles({
   const client = useQueryClient();
   const navigate = useNavigate();
   const copy = t.profileWorkspace;
-  const [text, setText] = useState("");
-  const [status, setStatus] = useState<AccessProfile["status"] | "all">("all");
+  const text = profileQuery ?? "";
+  const status = profileStatus ?? "all";
+  const filters = {
+    ...(profileQuery ? { profileQuery } : {}),
+    ...(profileStatus ? { profileStatus } : {}),
+  };
+  const changeFilters = (
+    query: string,
+    state: AccessProfile["status"] | "all",
+  ) => {
+    void navigate({
+      to: "/companies/$companyId",
+      params: { companyId },
+      search: {
+        view: "profiles",
+        ...(query ? { profileQuery: query } : {}),
+        ...(state !== "all" ? { profileStatus: state } : {}),
+      },
+      replace: true,
+      resetScroll: false,
+    });
+  };
   const [selectedId, setSelectedId] = useState<string>();
   const selection = useRef<string | undefined>(undefined);
   const profiles = useQuery({
@@ -619,7 +643,7 @@ export function CompanyProfiles({
     void navigate({
       to: "/companies/$companyId",
       params: { companyId },
-      search: { view: "profiles", ...(id ? { profile: id } : {}) },
+      search: { view: "profiles", ...filters, ...(id ? { profile: id } : {}) },
     });
   };
   const normalize = (value: string) =>
@@ -647,7 +671,12 @@ export function CompanyProfiles({
             className="profiles-name"
             to="/companies/$companyId"
             params={{ companyId }}
-            search={{ view: "profiles", profile: row.id }}
+            search={{
+              view: "profiles",
+              profileQuery,
+              profileStatus,
+              profile: row.id,
+            }}
           >
             <NavigationIcon name="profiles" />
             <strong>{row.name}</strong>
@@ -703,7 +732,7 @@ export function CompanyProfiles({
         ),
       },
     ],
-    [t, copy, companyId],
+    [t, copy, companyId, profileQuery, profileStatus],
   );
   return (
     <section
@@ -728,7 +757,7 @@ export function CompanyProfiles({
             className="profiles-back"
             to="/companies/$companyId"
             params={{ companyId }}
-            search={{ view: "profiles" }}
+            search={{ view: "profiles", ...filters }}
           >
             <UiIcon name="previous" />
             {copy.back}
@@ -774,7 +803,7 @@ export function CompanyProfiles({
               type="search"
               value={text}
               maxLength={120}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => changeFilters(event.target.value, status)}
             />
             <div className="ui-field">
               <label htmlFor="profiles-status">{copy.status}</label>
@@ -783,7 +812,7 @@ export function CompanyProfiles({
                 className="ui-field-control"
                 value={status}
                 onChange={(event) =>
-                  setStatus(event.target.value as typeof status)
+                  changeFilters(text, event.target.value as typeof status)
                 }
               >
                 <option value="all">{copy.allStatuses}</option>
@@ -794,8 +823,7 @@ export function CompanyProfiles({
             {(text || status !== "all") && (
               <Button
                 onClick={() => {
-                  setText("");
-                  setStatus("all");
+                  changeFilters("", "all");
                 }}
               >
                 {copy.clear}
