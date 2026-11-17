@@ -479,6 +479,9 @@ test("creates a company and manages branches, settings, members, responsibility 
     // Invitations: the member, still an administrator, invites a third
     // person by email; only that person's verified address can accept.
     await memberPage.goto(`${independentUrl}?view=invitations`);
+    await memberPage
+      .getByRole("button", { name: "Convidar pessoa", exact: true })
+      .click();
     await afterNavigation(
       memberPage.getByLabel("E-mail da pessoa"),
     ).toBeVisible();
@@ -489,13 +492,25 @@ test("creates a company and manages branches, settings, members, responsibility 
     await expect(
       memberPage.getByText("Convite criado.", { exact: false }),
     ).toBeVisible();
-    const invitationRow = memberPage
-      .locator(".branch-list > li")
-      .filter({ hasText: stack.guest.email });
+    const invitationRow = memberPage.getByRole("article", {
+      name: stack.guest.email,
+      exact: true,
+    });
     await expect(invitationRow).toContainText("Aguardando aceite");
     expect(
       (await new AxeBuilder({ page: memberPage }).analyze()).violations,
     ).toEqual([]);
+    const previousInvitationUrl = memberPage.url();
+    await memberPage
+      .getByRole("button", { name: "Reenviar convite", exact: true })
+      .click();
+    await memberPage
+      .getByRole("button", { name: "Confirmar reenvio", exact: true })
+      .click();
+    await expect(memberPage).not.toHaveURL(previousInvitationUrl);
+    await afterNavigation(invitationRow).toContainText(
+      "E-mail entregue ao serviço de envio",
+    );
     const link = await invitationLink(stack.guest.email);
     expect(new URL(link).origin).toBe(new URL(stack.webUrl).origin);
 
@@ -557,12 +572,18 @@ test("creates a company and manages branches, settings, members, responsibility 
     // Someone without an account creates one from the invitation, confirms
     // the address in the same tab and accepts.
     const newcomer = `newcomer-${randomUUID().slice(0, 8)}@example.test`;
+    await memberPage
+      .getByRole("link", { name: "Voltar aos convites", exact: true })
+      .click();
+    await memberPage
+      .getByRole("button", { name: "Convidar pessoa", exact: true })
+      .click();
     await memberPage.getByLabel("E-mail da pessoa").fill(newcomer);
     await memberPage
       .getByRole("button", { name: "Enviar convite", exact: true })
       .click();
     await expect(
-      memberPage.locator(".branch-list > li").filter({ hasText: newcomer }),
+      memberPage.getByRole("article", { name: newcomer, exact: true }),
     ).toContainText("Aguardando aceite");
     const newcomerLink = await invitationLink(newcomer);
     const newcomerContext = await browser.newContext({ locale: "pt-BR" });

@@ -974,3 +974,217 @@
     padding: 1rem;
   }
 }
+
+/* Invitations distinguish link lifetime, access expiry and email delivery. */
+.company-invitations-panel {
+  max-width: 74rem;
+}
+.invitations-workspace {
+  min-width: 0;
+}
+.invitations-header,
+.invitation-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.invitations-header h2 {
+  margin: 0;
+}
+.invitations-header p {
+  max-width: 48rem;
+  margin-bottom: 0;
+}
+.invitations-header > .ui-button {
+  flex-shrink: 0;
+}
+.invitations-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.invitations-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.invitations-controls > .ui-field:first-child {
+  flex: 1 1 18rem;
+}
+.invitations-controls > .ui-field {
+  min-width: 12rem;
+}
+.invitations-results {
+  margin: 1rem 0;
+}
+.invitations-workspace .ui-dataset-action-primary:disabled {
+  display: none;
+}
+.invitations-workspace .ui-datagrid-scroll {
+  max-height: 34rem;
+}
+.invitation-recipient {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.invitation-access-cell {
+  display: grid;
+  gap: 0.25rem;
+}
+.invitation-access-cell small {
+  color: var(--color-muted);
+}
+.invitation-status {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 650;
+  border-radius: 2rem;
+  color: var(--color-muted);
+  background: var(--color-surface-muted);
+}
+.invitation-status[data-state="PENDING"] {
+  color: var(--color-info-ink);
+  background: var(--color-info-bg);
+}
+.invitation-status[data-state="ACCEPTED"] {
+  color: var(--color-success-ink);
+  background: var(--color-success-bg);
+}
+.invitation-detail-heading {
+  align-items: center;
+  padding: 1.25rem;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+.invitation-detail-heading h3 {
+  margin: 0.5rem 0 0;
+  overflow-wrap: anywhere;
+}
+.invitation-detail-heading .eyebrow {
+  margin: 0;
+}
+.invitation-detail-heading > div {
+  min-width: 0;
+}
+.invitation-detail-heading > .invitation-status {
+  flex-shrink: 0;
+}
+.invitation-detail-grid,
+.invitation-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.invitation-card {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+.invitation-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+.invitation-card svg {
+  flex-shrink: 0;
+}
+.invitation-card dl {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+.invitation-card dt {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+.invitation-card dd {
+  margin: 0 0 0.75rem;
+  overflow-wrap: anywhere;
+}
+.invitation-delivery {
+  border-radius: 0.6rem;
+  padding: 0.85rem;
+  background: var(--color-surface-muted);
+  margin: 0 0 1.25rem;
+}
+.invitation-delivery[data-state="FAILED"] {
+  color: var(--color-danger-ink);
+  background: var(--color-danger-bg);
+}
+.invitation-actions {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+  margin-top: 1.5rem;
+}
+.invitation-final-note {
+  background: var(--color-surface-muted);
+  margin-top: 1.5rem;
+}
+.organization-panel .invitation-create-form {
+  max-width: none;
+  margin-top: 0;
+}
+.invitation-create-form .invitation-grant-fields {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+.invitation-grant-fields > label {
+  display: block;
+  margin: 0 0 0.4rem;
+  font-weight: 650;
+}
+.invitation-grant-fields > select,
+.invitation-grant-fields > input {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.invitation-grant-fields > fieldset {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+}
+.invitation-form-actions {
+  margin-top: 1.5rem;
+}
+.organization-panel .invitation-confirmation {
+  max-width: none;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-info-border);
+  border-radius: 0.75rem;
+  background: var(--color-info-bg);
+}
+@media (max-width: 42rem) {
+  .invitations-header,
+  .invitation-detail-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .invitations-header > .ui-button,
+  .invitation-detail-heading > .invitation-status {
+    align-self: flex-start;
+  }
+  .invitation-detail-grid,
+  .invitation-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .invitation-card {
+    padding: 1rem;
+  }
+}
+
+.invitation-form-grid {
+  align-items: start;
+}

@@ -289,6 +289,49 @@ const ptBR = {
   transferAccept: "Aceitar responsabilidade",
   transferDecline: "Recusar transferência",
   transferCancel: "Cancelar transferência",
+  invitationWorkspace: {
+    back: "Voltar aos convites",
+    detail: "Detalhe do convite",
+    recipient: "Destinatário",
+    search: "Buscar por e-mail",
+    searchPlaceholder: "E-mail do destinatário…",
+    status: "Status",
+    allStatuses: "Todos os status",
+    clear: "Limpar filtros",
+    delivery: "Envio do e-mail",
+    access: "Acesso que será concedido",
+    listLabel: "Lista de convites",
+    pageResults: (visible: number, total: number) =>
+      `${visible} de ${total} convites nesta página`,
+    pageHint:
+      "A busca e o filtro se aplicam aos convites desta página. Use a paginação para consultar os demais.",
+    noResults: "Nenhum convite corresponde aos filtros nesta página.",
+    noDetail:
+      "Este convite não está nesta página. Volte à lista para selecionar um convite disponível.",
+    emailHint:
+      "Somente a pessoa que entrar com este e-mail verificado poderá aceitar o convite.",
+    linkHint:
+      "O link do convite vale por 7 dias. Esse prazo é diferente da validade do acesso concedido.",
+    accessHint:
+      "O acesso começa após o aceite e respeita as filiais e o prazo escolhidos. Sem prazo, ele continua até ser revogado ou o membro ser desativado.",
+    accessExpiry: "Validade do acesso",
+    noExpiry: "Sem prazo definido",
+    linkExpiry: "Validade do convite",
+    created: "Criado em",
+    sender: "Enviado por",
+    noDelivery: "Sem informação de envio",
+    actions: "Gerenciar convite",
+    resendHint:
+      "Reenvie para emitir um novo link ou revogue para impedir o aceite.",
+    resendConfirmation:
+      "Um novo e-mail será enviado e o link anterior deixará de funcionar. O novo convite valerá por mais 7 dias.",
+    confirmResend: "Confirmar reenvio",
+    resent: "Reenvio solicitado. Confira o estado do envio do e-mail.",
+    finalHint:
+      "Este convite foi encerrado e não aceita reenvio ou revogação. Acesso já concedido é gerenciado em Membros.",
+    reviewRequired:
+      "Recarregue os convites antes de tentar novamente e confira se a operação já foi concluída. O rascunho será mantido se a leitura falhar.",
+  },
   invitationsTitle: "Convites",
   invitationsLead:
     "Convide pessoas por e-mail. Cada convite vale por 7 dias e só pode ser aceito por quem entrar com o endereço convidado.",
@@ -763,6 +806,48 @@ const enUS: OrganizationMessages = {
   transferAccept: "Accept responsibility",
   transferDecline: "Decline transfer",
   transferCancel: "Cancel transfer",
+  invitationWorkspace: {
+    back: "Back to invitations",
+    detail: "Invitation detail",
+    recipient: "Recipient",
+    search: "Search by email",
+    searchPlaceholder: "Recipient email…",
+    status: "Status",
+    allStatuses: "All statuses",
+    clear: "Clear filters",
+    delivery: "Email delivery",
+    access: "Access to be granted",
+    listLabel: "Invitations list",
+    pageResults: (visible: number, total: number) =>
+      `${visible} of ${total} invitations on this page`,
+    pageHint:
+      "Search and filters apply to invitations on this page. Use pagination to browse the rest.",
+    noResults: "No invitations match these filters on this page.",
+    noDetail:
+      "This invitation is not on this page. Return to the list to select an available invitation.",
+    emailHint:
+      "Only a person signed in with this verified email can accept the invitation.",
+    linkHint:
+      "The invitation link lasts 7 days. This is separate from the expiry of the access being granted.",
+    accessHint:
+      "Access starts after acceptance and follows the selected branches and expiry. Without an expiry, it continues until revoked or the member is deactivated.",
+    accessExpiry: "Access expiry",
+    noExpiry: "No expiry",
+    linkExpiry: "Invitation expiry",
+    created: "Created on",
+    sender: "Invited by",
+    noDelivery: "No delivery information",
+    actions: "Manage invitation",
+    resendHint: "Resend to issue a new link, or revoke to prevent acceptance.",
+    resendConfirmation:
+      "A new email will be sent and the previous link will stop working. The new invitation will last another 7 days.",
+    confirmResend: "Confirm resend",
+    resent: "Resend requested. Check the email delivery state.",
+    finalHint:
+      "This invitation has ended and cannot be resent or revoked. Manage any access already granted in Members.",
+    reviewRequired:
+      "Reload invitations before trying again and check whether the operation already completed. A failed read keeps the draft.",
+  },
   invitationsTitle: "Invitations",
   invitationsLead:
     "Invite people by email. Each invitation is valid for 7 days and only the person who signs in with the invited address can accept it.",

@@ -1632,6 +1632,9 @@ test("invites by email and revokes a pending invitation after confirmation", asy
   });
   const { screen } = await open(`${companyPath}?view=invitations`);
   await expect.element(screen.getByText(t.invitationsEmpty)).toBeVisible();
+  await screen
+    .getByRole("button", { name: t.inviteTitle, exact: true })
+    .click();
   await expect
     .element(
       screen.getByRole("option", { name: t.roles.COMPANY_ADMINISTRATOR }),
@@ -1651,7 +1654,7 @@ test("invites by email and revokes a pending invitation after confirmation", asy
     .element(screen.getByText(t.deliveryStates.SENT, { exact: false }))
     .toBeVisible();
   await screen
-    .getByRole("button", { name: `${t.invitationRevoke}: guest@example.test` })
+    .getByRole("button", { name: t.invitationRevoke, exact: true })
     .click();
   await expect
     .element(screen.getByText(t.invitationRevokeConfirmation))
@@ -1696,7 +1699,9 @@ test("lets a branch manager invite operators only to managed branches", async ()
       },
     };
   });
-  const { screen } = await open(`${companyPath}?view=invitations`);
+  const { screen } = await open(
+    `${companyPath}?view=invitations&invitation=new`,
+  );
   await expect.element(screen.getByText(t.inviteManagerHint)).toBeVisible();
   await expect
     .element(screen.getByRole("option", { name: t.roles.BRANCH_MANAGER }))
@@ -2295,6 +2300,394 @@ test("shows profile holder scope, expiry and membership status and denies unauth
   await expect
     .element(screen.getByRole("heading", { name: "Auditor", exact: true }))
     .not.toBeInTheDocument();
+});
+
+test("filters invitations on the current page and preserves context after detail navigation", async () => {
+  const accepted = {
+    ...invitationItem,
+    id: "00000000-0000-4000-8000-000000000072",
+    recipientEmail: "ana@example.test",
+    status: "ACCEPTED",
+    delivery: null,
+  };
+  respond((url) =>
+    url.pathname.endsWith("/invitations")
+      ? {
+          body: {
+            items: [invitationItem, accepted],
+            nextCursor: "next-invitations",
+          },
+        }
+      : { body: { ...memberCompany, access: invitationAccess } },
+  );
+  const { screen, router } = await open(
+    `${companyPath}?view=invitations&cursor=current-page`,
+  );
+  await expect
+    .element(screen.getByRole("form", { name: t.inviteTitle }))
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("searchbox", { name: t.invitationWorkspace.search })
+    .fill("GUEST");
+  await expect
+    .element(
+      screen.getByRole("link", { name: "ana@example.test", exact: true }),
+    )
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("link", { name: "guest@example.test", exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({
+    view: "invitations",
+    cursor: "current-page",
+    invitationQuery: "GUEST",
+    invitation: invitationItem.id,
+  });
+  expect(router.state.location.href).not.toContain("guest@example.test");
+  await expect
+    .element(screen.getByRole("article", { name: "guest@example.test" }))
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.invitationWorkspace.back }).click();
+  await expect
+    .element(
+      screen.getByRole("searchbox", { name: t.invitationWorkspace.search }),
+    )
+    .toHaveValue("GUEST");
+  await screen
+    .getByRole("button", { name: t.invitationWorkspace.clear })
+    .click();
+  await screen
+    .getByRole("combobox", { name: t.invitationWorkspace.status, exact: true })
+    .selectOptions("ACCEPTED");
+  await screen
+    .getByRole("link", { name: "ana@example.test", exact: true })
+    .click();
+  await expect
+    .element(screen.getByText(t.invitationWorkspace.finalHint))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByRole("button", { name: t.invitationResend, exact: true }),
+    )
+    .not.toBeInTheDocument();
+  await expect
+    .element(
+      screen.getByRole("button", { name: t.invitationRevoke, exact: true }),
+    )
+    .not.toBeInTheDocument();
+});
+
+test("separates invitation link expiry from scoped access expiry and reports delivery failure", async () => {
+  const item = {
+    ...invitationItem,
+    scope: "BRANCHES",
+    branches: [{ id: northId, name: "Norte" }],
+    grantExpiresAt: "2026-12-01T12:00:00.000Z",
+    delivery: "FAILED",
+  };
+  respond((url) =>
+    url.pathname.endsWith("/invitations")
+      ? { body: { items: [item], nextCursor: null } }
+      : { body: { ...memberCompany, access: invitationAccess } },
+  );
+  const { screen } = await open(
+    `${companyPath}?view=invitations&invitation=${invitationItem.id}`,
+  );
+  const article = screen.getByRole("article", { name: "guest@example.test" });
+  await expect
+    .element(article.getByText(`${t.grantBranches}: Norte`, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(
+      article.getByText(t.invitationWorkspace.accessExpiry, { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      article.getByText(formatInstant(locale, item.grantExpiresAt), {
+        exact: true,
+      }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      article.getByText(t.invitationWorkspace.linkExpiry, { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      article.getByText(formatInstant(locale, item.expiresAt), { exact: true }),
+    )
+    .toBeVisible();
+  await expect
+    .element(article.getByText(t.deliveryStates.FAILED))
+    .toBeVisible();
+  await expect
+    .element(article.getByText("Owner Person", { exact: true }))
+    .toBeVisible();
+});
+
+test("confirms resend and reconciles an unknown result before issuing another email", async () => {
+  let writes = 0;
+  let reads = 0;
+  respond((url, request) => {
+    if (
+      url.pathname.endsWith("/resend") &&
+      request instanceof Request &&
+      request.method === "POST"
+    ) {
+      writes++;
+      throw new TypeError("Synthetic lost resend response");
+    }
+    if (url.pathname.endsWith("/invitations")) {
+      if (writes && ++reads === 1)
+        return {
+          status: 503,
+          body: {
+            error: { code: "SERVICE_UNAVAILABLE", message: "Unavailable" },
+          },
+        };
+      return { body: { items: [invitationItem], nextCursor: null } };
+    }
+    return { body: { ...memberCompany, access: invitationAccess } };
+  });
+  const { screen } = await open(
+    `${companyPath}?view=invitations&invitation=${invitationItem.id}`,
+  );
+  await screen
+    .getByRole("button", { name: t.invitationResend, exact: true })
+    .click();
+  await expect
+    .element(screen.getByText(t.invitationWorkspace.resendConfirmation))
+    .toBeVisible();
+  expect(writes).toBe(0);
+  await screen.getByRole("button", { name: t.cancel, exact: true }).click();
+  expect(writes).toBe(0);
+  await screen
+    .getByRole("button", { name: t.invitationResend, exact: true })
+    .click();
+  const confirm = screen.getByRole("button", {
+    name: t.invitationWorkspace.confirmResend,
+  });
+  await confirm.click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.unknownWrite);
+  await expect.element(confirm).toBeDisabled();
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect.element(confirm).toBeDisabled();
+  expect(writes).toBe(1);
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect
+    .element(
+      screen.getByRole("button", { name: t.invitationResend, exact: true }),
+    )
+    .toBeEnabled();
+  expect(writes).toBe(1);
+});
+
+test("preserves an uncertain invitation draft until its list can be reconciled", async () => {
+  let writes = 0;
+  let reads = 0;
+  respond((url, request) => {
+    if (
+      url.pathname.endsWith("/invitations") &&
+      request instanceof Request &&
+      request.method === "POST"
+    ) {
+      writes++;
+      throw new TypeError("Synthetic lost invitation response");
+    }
+    if (url.pathname.endsWith("/invitations")) {
+      if (writes && ++reads === 1)
+        return {
+          status: 503,
+          body: {
+            error: { code: "SERVICE_UNAVAILABLE", message: "Unavailable" },
+          },
+        };
+      return {
+        body: { items: writes ? [invitationItem] : [], nextCursor: null },
+      };
+    }
+    return { body: { ...memberCompany, access: invitationAccess } };
+  });
+  const { screen } = await open(
+    `${companyPath}?view=invitations&invitation=new`,
+  );
+  const email = screen.getByRole("textbox", {
+    name: t.inviteEmail,
+    exact: true,
+  });
+  await email.fill("guest@example.test");
+  const send = screen.getByRole("button", {
+    name: t.inviteSubmit,
+    exact: true,
+  });
+  await send.click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.unknownWrite);
+  await expect.element(send).toBeDisabled();
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect.element(email).toHaveValue("guest@example.test");
+  await expect.element(send).toBeDisabled();
+  expect(writes).toBe(1);
+  await screen.getByRole("button", { name: t.reload, exact: true }).click();
+  await expect
+    .element(
+      screen.getByRole("link", { name: "guest@example.test", exact: true }),
+    )
+    .toBeVisible();
+  expect(writes).toBe(1);
+});
+
+test("keeps unavailable invitation details explicit and removes cached invitations after permission loss", async () => {
+  let authorized = true;
+  respond((url) =>
+    url.pathname.endsWith("/invitations")
+      ? { body: { items: [invitationItem], nextCursor: null } }
+      : {
+          body: {
+            ...memberCompany,
+            access: authorized
+              ? invitationAccess
+              : { ...memberAccess, capabilities: ["company.view"] },
+          },
+        },
+  );
+  const { screen, client } = await open(
+    `${companyPath}?view=invitations&invitation=00000000-0000-4000-8000-000000000072`,
+  );
+  await expect
+    .element(screen.getByText(t.invitationWorkspace.noDetail))
+    .toBeVisible();
+  authorized = false;
+  await client.invalidateQueries({ queryKey: companyKey(companyId) });
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.PERMISSION_DENIED);
+  await expect
+    .element(screen.getByText(t.invitationWorkspace.noDetail))
+    .not.toBeInTheDocument();
+});
+
+test("opens the replacement invitation after a successful resend from a later page", async () => {
+  const replacement = {
+    ...invitationItem,
+    id: "00000000-0000-4000-8000-000000000072",
+    expiresAt: "2026-11-01T12:00:00.000Z",
+  };
+  let resent = false;
+  respond((url, request) => {
+    if (
+      url.pathname.endsWith("/resend") &&
+      request instanceof Request &&
+      request.method === "POST"
+    ) {
+      resent = true;
+      return { status: 201, body: replacement };
+    }
+    if (url.pathname.endsWith("/invitations"))
+      return {
+        body: {
+          items: resent
+            ? [replacement, { ...invitationItem, status: "REPLACED" }]
+            : [invitationItem],
+          nextCursor: null,
+        },
+      };
+    return { body: { ...memberCompany, access: invitationAccess } };
+  });
+  const { screen, router } = await open(
+    `${companyPath}?view=invitations&cursor=later-page&invitation=${invitationItem.id}`,
+  );
+  await screen
+    .getByRole("button", { name: t.invitationResend, exact: true })
+    .click();
+  await screen
+    .getByRole("button", { name: t.invitationWorkspace.confirmResend })
+    .click();
+  await expect
+    .element(screen.getByText(t.invitationWorkspace.resent))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    view: "invitations",
+    invitation: replacement.id,
+  });
+  await expect
+    .element(
+      screen.getByText(formatInstant(locale, replacement.expiresAt), {
+        exact: true,
+      }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByRole("button", { name: t.invitationResend, exact: true }),
+    )
+    .toBeEnabled();
+});
+
+test("restores invitation filters from a direct URL and retains them on detail return", async () => {
+  const accepted = { ...invitationItem, status: "ACCEPTED" };
+  respond((url) =>
+    url.pathname.endsWith("/invitations")
+      ? {
+          body: {
+            items: [
+              accepted,
+              {
+                ...invitationItem,
+                id: "00000000-0000-4000-8000-000000000072",
+                recipientEmail: "other@example.test",
+              },
+            ],
+            nextCursor: "next-page",
+          },
+        }
+      : { body: { ...memberCompany, access: invitationAccess } },
+  );
+  const { screen, router } = await open(
+    `${companyPath}?view=invitations&invitationQuery=guest&invitationStatus=ACCEPTED`,
+  );
+  await expect
+    .element(
+      screen.getByRole("searchbox", { name: t.invitationWorkspace.search }),
+    )
+    .toHaveValue("guest");
+  await expect
+    .element(
+      screen.getByRole("combobox", {
+        name: t.invitationWorkspace.status,
+        exact: true,
+      }),
+    )
+    .toHaveValue("ACCEPTED");
+  await expect
+    .element(
+      screen.getByRole("link", { name: "other@example.test", exact: true }),
+    )
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("link", { name: "guest@example.test", exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({
+    view: "invitations",
+    invitationQuery: "guest",
+    invitationStatus: "ACCEPTED",
+    invitation: invitationItem.id,
+  });
+  await screen.getByRole("link", { name: t.invitationWorkspace.back }).click();
+  expect(router.state.location.search).toEqual({
+    view: "invitations",
+    invitationQuery: "guest",
+    invitationStatus: "ACCEPTED",
+  });
+  await screen
+    .getByRole("button", { name: t.invitationWorkspace.clear })
+    .click();
+  expect(router.state.location.search).toEqual({ view: "invitations" });
 });
 
 test("restores profile filters from a shared link and keeps them through detail navigation", async () => {

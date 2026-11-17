@@ -4,6 +4,15 @@
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Yarn Workspaces",
+    "anchor": "yarn-workspaces",
+    "text": "Yarn Workspaces\nYarn provides mature workspace functionality and additional dependency-management capabilities suitable for monorepos.\nIt was not selected because pnpm provides the capabilities Orion currently requires with a dependency model and workspace workflow that align well with the project's preference for explicit package relationships and relatively conventional Node.js package semantics.\nSelecting Yarn would not provide a material architectural advantage for Orion sufficient to justify preferring it over pnpm.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Dedicated Monorepo Task Runner from the Beginning",
     "anchor": "dedicated-monorepo-task-runner-from-the-beginning",
     "text": "Dedicated Monorepo Task Runner from the Beginning\nTools such as Turborepo and Nx can provide dependency-aware task execution, caching, affected-project analysis, and CI optimizations beyond basic workspace execution.\nThese capabilities may become valuable as Orion grows.\nThey were not selected for the initial repository foundation because Orion does not yet have enough projects or expensive tasks to demonstrate a need for advanced task orchestration.\nIntroducing one now would add another configuration and execution layer before its benefits could be measured against actual repository behavior.\nThe decision is therefore deferred rather than rejected.\nA dedicated task runner should be reconsidered when repository scale or CI performance provides evidence that pnpm's native task execution is no longer sufficient.\n"

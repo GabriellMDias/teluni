@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Link,
@@ -7,6 +7,10 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
+import { Button, DataSet, TextField } from "../components.js";
+import type { DataSetColumn } from "../dataset.js";
+import { NavigationIcon } from "../navigation-icon.js";
+import { UiIcon } from "../ui-icon.js";
 import { loginHref, sessionQuery, signUpHref } from "../identity/api.js";
 import type { Locale } from "../locale.js";
 import {
@@ -45,229 +49,394 @@ function scopeText(
     : `${t.grantBranches}: ${item.branches.map((branch) => branch.name).join(", ")}`;
 }
 
+function uncertainWrite(error: unknown): boolean {
+  return Boolean(
+    error && (!(error instanceof ApiFailure) || error.status >= 500),
+  );
+}
+
 function InviteForm({
   companyId,
   administrator,
   viewerResponsible,
   returnTo,
   t,
+  onSaved,
+  onCancel,
+  onReload,
 }: {
   companyId: string;
   administrator: boolean;
   viewerResponsible: boolean;
   returnTo: string;
   t: OrganizationMessages;
+  onSaved: (invitation: Invitation) => void;
+  onCancel: () => void;
+  onReload: () => Promise<boolean>;
 }) {
   const client = useQueryClient();
   const [email, setEmail] = useState("");
   const [draft, setDraft] = useState<GrantDraft>(
     administrator ? emptyGrantDraft : { ...emptyGrantDraft, scope: "BRANCHES" },
   );
-  const [done, setDone] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const invite = useMutation({
     mutationFn: () => {
       const grantExpiresAt = draftExpiry(draft);
       return createInvitation(companyId, {
-        email,
+        email: email.trim(),
         ...grantRequestOf(draft),
         ...(grantExpiresAt ? { grantExpiresAt } : {}),
       });
     },
-    onSuccess: async () => {
-      setEmail("");
-      setDraft(
-        administrator
-          ? emptyGrantDraft
-          : { ...emptyGrantDraft, scope: "BRANCHES" },
-      );
-      setDone(true);
+    onSuccess: async (invitation) => {
       await invalidateCompany(client, companyId);
+      onSaved(invitation);
     },
   });
+  const mustReload = uncertainWrite(invite.error);
+  const frozen = invite.isPending || mustReload || reloading;
   function submit(event: FormEvent) {
     event.preventDefault();
-    setDone(false);
+    if (frozen || !email.trim() || !draftComplete(draft)) return;
     invite.mutate();
   }
   return (
     <form
-      className="form-stack grant-form"
+      className="form-stack grant-form invitation-create-form"
       aria-labelledby="invite-title"
       onSubmit={submit}
     >
       <h3 id="invite-title">{t.inviteTitle}</h3>
-      <label htmlFor="invite-email">{t.inviteEmail}</label>
-      <input
-        id="invite-email"
-        type="email"
-        required
-        maxLength={254}
-        autoComplete="off"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
-      <GrantRequestFields
-        companyId={companyId}
-        idPrefix="invite"
-        roles={
-          administrator ? administratorRoles(viewerResponsible) : ["OPERATOR"]
-        }
-        companyScope={administrator}
-        hints={
-          administrator
-            ? viewerResponsible
-              ? []
-              : [t.grantResponsibleOnly]
-            : [t.inviteManagerHint]
-        }
-        draft={draft}
-        onChange={setDraft}
-        t={t}
-      />
+      <div className="invitation-form-grid">
+        <section className="invitation-card">
+          <h4>
+            <NavigationIcon name="invitations" />
+            {t.invitationWorkspace.recipient}
+          </h4>
+          <TextField
+            label={t.inviteEmail}
+            type="email"
+            required
+            maxLength={254}
+            autoComplete="off"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={frozen}
+            hint={t.invitationWorkspace.emailHint}
+          />
+          <p className="hint">{t.invitationWorkspace.linkHint}</p>
+        </section>
+        <section className="invitation-card">
+          <h4>
+            <NavigationIcon name="profiles" />
+            {t.invitationWorkspace.access}
+          </h4>
+          <fieldset
+            className="invitation-grant-fields"
+            aria-label={t.invitationWorkspace.access}
+            disabled={frozen}
+          >
+            <GrantRequestFields
+              companyId={companyId}
+              idPrefix="invite"
+              roles={
+                administrator
+                  ? administratorRoles(viewerResponsible)
+                  : ["OPERATOR"]
+              }
+              companyScope={administrator}
+              hints={
+                administrator
+                  ? viewerResponsible
+                    ? []
+                    : [t.grantResponsibleOnly]
+                  : [t.inviteManagerHint]
+              }
+              draft={draft}
+              onChange={setDraft}
+              t={t}
+            />
+          </fieldset>
+          <p className="hint">{t.invitationWorkspace.accessHint}</p>
+        </section>
+      </div>
       {invite.error && (
-        <WriteFailure error={invite.error} returnTo={returnTo} t={t} />
+        <WriteFailure
+          error={invite.error}
+          returnTo={returnTo}
+          t={t}
+          busy={invite.isPending || reloading}
+          onReload={
+            mustReload
+              ? () => {
+                  setReloading(true);
+                  void onReload()
+                    .then((success) => {
+                      if (success) onCancel();
+                    })
+                    .finally(() => setReloading(false));
+                }
+              : undefined
+          }
+        />
       )}
-      {done && (
-        <p role="status" className="notice notice-success">
-          {t.inviteSent}
-        </p>
+      {mustReload && (
+        <p className="hint">{t.invitationWorkspace.reviewRequired}</p>
       )}
-      <button
-        type="submit"
-        className="button-primary"
-        disabled={invite.isPending || !draftComplete(draft)}
-      >
-        {invite.isPending ? t.saving : t.inviteSubmit}
-      </button>
+      <div className="action-group invitation-form-actions">
+        <Button
+          type="submit"
+          variant="primary"
+          pending={invite.isPending}
+          disabled={frozen || !email.trim() || !draftComplete(draft)}
+        >
+          {invite.isPending ? t.saving : t.inviteSubmit}
+        </Button>
+        <Button disabled={invite.isPending || reloading} onClick={onCancel}>
+          {t.cancel}
+        </Button>
+      </div>
     </form>
   );
 }
 
-function InvitationRow({
+function InvitationStatus({
+  invitation,
+  t,
+}: {
+  invitation: Invitation;
+  t: OrganizationMessages;
+}) {
+  return (
+    <span className="invitation-status" data-state={invitation.status}>
+      {t.invitationStatuses[invitation.status]}
+    </span>
+  );
+}
+
+function InvitationDetail({
   companyId,
   invitation,
   returnTo,
   locale,
   t,
+  blocked,
+  readError,
+  onResent,
+  onReload,
 }: {
   companyId: string;
   invitation: Invitation;
   returnTo: string;
   locale: Locale;
   t: OrganizationMessages;
+  blocked: boolean;
+  readError?: unknown;
+  onResent: (invitation: Invitation) => void;
+  onReload: () => Promise<boolean>;
 }) {
   const client = useQueryClient();
-  const [confirming, setConfirming] = useState(false);
+  const [action, setAction] = useState<"resend" | "revoke">();
+  const [reloading, setReloading] = useState(false);
   const refresh = () => invalidateCompany(client, companyId);
   const resend = useMutation({
     mutationFn: () => resendInvitation(companyId, invitation.id),
-    onSuccess: refresh,
+    onSuccess: async (next) => {
+      await refresh();
+      onResent(next);
+    },
   });
-  // Revocation is idempotent, so a retry after an unknown outcome is safe.
+  // The API keeps revocation idempotent; refreshing also reconciles lost responses.
   const revoke = useMutation({
     mutationFn: () => revokeInvitation(companyId, invitation.id),
     onSuccess: async () => {
-      setConfirming(false);
+      setAction(undefined);
       await refresh();
     },
   });
-  const label = invitation.recipientEmail ?? t.invitationAddressErased;
-  const pending = invitation.status === "PENDING";
   const error = resend.error ?? revoke.error;
-  const busy = resend.isPending || revoke.isPending;
+  const busy = resend.isPending || revoke.isPending || reloading;
+  const mustReload = uncertainWrite(error);
+  const reconcile = () => {
+    setReloading(true);
+    void onReload()
+      .then((success) => {
+        if (success) {
+          resend.reset();
+          revoke.reset();
+          setAction(undefined);
+        }
+      })
+      .finally(() => setReloading(false));
+  };
+  const label = invitation.recipientEmail ?? t.invitationAddressErased;
+  const copy = t.invitationWorkspace;
+  const pending = invitation.status === "PENDING";
   return (
-    <li className="branch-item">
-      <div>
-        <strong>{label}</strong>
-      </div>
-      <span>
-        {t.invitationStatuses[invitation.status]} · {t.roles[invitation.role]} ·{" "}
-        {scopeText(t, invitation)}
-        {invitation.grantExpiresAt &&
-          ` · ${t.grantUntil} ${formatInstant(locale, invitation.grantExpiresAt)}`}
-      </span>
-      <span className="hint">
-        {pending &&
-          `${t.invitationUntil} ${formatInstant(locale, invitation.expiresAt)} · `}
-        {invitation.invitedByName &&
-          `${t.invitationBy} ${invitation.invitedByName} · `}
-        {pending &&
-          invitation.delivery &&
-          t.deliveryStates[invitation.delivery]}
-      </span>
-      {pending &&
-        (confirming ? (
-          <form
-            className="form-stack"
-            aria-label={`${t.invitationRevoke}: ${label}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              revoke.mutate();
-            }}
+    <article
+      className="invitation-detail"
+      aria-labelledby="invitation-recipient-title"
+    >
+      {Boolean(readError) && !error && (
+        <div role="alert" className="notice notice-error">
+          {describe(readError, t, "read")}
+          <Button pending={reloading} onClick={reconcile}>
+            {t.reload}
+          </Button>
+        </div>
+      )}
+      <header className="invitation-detail-heading">
+        <div>
+          <p className="eyebrow">{copy.detail}</p>
+          <h3 id="invitation-recipient-title">{label}</h3>
+        </div>
+        <InvitationStatus invitation={invitation} t={t} />
+      </header>
+      <div className="invitation-detail-grid">
+        <section
+          className="invitation-card"
+          aria-labelledby="invitation-access-title"
+        >
+          <h4 id="invitation-access-title">
+            <NavigationIcon name="profiles" />
+            {copy.access}
+          </h4>
+          <dl>
+            <dt>{t.grantRole}</dt>
+            <dd>{t.roles[invitation.role]}</dd>
+            <dt>{t.grantScope}</dt>
+            <dd>{scopeText(t, invitation)}</dd>
+            <dt>{copy.accessExpiry}</dt>
+            <dd>
+              {invitation.grantExpiresAt
+                ? formatInstant(locale, invitation.grantExpiresAt)
+                : copy.noExpiry}
+            </dd>
+          </dl>
+          <p className="hint">{copy.accessHint}</p>
+        </section>
+        <section
+          className="invitation-card"
+          aria-labelledby="invitation-delivery-title"
+        >
+          <h4 id="invitation-delivery-title">
+            <NavigationIcon name="invitations" />
+            {copy.delivery}
+          </h4>
+          <p
+            className="invitation-delivery"
+            data-state={invitation.delivery ?? "UNKNOWN"}
           >
-            <p>{t.invitationRevokeConfirmation}</p>
+            {invitation.delivery
+              ? t.deliveryStates[invitation.delivery]
+              : copy.noDelivery}
+          </p>
+          <dl>
+            <dt>{copy.linkExpiry}</dt>
+            <dd>{formatInstant(locale, invitation.expiresAt)}</dd>
+            <dt>{copy.created}</dt>
+            <dd>{formatInstant(locale, invitation.createdAt)}</dd>
+            <dt>{copy.sender}</dt>
+            <dd>{invitation.invitedByName ?? t.memberUnknown}</dd>
+          </dl>
+          <p className="hint">{copy.linkHint}</p>
+        </section>
+      </div>
+      {pending ? (
+        <section
+          className="invitation-actions"
+          aria-labelledby="invitation-actions-title"
+        >
+          <h4 id="invitation-actions-title">{copy.actions}</h4>
+          <p className="hint">{copy.resendHint}</p>
+          {action ? (
+            <form
+              className="invitation-confirmation"
+              aria-label={
+                action === "resend"
+                  ? `${t.invitationResend}: ${label}`
+                  : `${t.invitationRevoke}: ${label}`
+              }
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (busy || mustReload || blocked) return;
+                if (action === "resend") resend.mutate();
+                else revoke.mutate();
+              }}
+            >
+              <p>
+                {action === "resend"
+                  ? copy.resendConfirmation
+                  : t.invitationRevokeConfirmation}
+              </p>
+              <div className="action-group">
+                <Button
+                  type="submit"
+                  variant={action === "resend" ? "primary" : "secondary"}
+                  pending={busy}
+                  disabled={mustReload || blocked}
+                >
+                  {action === "resend"
+                    ? copy.confirmResend
+                    : t.grantRevokeConfirm}
+                </Button>
+                <Button disabled={busy} onClick={() => setAction(undefined)}>
+                  {t.cancel}
+                </Button>
+              </div>
+            </form>
+          ) : (
             <div className="action-group">
-              <button type="submit" disabled={busy}>
-                {revoke.isPending ? t.saving : t.grantRevokeConfirm}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
+              <Button
+                disabled={busy || mustReload || blocked}
                 onClick={() => {
-                  setConfirming(false);
                   revoke.reset();
+                  resend.reset();
+                  setAction("resend");
                 }}
               >
-                {t.cancel}
-              </button>
+                {t.invitationResend}
+              </Button>
+              <Button
+                disabled={busy || mustReload || blocked}
+                onClick={() => {
+                  revoke.reset();
+                  resend.reset();
+                  setAction("revoke");
+                }}
+              >
+                {t.invitationRevoke}
+              </Button>
             </div>
-          </form>
-        ) : (
-          <div className="action-group">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                revoke.reset();
-                resend.mutate();
-              }}
-            >
-              {resend.isPending ? t.saving : `${t.invitationResend}: ${label}`}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                resend.reset();
-                setConfirming(true);
-              }}
-            >
-              {t.invitationRevoke}: {label}
-            </button>
-          </div>
-        ))}
+          )}
+        </section>
+      ) : (
+        <p className="notice invitation-final-note">{copy.finalHint}</p>
+      )}
       {error && (
         <WriteFailure
           error={error}
           returnTo={returnTo}
           t={t}
           busy={busy}
-          onReload={() => {
-            resend.reset();
-            revoke.reset();
-            void refresh();
-          }}
+          onReload={reconcile}
         />
       )}
-    </li>
+      {mustReload && <p className="hint">{copy.reviewRequired}</p>}
+    </article>
   );
 }
 
+/** Current-page invitations and linkable detail; the public acceptance flow is separate. */
 export function CompanyInvitations({
   companyId,
   administrator,
   viewerResponsible,
   cursor,
+  invitationId,
+  invitationQuery,
+  invitationStatus,
   returnTo,
   locale,
   t,
@@ -276,65 +445,330 @@ export function CompanyInvitations({
   administrator: boolean;
   viewerResponsible: boolean;
   cursor?: string;
+  invitationId?: string;
+  invitationQuery?: string;
+  invitationStatus?: Invitation["status"];
   returnTo: string;
   locale: Locale;
   t: OrganizationMessages;
 }) {
+  const navigate = useNavigate();
+  const copy = t.invitationWorkspace;
+  const text = invitationQuery ?? "";
+  const status = invitationStatus ?? "all";
+  const filters = {
+    ...(invitationQuery ? { invitationQuery } : {}),
+    ...(invitationStatus ? { invitationStatus } : {}),
+  };
+  const changeFilters = (
+    query: string,
+    state: Invitation["status"] | "all",
+  ) => {
+    void navigate({
+      to: "/companies/$companyId",
+      params: { companyId },
+      search: {
+        view: "invitations",
+        cursor,
+        ...(query ? { invitationQuery: query } : {}),
+        ...(state !== "all" ? { invitationStatus: state } : {}),
+      },
+      replace: true,
+      resetScroll: false,
+    });
+  };
+  const [selectedId, setSelectedId] = useState<string>();
+  const selection = useRef<string | undefined>(undefined);
+  const [notice, setNotice] = useState<"created" | "resent">();
   const invitations = useQuery({
     queryKey: [...invitationsKey(companyId), cursor ?? null],
     queryFn: () => listInvitations(companyId, cursor),
+    refetchInterval: (query) =>
+      query.state.data?.items.some(
+        (item) => item.status === "PENDING" && item.delivery === "PENDING",
+      )
+        ? 5000
+        : false,
   });
-  return (
-    <section aria-labelledby="company-invitations-title">
-      <h2 id="company-invitations-title">{t.invitationsTitle}</h2>
-      <p>{t.invitationsLead}</p>
-      <InviteForm
-        {...{ companyId, administrator, viewerResponsible, returnTo, t }}
-      />
-      {invitations.isPending ? (
-        <p>{t.loading}</p>
-      ) : invitations.isError ? (
-        <div role="alert" className="notice notice-error">
-          {describe(invitations.error, t, "read")}
-          <button type="button" onClick={() => void invitations.refetch()}>
-            {t.reload}
-          </button>
-        </div>
-      ) : invitations.data.items.length === 0 ? (
-        <p className="empty-state">{t.invitationsEmpty}</p>
-      ) : (
-        <ul className="branch-list" aria-label={t.invitationsTitle}>
-          {invitations.data.items.map((invitation) => (
-            <InvitationRow
-              key={invitation.id}
-              {...{ companyId, invitation, returnTo, locale, t }}
-            />
-          ))}
-        </ul>
-      )}
-      <nav className="pagination" aria-label={t.invitationsTitle}>
-        {cursor && (
+  const items = invitations.data?.items ?? [];
+  const normalize = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase(locale)
+      .trim();
+  const term = normalize(text);
+  const rows = items.filter(
+    (item) =>
+      (status === "all" || item.status === status) &&
+      (!term || normalize(item.recipientEmail ?? "").includes(term)),
+  );
+  const detail = items.find((item) => item.id === invitationId);
+  const openInvitation = (id?: string, firstPage = false) => {
+    void navigate({
+      to: "/companies/$companyId",
+      params: { companyId },
+      search: {
+        view: "invitations",
+        ...filters,
+        ...(id !== "new" && !firstPage && cursor ? { cursor } : {}),
+        ...(id ? { invitation: id } : {}),
+      },
+    });
+  };
+  const reload = async () => (await invitations.refetch()).isSuccess;
+  const columns = useMemo<readonly DataSetColumn<Invitation>[]>(
+    () => [
+      {
+        key: "recipient",
+        header: copy.recipient,
+        width: 300,
+        value: (row) => row.recipientEmail ?? t.invitationAddressErased,
+        render: (row) => (
           <Link
-            to="/companies/$companyId"
-            params={{ companyId }}
-            search={{ view: "invitations" }}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {invitations.data?.nextCursor && (
-          <Link
+            className="invitation-recipient"
             to="/companies/$companyId"
             params={{ companyId }}
             search={{
               view: "invitations",
-              cursor: invitations.data.nextCursor,
+              cursor,
+              invitationQuery,
+              invitationStatus,
+              invitation: row.id,
             }}
           >
-            {t.nextPage}
+            <NavigationIcon name="invitations" />
+            <strong>{row.recipientEmail ?? t.invitationAddressErased}</strong>
           </Link>
+        ),
+      },
+      {
+        key: "status",
+        header: copy.status,
+        width: 180,
+        value: (row) => t.invitationStatuses[row.status],
+        render: (row) => <InvitationStatus invitation={row} t={t} />,
+      },
+      {
+        key: "delivery",
+        header: copy.delivery,
+        width: 280,
+        value: (row) =>
+          row.delivery ? t.deliveryStates[row.delivery] : copy.noDelivery,
+      },
+      {
+        key: "access",
+        header: copy.access,
+        width: 280,
+        value: (row) => `${t.roles[row.role]} · ${scopeText(t, row)}`,
+        render: (row) => (
+          <div className="invitation-access-cell">
+            <strong>{t.roles[row.role]}</strong>
+            <small>{scopeText(t, row)}</small>
+          </div>
+        ),
+      },
+      {
+        key: "expiry",
+        header: copy.linkExpiry,
+        width: 205,
+        value: (row) => row.expiresAt,
+        format: (value) => formatInstant(locale, String(value)),
+      },
+    ],
+    [companyId, cursor, locale, t, copy, invitationQuery, invitationStatus],
+  );
+  return (
+    <section
+      className="invitations-workspace"
+      aria-labelledby="company-invitations-title"
+    >
+      <header className="invitations-header">
+        <div>
+          <h2 id="company-invitations-title">{t.invitationsTitle}</h2>
+          <p className="hint">{t.invitationsLead}</p>
+        </div>
+        {!invitationId && (
+          <Button
+            variant="primary"
+            onClick={() => {
+              setNotice(undefined);
+              openInvitation("new");
+            }}
+          >
+            <UiIcon name="add" />
+            {t.inviteTitle}
+          </Button>
         )}
-      </nav>
+      </header>
+      {notice && (
+        <p role="status" className="notice notice-success">
+          {notice === "created" ? t.inviteSent : copy.resent}
+        </p>
+      )}
+      {invitationId ? (
+        <>
+          <Link
+            className="invitations-back"
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "invitations", cursor, ...filters }}
+          >
+            <UiIcon name="previous" />
+            {copy.back}
+          </Link>
+          {invitationId === "new" ? (
+            <InviteForm
+              {...{ companyId, administrator, viewerResponsible, returnTo, t }}
+              onSaved={(invitation) => {
+                setNotice("created");
+                openInvitation(invitation.id);
+              }}
+              onCancel={() => openInvitation()}
+              onReload={reload}
+            />
+          ) : (
+            <>
+              {invitations.isError && !detail && (
+                <div role="alert" className="notice notice-error">
+                  {describe(invitations.error, t, "read")}
+                  <Button onClick={() => void reload()}>{t.reload}</Button>
+                </div>
+              )}
+              {invitations.isPending ? (
+                <p>{t.loading}</p>
+              ) : detail ? (
+                <InvitationDetail
+                  key={detail.id}
+                  invitation={detail}
+                  {...{ companyId, returnTo, locale, t }}
+                  blocked={invitations.isError}
+                  readError={invitations.error}
+                  onResent={(next) => {
+                    setNotice("resent");
+                    openInvitation(next.id, true);
+                  }}
+                  onReload={reload}
+                />
+              ) : (
+                !invitations.isError && (
+                  <p className="empty-state">{copy.noDetail}</p>
+                )
+              )}
+            </>
+          )}
+        </>
+      ) : invitations.isPending ? (
+        <p>{t.loading}</p>
+      ) : invitations.isError ? (
+        <div role="alert" className="notice notice-error">
+          {describe(invitations.error, t, "read")}
+          <Button onClick={() => void reload()}>{t.reload}</Button>
+        </div>
+      ) : (
+        <>
+          <div className="invitations-controls">
+            <TextField
+              label={copy.search}
+              placeholder={copy.searchPlaceholder}
+              type="search"
+              value={text}
+              maxLength={254}
+              onChange={(event) => changeFilters(event.target.value, status)}
+            />
+            <div className="ui-field">
+              <label htmlFor="invitations-status">{copy.status}</label>
+              <select
+                id="invitations-status"
+                className="ui-field-control"
+                value={status}
+                onChange={(event) =>
+                  changeFilters(text, event.target.value as typeof status)
+                }
+              >
+                <option value="all">{copy.allStatuses}</option>
+                {(
+                  Object.keys(t.invitationStatuses) as Invitation["status"][]
+                ).map((value) => (
+                  <option value={value} key={value}>
+                    {t.invitationStatuses[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(text || status !== "all") && (
+              <Button
+                onClick={() => {
+                  changeFilters("", "all");
+                }}
+              >
+                {copy.clear}
+              </Button>
+            )}
+          </div>
+          <p className="hint invitations-results" role="status">
+            {copy.pageResults(rows.length, items.length)}
+          </p>
+          <DataSet
+            label={copy.listLabel}
+            locale={locale}
+            mode="grid"
+            rows={rows}
+            columns={columns}
+            rowId={(row) => row.id}
+            selectedId={
+              rows.some((row) => row.id === selectedId) ? selectedId : undefined
+            }
+            onSelect={(id) => {
+              selection.current = id;
+              setSelectedId(id);
+            }}
+            onModeChange={
+              rows.length
+                ? () =>
+                    openInvitation(
+                      rows.find((row) => row.id === selection.current)?.id ??
+                        rows[0].id,
+                    )
+                : undefined
+            }
+            onRefresh={() => void reload()}
+            refreshing={invitations.isFetching}
+            empty={
+              <p className="empty-state">
+                {items.length ? copy.noResults : t.invitationsEmpty}
+              </p>
+            }
+          />
+          <p className="hint">{copy.pageHint}</p>
+          {(cursor || invitations.data.nextCursor) && (
+            <nav className="pagination" aria-label={t.invitationsTitle}>
+              {cursor && (
+                <Link
+                  to="/companies/$companyId"
+                  params={{ companyId }}
+                  search={{ view: "invitations", ...filters }}
+                >
+                  {t.firstPage}
+                </Link>
+              )}
+              {invitations.data.nextCursor && (
+                <Link
+                  to="/companies/$companyId"
+                  params={{ companyId }}
+                  search={{
+                    view: "invitations",
+                    ...filters,
+                    cursor: invitations.data.nextCursor,
+                  }}
+                >
+                  {t.nextPage}
+                </Link>
+              )}
+            </nav>
+          )}
+        </>
+      )}
     </section>
   );
 }
