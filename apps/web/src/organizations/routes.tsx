@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createRoute, Link, useRouterState } from "@tanstack/react-router";
+import type { Invitation } from "./api.js";
 import { sessionQuery } from "../identity/api.js";
 import { NavigationIcon } from "../navigation-icon.js";
 import { rootRoute } from "../shell.js";
@@ -53,6 +54,8 @@ const companyRoute = createRoute({
     member?: string;
     profile?: string;
     invitation?: string;
+    invitationQuery?: string;
+    invitationStatus?: Invitation["status"];
   } => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
@@ -77,6 +80,20 @@ const companyRoute = createRoute({
     (search.invitation === "new" || isUuid(search.invitation))
       ? { invitation: search.invitation }
       : {}),
+    ...(search.view === "invitations" &&
+    typeof search.invitationQuery === "string" &&
+    search.invitationQuery.length > 0 &&
+    search.invitationQuery.length <= 254
+      ? { invitationQuery: search.invitationQuery }
+      : {}),
+    ...(search.view === "invitations" &&
+    (search.invitationStatus === "PENDING" ||
+      search.invitationStatus === "ACCEPTED" ||
+      search.invitationStatus === "REVOKED" ||
+      search.invitationStatus === "REPLACED" ||
+      search.invitationStatus === "EXPIRED")
+      ? { invitationStatus: search.invitationStatus }
+      : {}),
     // The default view's branches dataset owns its mode and record.
     ...(search.view === undefined &&
     (search.mode === "grid" || search.mode === "form")
@@ -89,8 +106,17 @@ const companyRoute = createRoute({
   }),
   component: function CompanyRoute() {
     const { companyId } = companyRoute.useParams();
-    const { cursor, view, mode, record, member, profile, invitation } =
-      companyRoute.useSearch();
+    const {
+      cursor,
+      view,
+      mode,
+      record,
+      member,
+      profile,
+      invitation,
+      invitationQuery,
+      invitationStatus,
+    } = companyRoute.useSearch();
     return (
       <CompanyPage
         key={companyId}
@@ -102,6 +128,8 @@ const companyRoute = createRoute({
         memberId={member}
         profileId={profile}
         invitationId={invitation}
+        invitationQuery={invitationQuery}
+        invitationStatus={invitationStatus}
       />
     );
   },

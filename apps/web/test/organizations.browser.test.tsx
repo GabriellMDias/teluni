@@ -2340,6 +2340,7 @@ test("filters invitations on the current page and preserves context after detail
   expect(router.state.location.search).toEqual({
     view: "invitations",
     cursor: "current-page",
+    invitationQuery: "GUEST",
     invitation: invitationItem.id,
   });
   expect(router.state.location.href).not.toContain("guest@example.test");
@@ -2626,4 +2627,65 @@ test("opens the replacement invitation after a successful resend from a later pa
       screen.getByRole("button", { name: t.invitationResend, exact: true }),
     )
     .toBeEnabled();
+});
+
+test("restores invitation filters from a direct URL and retains them on detail return", async () => {
+  const accepted = { ...invitationItem, status: "ACCEPTED" };
+  respond((url) =>
+    url.pathname.endsWith("/invitations")
+      ? {
+          body: {
+            items: [
+              accepted,
+              {
+                ...invitationItem,
+                id: "00000000-0000-4000-8000-000000000072",
+                recipientEmail: "other@example.test",
+              },
+            ],
+            nextCursor: "next-page",
+          },
+        }
+      : { body: { ...memberCompany, access: invitationAccess } },
+  );
+  const { screen, router } = await open(
+    `${companyPath}?view=invitations&invitationQuery=guest&invitationStatus=ACCEPTED`,
+  );
+  await expect
+    .element(
+      screen.getByRole("searchbox", { name: t.invitationWorkspace.search }),
+    )
+    .toHaveValue("guest");
+  await expect
+    .element(
+      screen.getByRole("combobox", {
+        name: t.invitationWorkspace.status,
+        exact: true,
+      }),
+    )
+    .toHaveValue("ACCEPTED");
+  await expect
+    .element(
+      screen.getByRole("link", { name: "other@example.test", exact: true }),
+    )
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("link", { name: "guest@example.test", exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({
+    view: "invitations",
+    invitationQuery: "guest",
+    invitationStatus: "ACCEPTED",
+    invitation: invitationItem.id,
+  });
+  await screen.getByRole("link", { name: t.invitationWorkspace.back }).click();
+  expect(router.state.location.search).toEqual({
+    view: "invitations",
+    invitationQuery: "guest",
+    invitationStatus: "ACCEPTED",
+  });
+  await screen
+    .getByRole("button", { name: t.invitationWorkspace.clear })
+    .click();
+  expect(router.state.location.search).toEqual({ view: "invitations" });
 });

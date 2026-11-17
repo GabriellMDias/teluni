@@ -1484,6 +1484,8 @@ export function CompanyPage({
   memberId,
   profileId,
   invitationId,
+  invitationQuery,
+  invitationStatus,
 }: {
   companyId: string;
   cursor?: string;
@@ -1494,6 +1496,9 @@ export function CompanyPage({
   memberId?: string;
   profileId?: string;
   invitationId?: string;
+  invitationQuery?: string;
+  invitationStatus?:
+    "PENDING" | "ACCEPTED" | "REVOKED" | "REPLACED" | "EXPIRED";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -1512,6 +1517,8 @@ export function CompanyPage({
     ...(view === "invitations" && invitationId
       ? { invitation: invitationId }
       : {}),
+    ...(view === "invitations" && invitationQuery ? { invitationQuery } : {}),
+    ...(view === "invitations" && invitationStatus ? { invitationStatus } : {}),
   });
   const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
@@ -1614,6 +1621,8 @@ export function CompanyPage({
         access.capabilities.includes("invitations.manage") ? (
           <CompanyInvitations
             invitationId={invitationId}
+            invitationQuery={invitationQuery}
+            invitationStatus={invitationStatus}
             companyId={companyId}
             administrator={access.capabilities.includes("members.manage")}
             viewerResponsible={access.responsible}

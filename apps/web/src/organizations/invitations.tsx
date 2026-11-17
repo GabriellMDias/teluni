@@ -435,6 +435,8 @@ export function CompanyInvitations({
   viewerResponsible,
   cursor,
   invitationId,
+  invitationQuery,
+  invitationStatus,
   returnTo,
   locale,
   t,
@@ -444,14 +446,37 @@ export function CompanyInvitations({
   viewerResponsible: boolean;
   cursor?: string;
   invitationId?: string;
+  invitationQuery?: string;
+  invitationStatus?: Invitation["status"];
   returnTo: string;
   locale: Locale;
   t: OrganizationMessages;
 }) {
   const navigate = useNavigate();
   const copy = t.invitationWorkspace;
-  const [text, setText] = useState("");
-  const [status, setStatus] = useState<Invitation["status"] | "all">("all");
+  const text = invitationQuery ?? "";
+  const status = invitationStatus ?? "all";
+  const filters = {
+    ...(invitationQuery ? { invitationQuery } : {}),
+    ...(invitationStatus ? { invitationStatus } : {}),
+  };
+  const changeFilters = (
+    query: string,
+    state: Invitation["status"] | "all",
+  ) => {
+    void navigate({
+      to: "/companies/$companyId",
+      params: { companyId },
+      search: {
+        view: "invitations",
+        cursor,
+        ...(query ? { invitationQuery: query } : {}),
+        ...(state !== "all" ? { invitationStatus: state } : {}),
+      },
+      replace: true,
+      resetScroll: false,
+    });
+  };
   const [selectedId, setSelectedId] = useState<string>();
   const selection = useRef<string | undefined>(undefined);
   const [notice, setNotice] = useState<"created" | "resent">();
@@ -485,6 +510,7 @@ export function CompanyInvitations({
       params: { companyId },
       search: {
         view: "invitations",
+        ...filters,
         ...(id !== "new" && !firstPage && cursor ? { cursor } : {}),
         ...(id ? { invitation: id } : {}),
       },
@@ -503,7 +529,13 @@ export function CompanyInvitations({
             className="invitation-recipient"
             to="/companies/$companyId"
             params={{ companyId }}
-            search={{ view: "invitations", cursor, invitation: row.id }}
+            search={{
+              view: "invitations",
+              cursor,
+              invitationQuery,
+              invitationStatus,
+              invitation: row.id,
+            }}
           >
             <NavigationIcon name="invitations" />
             <strong>{row.recipientEmail ?? t.invitationAddressErased}</strong>
@@ -540,10 +572,11 @@ export function CompanyInvitations({
         key: "expiry",
         header: copy.linkExpiry,
         width: 205,
-        value: (row) => formatInstant(locale, row.expiresAt),
+        value: (row) => row.expiresAt,
+        format: (value) => formatInstant(locale, String(value)),
       },
     ],
-    [companyId, cursor, locale, t, copy],
+    [companyId, cursor, locale, t, copy, invitationQuery, invitationStatus],
   );
   return (
     <section
@@ -579,7 +612,7 @@ export function CompanyInvitations({
             className="invitations-back"
             to="/companies/$companyId"
             params={{ companyId }}
-            search={{ view: "invitations", cursor }}
+            search={{ view: "invitations", cursor, ...filters }}
           >
             <UiIcon name="previous" />
             {copy.back}
@@ -641,7 +674,7 @@ export function CompanyInvitations({
               type="search"
               value={text}
               maxLength={254}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => changeFilters(event.target.value, status)}
             />
             <div className="ui-field">
               <label htmlFor="invitations-status">{copy.status}</label>
@@ -650,7 +683,7 @@ export function CompanyInvitations({
                 className="ui-field-control"
                 value={status}
                 onChange={(event) =>
-                  setStatus(event.target.value as typeof status)
+                  changeFilters(text, event.target.value as typeof status)
                 }
               >
                 <option value="all">{copy.allStatuses}</option>
@@ -666,8 +699,7 @@ export function CompanyInvitations({
             {(text || status !== "all") && (
               <Button
                 onClick={() => {
-                  setText("");
-                  setStatus("all");
+                  changeFilters("", "all");
                 }}
               >
                 {copy.clear}
@@ -715,7 +747,7 @@ export function CompanyInvitations({
                 <Link
                   to="/companies/$companyId"
                   params={{ companyId }}
-                  search={{ view: "invitations" }}
+                  search={{ view: "invitations", ...filters }}
                 >
                   {t.firstPage}
                 </Link>
@@ -726,6 +758,7 @@ export function CompanyInvitations({
                   params={{ companyId }}
                   search={{
                     view: "invitations",
+                    ...filters,
                     cursor: invitations.data.nextCursor,
                   }}
                 >
