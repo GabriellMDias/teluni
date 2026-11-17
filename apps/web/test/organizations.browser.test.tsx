@@ -346,6 +346,57 @@ const administratorAccess = {
   ],
 };
 
+test("keeps the current logo and restores focus when a rejected replacement is discarded", async () => {
+  const logo =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jPZkAAAAASUVORK5CYII=";
+  let writes = 0;
+  respond((_url, request) => {
+    if (request instanceof Request && request.method === "PATCH") writes++;
+    return {
+      body: {
+        company: {
+          id: companyId,
+          displayName: "Original company",
+          version: 1,
+          logoDataUrl: logo,
+          defaultLocale: "pt-BR",
+        },
+        access: administratorAccess,
+      },
+    };
+  });
+  const { screen } = await open(`${companyPath}?view=settings`);
+  const edit = screen.getByRole("button", { name: t.editSettings });
+  await edit.click();
+  const name = screen.getByLabelText(t.fieldCompanyName);
+  const save = screen.getByRole("button", { name: t.save });
+  await expect.element(name).toHaveFocus();
+  await expect.element(save).toBeDisabled();
+  await name.fill("Draft company");
+  await screen
+    .getByLabelText(t.replaceLogo)
+    .upload(new File(["not an image"], "invalid.png", { type: "image/png" }));
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.logoInvalid);
+  await screen
+    .getByRole("button", { name: t.settingsWorkspace.clearFile })
+    .click();
+  await expect
+    .element(screen.getByRole("img", { name: t.logoPreview }))
+    .toHaveAttribute("src", logo);
+  await expect
+    .element(screen.getByLabelText(t.replaceLogo))
+    .not.toHaveAttribute("aria-invalid", "true");
+  await expect.element(save).toBeEnabled();
+  await screen.getByRole("button", { name: t.cancel }).click();
+  await expect.element(edit).toHaveFocus();
+  await expect
+    .element(screen.getByRole("heading", { name: "Original company" }))
+    .toBeVisible();
+  expect(writes).toBe(0);
+});
+
 test("keeps the company draft and its version across refetch until a conflict is reviewed", async () => {
   let version = 1;
   let name = "Original company";
@@ -409,12 +460,20 @@ test("keeps the company draft and its version across refetch until a conflict is
 test("reconciles a lost company update response before another save", async () => {
   let name = "Original company";
   let writes = 0;
+  let reloadAttempts = 0;
   respond((_url, request) => {
     if (request instanceof Request && request.method === "PATCH") {
       writes++;
       name = "Saved despite disconnect";
       throw new TypeError("Synthetic lost response");
     }
+    if (writes > 0 && ++reloadAttempts === 1)
+      return {
+        status: 503,
+        body: {
+          error: { code: "SERVICE_UNAVAILABLE", message: "Unavailable" },
+        },
+      };
     return {
       body: {
         company: {
@@ -437,6 +496,14 @@ test("reconciles a lost company update response before another save", async () =
   await expect
     .element(screen.getByRole("alert"))
     .toMatchTextContent(t.unknownWrite);
+  await expect
+    .element(screen.getByRole("button", { name: t.save }))
+    .toBeDisabled();
+  await screen.getByRole("button", { name: t.reload }).click();
+  await expect.poll(() => reloadAttempts).toBe(1);
+  await expect
+    .element(screen.getByLabelText(t.fieldCompanyName))
+    .toHaveValue("Saved despite disconnect");
   await expect
     .element(screen.getByRole("button", { name: t.save }))
     .toBeDisabled();

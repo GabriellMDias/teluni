@@ -409,6 +409,10 @@ Allocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the block
 The owner authorized [layout information components](implementation-plan.md#layout-information-components): clock/date, dynamic QR, scrolling text, weather and RSS, then local example layouts. The bounded increment and two local Café Aurora example layouts are implemented under accepted [ADR-0037](../adr/0037-publish-widget-configuration-and-proxy-live-public-data.md), using the owner's prior decision delegation; current-head repository/CI verification gates integration. MET Norway's initial adapter needs no API key; its credit and cache rules remain implementation requirements. No new account/credential blocker is introduced. Reachability of a deployed public origin, hardware qualification and the existing pilot/production actions retain their normal triggers; local examples do not establish them.
 
 
+## Company settings workspace refinement of 2026-11-16
+
+The [settings workspace refinement](implementation-plan.md#company-settings-workspace-refinement) uses existing company permissions, metadata and configuration. It introduces no new credential, deployment step or owner blocker.
+
 ## Catalog workspace refinement of 2026-11-16
 
 The [catalog workspace increment](implementation-plan.md#catalog-workspace-refinement) introduces no new access, credential, provider or pilot requirement. On the development host, Docker could not create its bridge interfaces with the running kernel's modules unavailable; restoring a matching booted kernel and modules is needed for the persistent local stack. Its existing volumes were preserved. This local environment limitation does not change the deployment requirements.

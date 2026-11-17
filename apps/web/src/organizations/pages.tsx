@@ -7,7 +7,9 @@ import {
 } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
-import { DataSet } from "../components.js";
+import { Button, DataSet, TextField } from "../components.js";
+import { NavigationIcon } from "../navigation-icon.js";
+import { UiIcon } from "../ui-icon.js";
 import type { DataSetMode } from "../dataset.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale, type Locale } from "../locale.js";
@@ -30,7 +32,7 @@ import {
   type Company,
   type CompanyWithAccess,
 } from "./api.js";
-import { CompanyLogoField } from "./company-logo.js";
+import { CompanyLogoField, CompanyLogoPreview } from "./company-logo.js";
 import { BranchLocationField, locationLabel } from "./branch-location.js";
 import { organizationMessages } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
@@ -82,7 +84,55 @@ type CompanyValues = Pick<
   "displayName" | "defaultLocale" | "logoDataUrl"
 >;
 
-/** The company settings fields shared by creation and administration forms. */
+/** Account identification controls keep the same labels and behavior on both forms. */
+function CompanyProfileFields({
+  idPrefix,
+  values,
+  disabled,
+  nameRef,
+  onChange,
+}: {
+  idPrefix: string;
+  values: CompanyValues;
+  disabled: boolean;
+  nameRef?: React.Ref<HTMLInputElement>;
+  onChange: (change: Partial<CompanyValues>) => void;
+}) {
+  const { t } = useOrganizationMessages();
+  return (
+    <>
+      <TextField
+        id={`${idPrefix}-name`}
+        ref={nameRef}
+        label={t.fieldCompanyName}
+        required
+        maxLength={120}
+        value={values.displayName}
+        disabled={disabled}
+        onChange={(event) => onChange({ displayName: event.target.value })}
+      />
+      <div className="ui-field">
+        <label htmlFor={`${idPrefix}-locale`}>{t.fieldLocale}</label>
+        <select
+          id={`${idPrefix}-locale`}
+          className="ui-field-control"
+          value={values.defaultLocale}
+          disabled={disabled}
+          onChange={(event) =>
+            onChange({ defaultLocale: event.target.value as Locale })
+          }
+        >
+          {(["pt-BR", "en-US"] as const).map((value) => (
+            <option key={value} value={value}>
+              {t.localeNames[value]}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
+  );
+}
+
 function CompanyFields({
   idPrefix,
   values,
@@ -94,45 +144,24 @@ function CompanyFields({
   disabled?: boolean;
   onChange: (values: CompanyValues) => void;
 }) {
-  const { t } = useOrganizationMessages();
   const current = useRef(values);
   current.current = values;
+  const update = (change: Partial<CompanyValues>) =>
+    onChange({ ...current.current, ...change });
   return (
     <>
-      <label htmlFor={`${idPrefix}-name`}>{t.fieldCompanyName}</label>
-      <input
-        id={`${idPrefix}-name`}
-        required
-        maxLength={120}
-        value={values.displayName}
+      <CompanyProfileFields
+        idPrefix={idPrefix}
+        values={values}
         disabled={disabled}
-        onChange={(event) =>
-          onChange({ ...values, displayName: event.target.value })
-        }
+        onChange={update}
       />
       <CompanyLogoField
         id={`${idPrefix}-logo`}
         value={values.logoDataUrl ?? null}
         disabled={disabled}
-        onChange={(logoDataUrl) =>
-          onChange({ ...current.current, logoDataUrl })
-        }
+        onChange={(logoDataUrl) => update({ logoDataUrl })}
       />
-      <label htmlFor={`${idPrefix}-locale`}>{t.fieldLocale}</label>
-      <select
-        id={`${idPrefix}-locale`}
-        value={values.defaultLocale}
-        disabled={disabled}
-        onChange={(event) =>
-          onChange({ ...values, defaultLocale: event.target.value as Locale })
-        }
-      >
-        {(["pt-BR", "en-US"] as const).map((value) => (
-          <option key={value} value={value}>
-            {t.localeNames[value]}
-          </option>
-        ))}
-      </select>
     </>
   );
 }
@@ -1004,26 +1033,79 @@ function Branches({
   );
 }
 
-function CompanySettings({ company }: { company: Company }) {
-  const { t } = useOrganizationMessages();
+function CompanySettings({
+  company,
+  capabilities,
+}: {
+  company: Company;
+  capabilities: CompanyWithAccess["access"]["capabilities"];
+}) {
+  const { locale, t } = useOrganizationMessages();
+  const copy = t.settingsWorkspace;
   const queryClient = useQueryClient();
   const refreshing = useIsFetching({ queryKey: companyKey(company.id) }) > 0;
-  type Draft = CompanyValues & { expectedVersion: number };
-  // Capture the version with the draft; background refetches cannot rebase it.
+  type Draft = {
+    values: CompanyValues;
+    baseline: CompanyValues;
+    expectedVersion: number;
+  };
+  // Capture both the initial values and version; a background read cannot rebase a draft.
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState(false);
-  const refresh = () =>
+  const editButton = useRef<HTMLButtonElement>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
+  const focusAfterChange = useRef<"name" | "edit" | null>(null);
+  const editing = draft !== null;
+  useEffect(() => {
+    if (focusAfterChange.current === "name" && editing) {
+      focusAfterChange.current = null;
+      nameInput.current?.focus();
+    }
+    if (focusAfterChange.current === "edit" && !editing && !refreshing) {
+      focusAfterChange.current = null;
+      editButton.current?.focus();
+    }
+  }, [editing, refreshing]);
+  const refreshRelated = () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: companyKey(company.id) }),
       queryClient.invalidateQueries({ queryKey: companiesKey }),
       queryClient.invalidateQueries({ queryKey: auditKey(company.id) }),
     ]);
+  const closeDraft = () => {
+    focusAfterChange.current = "edit";
+    setDraft(null);
+  };
   const save = useMutation({
-    mutationFn: (input: Draft) => updateCompany(company.id, input),
+    mutationFn: ({ values, expectedVersion }: Draft) =>
+      updateCompany(company.id, { ...values, expectedVersion }),
     onSuccess: async () => {
-      setDraft(null);
+      closeDraft();
       setSaved(true);
-      await refresh();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: companyKey(company.id) }),
+        refreshRelated(),
+      ]);
+    },
+  });
+  const reload = useMutation({
+    mutationFn: () => getCompany(company.id),
+    onSuccess: async (latest) => {
+      queryClient.setQueryData<CompanyWithAccess>(
+        companyKey(company.id),
+        (current) =>
+          current && current.company.version > latest.company.version
+            ? current
+            : latest,
+      );
+      closeDraft();
+      save.reset();
+      await refreshRelated();
+    },
+    onError: (error) => {
+      if (error instanceof ApiFailure && [401, 403, 404].includes(error.status))
+        void queryClient.invalidateQueries({
+          queryKey: companyKey(company.id),
+        });
     },
   });
   const mustReload =
@@ -1031,95 +1113,249 @@ function CompanySettings({ company }: { company: Company }) {
     (!(save.error instanceof ApiFailure) ||
       save.error.status >= 500 ||
       save.error.code === "RESOURCE_VERSION_CONFLICT");
+  const blocked = save.isPending || mustReload || reload.isPending;
+  const dirty =
+    draft &&
+    (draft.values.displayName !== draft.baseline.displayName ||
+      draft.values.defaultLocale !== draft.baseline.defaultLocale ||
+      draft.values.logoDataUrl !== draft.baseline.logoDataUrl);
+  const canSave = !!(dirty && draft?.values.displayName.trim()) && !blocked;
+  const update = (change: Partial<CompanyValues>) =>
+    setDraft(
+      (current) =>
+        current && { ...current, values: { ...current.values, ...change } },
+    );
+  const links = (
+    [
+      {
+        allowed: capabilities.includes("branches.view"),
+        view: undefined,
+        icon: "branches",
+        title: t.branchesTitle,
+        detail: copy.branches,
+      },
+      {
+        allowed: capabilities.includes("members.manage"),
+        view: "members",
+        icon: "members",
+        title: t.membersTitle,
+        detail: copy.members,
+      },
+      {
+        allowed: capabilities.includes("audit.view"),
+        view: "history",
+        icon: "history",
+        title: t.historyTitle,
+        detail: copy.history,
+      },
+    ] as const
+  ).filter((link) => link.allowed);
+
   return (
-    <section aria-labelledby="company-settings-title">
-      <h2 id="company-settings-title">{t.settingsTitle}</h2>
-      {saved && <p role="status">{t.settingsSaved}</p>}
-      {draft ? (
-        <form
-          className="form-stack"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!mustReload) save.mutate(draft);
-          }}
-        >
-          <CompanyFields
-            idPrefix="settings"
-            values={draft}
-            disabled={save.isPending}
-            onChange={(values) => setDraft({ ...draft, ...values })}
-          />
-          {save.error && (
-            <Failure
-              error={save.error}
-              operation="write"
-              onReload={() => {
-                setDraft(null);
-                save.reset();
-                void refresh();
-              }}
-            />
-          )}
-          <div className="action-group">
-            <button
-              type="submit"
-              className="button-primary"
-              disabled={save.isPending || mustReload}
-            >
-              {save.isPending ? t.saving : t.save}
-            </button>
-            <button
-              type="button"
-              disabled={save.isPending}
-              onClick={() => {
-                setDraft(null);
-                save.reset();
-                if (mustReload) void refresh();
-              }}
-            >
-              {t.cancel}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <>
-          <dl className="company-settings">
-            <dt>{t.fieldCompanyName}</dt>
-            <dd>{company.displayName}</dd>
-            {company.logoDataUrl && (
-              <>
-                <dt>{t.fieldLogo}</dt>
-                <dd>
-                  <img
-                    className="company-logo-preview"
-                    src={company.logoDataUrl}
-                    alt={t.logoPreview}
-                    width={88}
-                    height={88}
-                  />
-                </dd>
-              </>
-            )}
-            <dt>{t.fieldLocale}</dt>
-            <dd>{t.localeNames[company.defaultLocale]}</dd>
-          </dl>
-          <button
-            type="button"
+    <section
+      className="company-settings-workspace"
+      aria-labelledby="company-settings-title"
+    >
+      <header className="company-settings-toolbar">
+        <div>
+          <h2 id="company-settings-title">{t.settingsTitle}</h2>
+          <p className="hint">{copy.lead}</p>
+        </div>
+        {!draft && (
+          <Button
+            ref={editButton}
+            variant="primary"
             disabled={refreshing}
             onClick={() => {
-              setSaved(false);
-              save.reset();
-              setDraft({
+              const values: CompanyValues = {
                 displayName: company.displayName,
                 logoDataUrl: company.logoDataUrl ?? null,
                 defaultLocale: company.defaultLocale,
+              };
+              setSaved(false);
+              save.reset();
+              reload.reset();
+              focusAfterChange.current = "name";
+              setDraft({
+                values,
+                baseline: values,
                 expectedVersion: company.version,
               });
             }}
           >
-            {t.editSettings}
-          </button>
-        </>
+            <NavigationIcon name="settings" /> {t.editSettings}
+          </Button>
+        )}
+      </header>
+      {saved && (
+        <p className="notice notice-success" role="status">
+          {t.settingsSaved}
+        </p>
+      )}
+      <form
+        id="company-settings-form"
+        aria-label={t.settingsTitle}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (canSave && draft) save.mutate(draft);
+        }}
+      >
+        <div className="company-settings-grid">
+          <section
+            className="company-settings-card"
+            aria-labelledby="company-profile-title"
+          >
+            <div className="company-settings-card-heading">
+              <span className="company-settings-icon">
+                <NavigationIcon name="companies" />
+              </span>
+              <div>
+                <h3 id="company-profile-title">{copy.profileTitle}</h3>
+                <p className="hint">{copy.profileLead}</p>
+              </div>
+            </div>
+            {draft ? (
+              <div className="company-settings-fields">
+                <CompanyProfileFields
+                  idPrefix="settings"
+                  nameRef={nameInput}
+                  values={draft.values}
+                  disabled={blocked}
+                  onChange={update}
+                />
+              </div>
+            ) : (
+              <dl className="company-settings-facts">
+                <div>
+                  <dt>{t.fieldCompanyName}</dt>
+                  <dd>{company.displayName}</dd>
+                </div>
+                <div>
+                  <dt>{t.fieldLocale}</dt>
+                  <dd>{t.localeNames[company.defaultLocale]}</dd>
+                </div>
+              </dl>
+            )}
+          </section>
+          <section
+            className="company-settings-card"
+            aria-labelledby="company-brand-title"
+          >
+            <div className="company-settings-card-heading">
+              <span className="company-settings-icon">
+                <NavigationIcon name="media" />
+              </span>
+              <div>
+                <h3 id="company-brand-title">{copy.brandTitle}</h3>
+                <p className="hint">{copy.brandLead}</p>
+              </div>
+            </div>
+            {draft ? (
+              <CompanyLogoField
+                id="settings-logo"
+                value={draft.values.logoDataUrl ?? null}
+                disabled={blocked}
+                onChange={(logoDataUrl) => update({ logoDataUrl })}
+              />
+            ) : (
+              <div className="company-settings-logo">
+                <CompanyLogoPreview value={company.logoDataUrl ?? null} />
+                <div>
+                  <strong>
+                    {company.logoDataUrl ? t.fieldLogo : copy.noLogo}
+                  </strong>
+                  <p className="hint">
+                    {company.logoDataUrl ? copy.savedLogo : copy.noLogoLead}
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+        {draft && (
+          <>
+            {save.error && (
+              <Failure
+                error={save.error}
+                operation="write"
+                onReload={
+                  mustReload && !reload.isPending
+                    ? () => reload.mutate()
+                    : undefined
+                }
+              />
+            )}
+            {reload.error && <Failure error={reload.error} operation="read" />}
+            <footer className="company-settings-footer">
+              <p className="hint" role="status">
+                {reload.isPending
+                  ? copy.reloading
+                  : save.isPending
+                    ? t.saving
+                    : mustReload
+                      ? copy.reviewRequired
+                      : dirty
+                        ? copy.unsaved
+                        : copy.noChanges}
+              </p>
+              <div className="action-group">
+                <Button
+                  disabled={blocked}
+                  onClick={() => {
+                    closeDraft();
+                    save.reset();
+                  }}
+                >
+                  {t.cancel}
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  pending={save.isPending}
+                  disabled={!canSave}
+                >
+                  {t.save}
+                </Button>
+              </div>
+            </footer>
+          </>
+        )}
+      </form>
+      {!editing && links.length > 0 && (
+        <nav
+          className="company-settings-shortcuts"
+          aria-labelledby="company-settings-shortcuts-title"
+        >
+          <h3 id="company-settings-shortcuts-title">{copy.shortcuts}</h3>
+          <ul>
+            {links.map((link) => (
+              <li key={link.icon}>
+                <Link
+                  to="/companies/$companyId"
+                  params={{ companyId: company.id }}
+                  search={link.view ? { view: link.view } : {}}
+                >
+                  <span className="company-settings-icon">
+                    <NavigationIcon name={link.icon} />
+                  </span>
+                  <span>
+                    <strong>{link.title}</strong>
+                    <small>{link.detail}</small>
+                  </span>
+                  <UiIcon name="next" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+      {!editing && company.updatedAt && (
+        <p className="hint company-settings-updated">
+          {copy.updated}{" "}
+          <time dateTime={company.updatedAt}>
+            {formatInstant(locale, company.updatedAt)}
+          </time>
+        </p>
       )}
     </section>
   );
@@ -1303,7 +1539,7 @@ export function CompanyPage({
   const datasetView = !view && canView;
   return (
     <section
-      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}`}
+      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}`}
       aria-labelledby="company-title"
       lang={locale}
     >
@@ -1372,7 +1608,10 @@ export function CompanyPage({
         )
       ) : view === "settings" ? (
         access.capabilities.includes("company.settings.manage") ? (
-          <CompanySettings company={company.data.company} />
+          <CompanySettings
+            company={company.data.company}
+            capabilities={access.capabilities}
+          />
         ) : (
           <p role="alert" className="notice notice-error">
             {t.errors.PERMISSION_DENIED}

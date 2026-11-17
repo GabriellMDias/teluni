@@ -1,5 +1,212 @@
 [
   {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Instrumentation ownership and coverage",
+    "anchor": "instrumentation-ownership-and-coverage",
+    "text": "Instrumentation ownership and coverage\nThe owner of an operation owns its semantic telemetry. Transport supplies request context, application operations supply meaning/outcome, adapters supply dependency behavior, and cross-cutting infrastructure supplies logger setup, redaction, tracing, and common runtime fields. Share mechanisms only when meaning is shared; do not create generic packages or wrappers merely to hide a vendor. Keep provider SDK coupling at integration boundaries.\nInstrument meaningful boundaries rather than every function. Automatic HTTP/database/runtime instrumentation supplies technical visibility but cannot infer business success. Critical workflows may fail semantically while infrastructure appears healthy. Useful coverage, when the corresponding capability exists, includes:\nRemote calls: provider/operation, latency, outcome, timeout, fallback, and retries.\nDatabase: query/transaction latency, pool saturation, deadlocks, timeouts, and migration outcome without raw values.\nQueues/jobs: publish/consume/progress, waiting age, execution duration, attempts, duplicate handling, dead-letter growth, terminal failure, and originating correlation.\nCaches: justified hit/miss, latency, eviction, and errors; do not build instrumentation before the cache exists.\nLifecycle/releases: startup/shutdown, deployments/rollbacks, migrations, and important safe configuration/flag state.\nClient observability is requirement-driven and must account for privacy, offline delivery, network/battery/overhead, application/OS version, and safe device metadata. Source maps/native symbols can support trusted diagnostics without being public. Do not capture local usernames/paths, user input, or server secrets blindly.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Safety, cost, and pipeline failure",
+    "anchor": "safety-cost-and-pipeline-failure",
+    "text": "Safety, cost, and pipeline failure\nTelemetry is production data. [Redaction](../security/telemetry-redaction.md), [classification](../security/data-classification.md), [retention](../security/data-retention.md), and [production access](../security/production-access.md) govern both human and AI investigation. Use minimum required allowlisted fields and never intentionally collect restricted secrets, even for emergency debugging. New providers are data-processing boundaries.\nNormally telemetry failure must not fail unrelated business operations. An explicit regulatory/security audit requirement can create a different guarantee and must be designed as such. Bound buffers, CPU/memory/network overhead, export timeouts, and dropping behavior; make loss/export failures diagnosable without recursive telemetry storms. Sampling and cost controls must preserve useful evidence for critical, rare, and unexpected failures rather than indiscriminately suppressing it.\nDevelopment must support useful local diagnostics without the full production stack while preserving production semantics and redaction. Missing essential evidence and excessive noisy collection are both defects. Add the smallest signal that answers a real question.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Investigation and testing observability",
+    "anchor": "investigation-and-testing-observability",
+    "text": "Investigation and testing observability\nA useful investigation can move from safe user reference or alert to service/error group, trace, logs, dependency, release, source, and regression test. Use evidence to distinguish facts from hypotheses. Authorized AI tooling follows the same access rules; it is not a reason to collect more sensitive data. Convert confirmed defects into reproduction/regression tests where practical and use runtime evidence to verify recovery.\nTest high-value contracts such as correlation generation/propagation/isolation, authoritative error ownership, redaction before export, meaningful events, and available release metadata. Avoid vendor-specific business-test coupling or assertions for every trivial message/span. Consult [validation](../validation.md) before claiming static checks or remote tests exist.\nDashboards should answer concrete service/workflow questions, not display every available metric. Alerts require action and real evidence-based thresholds; runbooks should reference stable signals and actual queries once tooling exists. Provider deployments, thresholds, retention, and service objectives must be determined by real operational requirements rather than invented to fill this documentation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Tracing",
+    "anchor": "tracing",
+    "text": "Tracing\nThis policy owns causal spans, context propagation, sampling, and tracing safety. [Observability](observability.md) owns the cross-signal model; [redaction](../security/telemetry-redaction.md) owns collection restrictions. A trace explains where execution/time/failure flowed, not every function call or all application data.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and accepted direction",
+    "anchor": "current-implementation-and-accepted-direction",
+    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects OpenTelemetry, W3C Trace Context, and OTLP. The API [telemetry bootstrap](../../apps/api/src/telemetry.ts) registers HTTP/Fastify instrumentation before application composition, uses a configurable ratio sampler, and exports through an allowlisting wrapper. Without an OTLP endpoint spans are discarded. The exporter currently normalizes names to `http.request` and removes events/links; only its declared HTTP/protocol attributes survive export. Do not assume newly added semantic spans, links, or exception events will be retained without changing/testing that boundary.\nPrisma instrumentation is registered before application composition, and active trace/span IDs enter structured logs. The exporter normalizes Prisma spans to `db.operation` and strips SQL, bind values, events, links, and unallowlisted attributes. A Collector is preferred where justified, not mandatory; backend, tail sampling, deployed retention, and client instrumentation are separate decisions. This policy does not require a vendor or deployed collector.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Spans, names, and attributes",
+    "anchor": "spans-names-and-attributes",
+    "text": "Spans, names, and attributes\nA span represents meaningful work with stable name, timing, status, attributes, and causal relationship according to the standard. Typical boundaries are incoming requests, application operations, important database/provider calls, queue publication, and job execution. Root spans begin standalone work with no valid accepted upstream context. Avoid unrelated roots inside one logical operation, spans for trivial helpers, duplicate framework instrumentation, and redundant ORM internals.\nNames must be stable and low-cardinality: use an operation or route template, never resource IDs, personal data, raw dynamic URLs, user input, or error messages. Treat names and fields used in queries/dashboards as operational contracts. Prefer standard semantic conventions; add a consistent custom namespace only for actual domain concepts. Safe fields should be typed, bounded, meaningful, and necessary. Justified opaque actor/tenant/job IDs can aid investigation but remain classified and incur storage/search cost.\nNever intentionally attach restricted data. Bodies, bind values, rows, credentials, sensitive headers, and arbitrary objects are prohibited by default under redaction policy. Review automatic statement/exception capture; normalize, parameterize, sanitize, or disable unsafe SQL. Prefer safe peer/route and provider operation/result over payloads. Database spans should explain latency, lock waits, and failure without exposing values.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Context propagation and trust",
+    "anchor": "context-propagation-and-trust",
+    "text": "Context propagation and trust\nPropagation belongs in transport middleware, HTTP/RPC clients, queue adapters, workers, and integration infrastructure, not manual trace-ID parameters throughout business code. Continue valid supported upstream context only where the trust model permits it; otherwise start a new trace. Parse external headers defensively. Malformed context should not fail an application request unless its protocol specifically requires that behavior.\nTrace IDs/context are operational metadata, never proof of identity, authorization, tenant, or privileged routing. Accept only supported protocol fields; untrusted context must not inject arbitrary attributes or sensitive values. Actual principal propagation uses trusted application mechanisms.\nOutbound propagation should follow standards and provider support, not automatically send internal context to every third party. Browser cross-origin propagation needs explicit origin/header and privacy review. Trace boundaries and trust boundaries differ: crossing one does not authorize sharing all attributes.\nBaggage is not part of the default path. Introduce it only for an explicit distributed-context requirement, with deliberately allowlisted keys; values must be small, bounded, non-sensitive, and necessary across processes. It is not general context storage; do not put email, roles/permissions, tokens, user content, or full tenant metadata there. Most context should remain local. Restore/clear async context after execution; it must never leak across concurrent requests, jobs, threads, or tenants.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Asynchronous causality and trace links",
+    "anchor": "asynchronous-causality-and-trace-links",
+    "text": "Asynchronous causality and trace links\nUse parent-child relationships for actual nested work and links where multiple parents, delayed execution, fan-in, fan-out, or independent stages make a tree misleading. Queue telemetry should separate waiting delay from execution time where supported and identify safe message type, consumer, and attempt. Scheduled work without a causal parent starts a new trace.\nImmediate retries may remain child spans; delayed attempts may use new linked traces with stable job/event/workflow IDs. Make retry attempts/reasons distinguishable. Duplicate deliveries are independent executions and need not share one trace. Long workflows lasting hours/days should use stages, links, and workflow IDs rather than an unbounded trace. Large batches/fan-out should use counts and selective significant/failed item spans rather than thousands of IDs or descendants.\nThe current exporter removes links; implementing these semantics requires explicit export-boundary changes and tests, not merely adding link calls.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Outcomes and cross-signal correlation",
+    "anchor": "outcomes-and-cross-signal-correlation",
+    "text": "Outcomes and cross-signal correlation\nSpan status follows operational semantics. Expected domain rejection or inbound `4xx` is not automatically an infrastructure error; an unexpected outbound `401` may be a credential/configuration failure. Record a bounded result/error code when useful. Associate unexpected failures with the responsible operation; do not repeat exception events on every ancestor unless distinct operations failed.\nA failed attempt can remain an error child of a successful parent after retry. Preserve meaningful partial failures, timeout distinctions, cancellation, fallback, and circuit-breaker states where applicable. Do not hide degradation simply because eventual completion succeeded.\nLogs and error reports should inherit active trace/span correlation centrally where practical. Span events explain one execution; independent searchable semantic events may belong in logs. Do not duplicate both automatically. Metrics answer frequency/distribution questions, not the cause of one trace. Sampled tracing is never the sole required audit/security record.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Sampling and volume",
+    "anchor": "sampling-and-volume",
+    "text": "Sampling and volume\nSampling must preserve useful coverage while bounding CPU, memory, network, storage, and cost. Head sampling is cheaper/early but cannot know the final outcome; tail sampling can prioritize errors/slow traces but needs more infrastructure. Propagate sampling decisions as required by the standard. Keep strategy transparent: an ID in a log may have no exported trace due to sampling, not necessarily broken instrumentation.\nPrioritize unexpected errors, important slow executions, and rare high-value operations where supported. Thresholds/rates depend on actual service expectations and traffic; do not invent a universal production percentage. Dynamic/incident changes must be bounded and understandable, not a global unsampling switch for one local issue. Development/tests may sample more while keeping the same redaction rules and isolated exporters.\nBound attributes, lengths, events, links, and spans per trace. Do not emit one event per row/item/loop iteration in large workloads; use safe summaries or justified child spans. Truncation is not privacy protection. Routine health probes, metric scrapes, and low-value static/polling routes should generally be excluded or heavily sampled without hiding critical behavior. Startup/shutdown and migrations normally need logs/metrics first; trace only meaningful diagnostic work. Low-level DNS/filesystem/cache spans need demonstrable value rather than automatic maximum detail.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Export reliability and clients",
+    "anchor": "export-reliability-and-clients",
+    "text": "Export reliability and clients\nExporter/collector outages must normally degrade safely without failing business operations. Use bounded buffering, timeouts, dropping behavior, and safe rate-limited diagnostics for export failures, dropped spans, or saturation. Avoid recursive telemetry storms. [Retention](../security/data-retention.md) and [production access](../security/production-access.md) apply to traces and third-party processors.\nBrowser/mobile/desktop tracing is requirement-driven, with privacy and cross-origin safety; mobile also requires battery/network/offline consideration. Local paths, usernames, machine identifiers, and sensitive input are not default trace data. Do not introduce client tracing just to match the server implementation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Tests and change checklist",
+    "anchor": "tests-and-change-checklist",
+    "text": "Tests and change checklist\nTest important propagation across boundaries, malformed external context, async isolation/cleanup, redaction and final exporter output, safe failure behavior, and meaningful causal relationships using in-memory/test exporters. Do not require production infrastructure or assert every automatic span.\nBefore a manual span/attribute, identify causal value, existing instrumentation, name/standard convention, parent/link relation, permitted fields, trust-boundary propagation, volume, duplicate risk, and tests. For async work, include delay, multiple parents, retries/duplicates, IDs, and context lifetime. Before changing sampling, evaluate traffic, retained error/slow/rare evidence, bias, cost, dropped telemetry, and how results will be reviewed. Preserve current source/export limitations explicitly until implementation satisfies the intended policy.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/AGENTS",
+    "title": "Runbook Instructions",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook Instructions",
+    "anchor": "runbook-instructions",
+    "text": "Runbook Instructions\nConsult the [index](README.md), [authoring policy](authoring.md), and [template](template.md).\nDocument real operational conditions only. Do not invent provider commands, organizational roles, or runnable procedures before they exist.\nInclude applicability, required access, verifiable preconditions, bounded actions, postcondition verification, and stop/escalation conditions.\nFollow [production-access policy](../security/production-access.md). A runbook grants no additional authority; verify delegated authorization before privileged or destructive actions.\nPreserve recovery and unknown-outcome semantics. Do not equate command success with recovery or retry an uncertain state-changing operation blindly.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Authoring and Using Runbooks",
+    "anchor": "authoring-and-using-runbooks",
+    "text": "Authoring and Using Runbooks\nUse the [index](README.md) and [template](template.md). Runbooks are current, repeatable operational procedures for authorized operators, not architecture explanations, ADRs, incident histories, or speculative troubleshooting notes.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Applicability, scope, and ownership",
+    "anchor": "applicability-scope-and-ownership",
+    "text": "Applicability, scope, and ownership\nCreate a runbook for a real runtime, dependency, workflow, or recurring incident when response is non-obvious, risky, time-sensitive, or dependent on individual knowledge. Do not create hypothetical systems, commands, organizational roles, or empty index entries.\nHandle one coherent condition or procedure per runbook. Use a descriptive English filename such as `<condition-or-operation>.md`; avoid generic collections of unrelated production problems. Use concrete symptom, service, dependency, error-code, alert, and operation terminology so the procedure is searchable.\nEvery runbook should have an identifiable owner, even across several systems. The owner maintains commands, links, permissions, safety assumptions, and recovery behavior. An active runbook represents an implemented operation in its stated environment. A deprecated one should identify its reason and replacement where relevant. Remove obsolete procedures when they no longer provide value; Git preserves history. Add lifecycle complexity only when needed.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Required procedure information",
+    "anchor": "required-procedure-information",
+    "text": "Required procedure information\nFollow the template with sections that justify their operational value:\nSection\nWhat the operator needs\nPurpose and trigger\nThe specific condition, request, alert, or error that makes the procedure applicable\nSymptoms and non-applicability\nObservable evidence and cases where the procedure should not be used\nImpact\nAffected capabilities, scope, urgency, and data/security risk\nPreconditions and access\nObservable checks, target environment, required capabilities, and safety conditions\nDiagnosis\nOrdered low-risk inspection, expected output, and evidence-based branches\nMitigation/procedure\nBounded actions, consequences, warnings, and temporary measures\nVerification\nEvidence of the intended service, security, or data state\nRollback/recovery\nReversal prerequisites or a real forward-recovery path\nEscalation\nStop conditions and an actual owner or escalation target when one exists\nPreconditions must be verifiable; assumptions describe environmental expectations and should be explicit when their violation changes safety. Check applicability, environment, access, current procedure state, and preconditions before execution. Do not skip safety conditions merely to work faster.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis and command safety",
+    "anchor": "diagnosis-and-command-safety",
+    "text": "Diagnosis and command safety\nPrefer low-risk observability before invasive production access: metrics, alerts, logs, traces, error reports, safe read-only inspection, then privileged diagnostics where appropriate. Avoid premature mutation while the failure is poorly understood unless active harm requires immediate containment.\nCommands must be specific, bounded, copyable, and current when tooling exists. Do not invent provider-specific commands or placeholders and present them as executable procedure. Describe expected output and its meaning; include explicit branches when actions depend on evidence. Keep decision trees simple enough to use under pressure.\nPrefer read-only, timeout-limited, bounded database queries, using known indexes where applicable. Explain production impact. Avoid embedding secrets in commands, shell history, process arguments, or documentation. Use credential references and secret-management procedures. Do not reuse service credentials or shared administrator accounts to bypass access policy.\nMark destructive, irreversible, and high-risk actions before execution with the concrete affected scope and consequences, not a generic warning. Verify authorization, scope, reversibility, and the verification method, and use the appropriate approval mechanism. A runbook is guidance, not unconditional permission or additional delegated capability.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation, recovery, and verification",
+    "anchor": "mitigation-recovery-and-verification",
+    "text": "Mitigation, recovery, and verification\nMitigation reduces impact without necessarily correcting the cause. Explain what each important mitigation restores, disables, or puts at risk. Mark temporary measures and their follow-up/removal needs. Recovery restores safe normal operation; verify its prerequisites and restore progressively where risk warrants it.\nEvery state-changing procedure should define outcome verification. Command success or a cleared alert alone is not proof. Use relevant health, error-rate, latency, progress, data-integrity, or credential-revocation evidence. Where needed, prove that the previous unsafe behavior is no longer possible. Specify post-recovery observation signals and justified observation periods rather than arbitrary delays.\nDocument rollback only when real and safe; identify compatibility prerequisites. If rollback is unsafe or impossible, state that and provide the forward-recovery direction. Explicitly identify irreversible actions before execution.\nStop when evidence no longer matches the procedure, preconditions or required access cannot be verified, scope exceeds documented bounds, destructive effects are unknown, recovery fails, or corruption/security compromise is suspected. Preserve useful evidence and escalate rather than improvising outside the known safe scope. Identify actual escalation targets when organizational structure exists.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Integration with policy and operational evidence",
+    "anchor": "integration-with-policy-and-operational-evidence",
+    "text": "Integration with policy and operational evidence\n[Production access](../security/production-access.md) governs least privilege, authorization, elevated roles, and break-glass. Break-glass is for genuine emergencies where normal access is unavailable or insufficient, not a default first step.\n[Incident response](../security/incident-response.md) governs incident declaration, severity, communication, recovery evidence, and follow-up. Incident urgency does not expand an agent's authority.\n[Observability](../reliability/observability.md) and [health checks](../reliability/health-checks.md) govern investigation signals. Reference stable events, fields, metrics, operations, error codes, and relevant spans rather than fragile message strings or vague “check logs” instructions.\n[Alerting](../reliability/alerting.md) connects alerts to runbooks; reference the canonical alert name where possible. Add real provider queries and links only when the tooling exists.\n[Data classification](../security/data-classification.md), [redaction](../security/telemetry-redaction.md), [secrets](../security/secrets-management.md), and [retention](../security/data-retention.md) govern sensitive outputs. Temporary exports need a storage location, access scope, retention, and deletion method.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "State-changing and long-running operations",
+    "anchor": "state-changing-and-long-running-operations",
+    "text": "State-changing and long-running operations\nData repair must identify the invariant, affected scope, desired canonical state, repair, verification, and recovery. Prefer reviewed repository-controlled scripts over inline copies of complex code. Identify the relevant script revision/release when version-sensitive. Use dry runs before destructive execution where valuable and explain preview results.\nState whether an operation is safe to repeat. Resolve unknown outcomes by inspecting actual state before retrying. For batch or long-running operations, document batch size, progress, monitoring, failure handling, safe pause, and resume behavior where supported. Say explicitly when concurrent execution is unsafe; tooling should eventually enforce that restriction where practical.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Exercise, maintenance, and automation",
+    "anchor": "exercise-maintenance-and-automation",
+    "text": "Exercise, maintenance, and automation\nImportant procedures should eventually be exercised through controlled staging, synthetic failures, tabletop exercises, restore tests, or game days. Do not test destructive instructions against real production data merely to prove documentation works. Backups require real restore tests; successful backup creation alone is insufficient. Exercise credential rotation before an emergency where possible.\nReview after architecture, tooling, permissions, dependencies, or incident evidence changes. After significant use, assess accuracy, missing steps, confusion, and opportunities for automation. Treat drift as an operational defect. Calendar review can be added when operational maturity justifies it.\nRepeated deterministic procedures are candidates for scripts, purpose-built tools, and safe automatic recovery. Runbooks can remain orchestration and verification guides. Where safe self-healing exists, alert on failed recovery or recurring instability rather than keeping humans as the primary mechanism.\n`pnpm docs:check` already checks local links, headings, and reachability. Runbook ownership, command applicability, safety, and recovery semantics still require review. Future focused checks may cover metadata, known command wrappers, scripts, or supported arguments; avoid rigid parsing that makes simple procedures difficult to maintain. Runbook files remain canonical if an index is later generated.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Creation and follow-up",
+    "anchor": "creation-and-follow-up",
+    "text": "Creation and follow-up\nConfirm a real repeatable condition, copy the template, identify ownership/access, write triggers and preconditions, then diagnosis, action, verification, recovery, warnings, and escalation. Review security and operational safety and exercise the procedure where practical.\nAfter recovery, consider permanent correction, regression tests, alert/observability changes, automation, revised warnings or verification, a runbook update, an ADR, and post-incident review based on observed evidence. Incident tooling, provider queries, command wrappers, metadata format, index generation, and review cadence remain dependent on actual operational needs and tooling.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/README",
+    "title": "Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbooks",
+    "anchor": "runbooks",
+    "text": "Runbooks\nNo operational runbooks exist yet. This directory contains the [authoring policy](authoring.md), [template](template.md), and [local instructions](AGENTS.md). Add index entries only for real procedures when the corresponding runtime and operational tooling exist.\nExisting contributor procedures have narrower owners: [local setup](../setup.md), [validation](../validation.md), and [database release/evolution](../database/release-evolution.md). No production environment is selected; authoring guidance does not activate deployment-specific work.\nRunbooks describe current repeatable operations, not hypothetical systems or historical incident narratives. A procedure does not grant authority: [production access](../security/production-access.md) and [incident response](../security/incident-response.md) continue to apply.\n"
+  },
+  {
     "id": "repository/docs/runbooks/README",
     "title": "Runbooks",
     "group": "Runbooks",
@@ -745,212 +952,5 @@
     "heading": "Secret rotation",
     "anchor": "secret-rotation",
     "text": "Secret rotation\nImportant secrets must be rotatable, and revocable where supported. Define who rotates, how a new credential is distributed, how consumers are verified, and how the old credential is revoked. Scheduled, provider-, personnel-, policy-, and incident-driven rotation have different triggers; do not invent a universal cadence.\nWhere supported, create the new credential, update consumers, verify use, then revoke the previous credential with a bounded overlap. A replacement alone does not neutralize a still-valid compromised value. Exposure or suspected compromise requires prompt rotation/revocation according to capability and impact. Webhook secrets need environment isolation, protocol-correct secure comparison, and rotation as well.\nKeep code deployment and credential rotation separable where practical. Account for multi-version rollout, credential-format changes, and rollback compatibility: an old binary may fail after its credential is revoked. Automated rotation must preserve authorization, auditability, safe rollout/recovery, and retirement of prior credentials without creating unmanaged copies. Exercise critical rotation and recovery in suitable non-production environments before emergencies where practical.\nRecovery must address lost credentials/store access, incorrect rotation, provider failure, deleted credentials, or compromised administrators without creating permanent weaker backdoors. [Production access](production-access.md) governs time-limited, exceptional break-glass access. Separation of creation/access/rotation/approval duties should match actual risk and organizational maturity.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Use, diagnostics, and backups",
-    "anchor": "use-diagnostics-and-backups",
-    "text": "Use, diagnostics, and backups\nDo not serialize secret-bearing objects into logs, traces, metrics, errors, breadcrumbs, audit, profiling, caches, or responses. Review provider exceptions and automatic SDK capture of headers, locals, environment, configuration, and requests. Dedicated secret wrappers may help when practical, but their default string/serialization representation must not reveal values. [Redaction policy](telemetry-redaction.md) remains authoritative.\nProduction debugger access is privileged. Full memory dumps are restricted artifacts needing exceptional justified collection and tightly controlled access. Support tools must not expose secrets or inherit infrastructure credentials. Administrative UIs should show configured state or rotation metadata; generated credentials may use one-time display when necessary instead of repeated retrieval.\nSecret-store backups require equivalent or stronger controls. Application backups must not accidentally include secret files; database backups containing hashes, sessions, or provider tokens retain their classification. [Retention](data-retention.md) governs their lifecycle.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Accidental source-control exposure",
-    "anchor": "accidental-source-control-exposure",
-    "text": "Accidental source-control exposure\nTreat a committed or otherwise disclosed credential as potentially compromised, even in a private repository. Identify it without redisplaying it, revoke/rotate, stop future exposure, assess copies/history/destinations and access, investigate use as needed, and add prevention. History rewriting or deleting a file/log can reduce continued exposure but never restores secrecy.\nFor telemetry exposure, stop collection, identify affected logs/traces/errors/exports/backups/providers, remove stored copies where possible, review access, and add regression coverage. Follow [incident response](incident-response.md); do not wait for natural retention expiry. Ordinary chats, issues, pull requests, reviews, AI prompts, and support tickets are not secret-delivery channels; any exception requires an explicitly approved secure workflow.\nAI repository access does not imply raw credential access. Prefer names, schemas, safe errors, and sanitized evidence. When authorized operational actions require credentials, prefer delegated secure tools that keep values outside agent context. Human operators likewise should receive authorized capabilities under their own identity without routinely retrieving long-lived production secrets.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Removal, audit, and enforcement",
-    "anchor": "removal-audit-and-enforcement",
-    "text": "Removal, audit, and enforcement\nWhen a secret is retired, remove usage and deployment references, verify active consumers, revoke, delete from the store, and update access permissions and documentation. Investigate orphaned credentials rather than retaining unknown capabilities indefinitely. Audit creation, access, permission changes, rotation, revocation, and deletion where supported without recording values.\nUse available secret scanning and consider historical scans because working-tree checks cannot see all exposure. Keep false-positive exceptions narrow and documented; do not disable scanning broadly. Configuration metadata, client/server boundaries, redaction tests, unsafe-default checks, and artifact inspection complement scanning. Credential-handling SDKs and cryptographic dependencies warrant extra scrutiny. Choose any future secret provider through an ADR considering security, availability, audit/access, rotation, platform integration, developer experience, cost, and migration.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New secret checklist",
-    "anchor": "new-secret-checklist",
-    "text": "New secret checklist\nBefore introduction, identify the capability, why a secret is needed instead of workload identity, owner, source, consumers/environment, least privilege, storage/delivery, rotation/revocation, exposure detection, possible telemetry/build/client paths, and eventual removal. Record metadata through canonical configuration sources where practical. A credential without an owner and workable lifecycle is an incomplete design.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Telemetry Redaction",
-    "anchor": "telemetry-redaction",
-    "text": "Telemetry Redaction\nThis policy owns safe data selection and sanitization for logs, traces, metrics, errors, breadcrumbs, audit/security records, profiling, diagnostics, and support artifacts across applications, tooling, SDKs, and infrastructure. [Data classification](data-classification.md) determines sensitivity. When diagnostic usefulness conflicts with data protection, protection takes priority.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Current implementation and ownership",
-    "anchor": "current-implementation-and-ownership",
-    "text": "Current implementation and ownership\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) governs the selected foundation. The API has [Pino field redaction](../../apps/api/src/logging.ts), [allowlisted trace/metric export](../../apps/api/src/telemetry.ts), and [safe HTTP/error diagnostics](../../apps/api/src/app.ts). These local controls do not establish a universal schema-driven redaction engine or prove that every future SDK/platform default is safe. The API runtime documentation and [validation inventory](../validation.md) identify current implementation and checks.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Default deny for payload capture",
-    "anchor": "default-deny-for-payload-capture",
-    "text": "Default deny for payload capture\nCapture only fields needed to answer an operational question. Prefer explicit safe projections over capturing whole objects and attempting cleanup afterward. Request/response bodies, event/job/RPC/WebSocket payloads, ORM/domain entities, free-form metadata, environment dumps, and complete configuration must not be captured by default.\n`RESTRICTED` data must never be intentionally captured, including passwords/hashes, access/session/refresh tokens, API/private/signing keys, database/payment credentials, recovery codes, and credential-bearing headers/cookies. Encryption, restricted provider access, development mode, incidents, and provider-side filtering do not exempt this rule.\nConfidential fields require concrete diagnostic need, minimized representation, and controlled access/retention. Prefer justified opaque identifiers to names, email, phone, or complete records. Public/internal data may be captured when operationally useful; the destination never lowers classification. User-generated strings and arbitrary exceptions remain untrusted and potentially sensitive.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Redaction strategies",
-    "anchor": "redaction-strategies",
-    "text": "Redaction strategies\nUse source allowlists first, centralized application filtering as defense in depth, and collector/provider scrubbing as additional layers. Restricted data must be removed or replaced with a constant marker before export. Partial masking requires a justified safe remainder; it is not adequate for authentication secrets. Pseudonymization or hashing may permit correlation but does not establish anonymity, especially for predictable values.\nRecognize common secret-bearing field names and locations, including authorization, cookies, query/form fields, provider metadata, exceptions, and environment variables. Name-based blocklists are a safety net, not the primary policy: schemas evolve. Use clear field names, safe structured projections, and canonical classification metadata where practical. Local rules may be stricter but must not conflict with shared policy.\nIf safe sanitization cannot be completed, drop unsafe telemetry and emit only a bounded safe failure signal. Never include the rejected payload in that signal or recurse through the failing serializer. Review getters, `toJSON`, custom serializers, recursion, arrays, and nesting; deterministic telemetry-specific serialization must not expose extra fields. Bound string length, depth, array size, breadcrumb count, and exception metadata. Truncation is not redaction and must not misrepresent meaning.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "HTTP request telemetry",
-    "anchor": "http-request-telemetry",
-    "text": "HTTP request telemetry\nUseful safe metadata includes method, normalized route template, status, duration, service, environment, release, and request/trace IDs. Full URLs, query strings, headers, and bodies are not default telemetry. Allowlist justified parameters/headers individually and remove credential-bearing `Authorization`, `Proxy-Authorization`, `Cookie`, and `Set-Cookie` values. File content, binary buffers, document text, image metadata, and archive contents must never be captured automatically; filenames can also disclose sensitive data.\nApply the same rule to other transports. Prefer event/job type, safe ID, consumer, attempt, result, and duration over payloads. Normalize routes rather than embedding resource IDs. Public support references must be opaque and contain no personal information, secret state, or key material; preserve safe correlation during redaction.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Database and provider instrumentation",
-    "anchor": "database-and-provider-instrumentation",
-    "text": "Database and provider instrumentation\nDatabase telemetry may describe operation, logical entity, system, duration, and result. Raw SQL can contain literals; use normalized/parameterized representations when query telemetry is required. Do not automatically capture bind values, rows, connection strings, or raw ORM objects. Any exceptional parameter diagnostics still require explicit classification/access controls and cannot capture restricted data.\nReview driver/ORM error metadata before export: errors may contain SQL, values, hostnames, and connection information. Never expose raw database/provider exceptions to users. Review SDK requests, responses, headers, breadcrumbs, and debug modes independently. Prefer safe provider result codes and references; payment and authentication credentials remain prohibited. Provider-specific codes need sensitivity and cardinality review and do not replace the API's public error contract.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Errors, traces, metrics, and audit",
-    "anchor": "errors-traces-metrics-and-audit",
-    "text": "Errors, traces, metrics, and audit\nError SDK automatic capture must be reviewed before use: requests, queries, cookies, locals, environment, console output, user context, and breadcrumbs can leak data. Local-variable capture is disabled by default unless an explicitly acceptable environment and controls justify it. `captureException(error)` is not automatically safe. Internal stacks can help diagnosis but may expose implementation paths and must not reach untrusted users or intentionally contain secrets.\nUse safe minimal user context, preferring a justified internal identifier to profile data, and clear it on logout. Review navigation, console, database, HTTP, and interaction breadcrumbs. Trace attributes/events must use safe selected metadata, not objects or payloads.\nMetric labels must never contain secrets and should avoid personal/entity-specific values, arbitrary error messages, full URLs, and request/trace IDs. Any exceptional dimension requires explicit privacy and cardinality justification; prefer bounded error/result categories. Audit/security records may justify confidential actor/resource identifiers that routine diagnostics omit, but still exclude credentials and unnecessary payloads.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Clients, infrastructure, and special diagnostics",
-    "anchor": "clients-infrastructure-and-special-diagnostics",
-    "text": "Clients, infrastructure, and special diagnostics\nDo not automatically collect form values, clipboard, local storage, navigation state, screen contents, or user content. Session replay, screenshots, crash attachments, and full memory dumps are separate high-risk collection capabilities requiring explicit review; replay must mask/exclude sensitive areas. Memory dumps can contain arbitrary credentials and require justified collection and restricted access. Do not enable features merely because a vendor offers them.\nCollect IP, user-agent, device identifiers, file paths, and geolocation only for justified needs with suitable retention; normalized platform/version/device-class data is often sufficient. Precise location is not default telemetry. Feature-flag diagnostics should contain bounded state, not full targeting contexts.\nInspect reverse proxies, load balancers, database server logs, container stdout/stderr, CI, and SDK debug logging independently. Application redaction cannot stop another layer from recording URLs, failed SQL, or credentials. CI output must not echo secrets; use platform masking where available. Development follows the same secret rules. Tests should use isolated/disabled exporters and never send synthetic test telemetry into production systems.\nTemporary/emergency diagnostics must be explicit, minimized, reviewed, time-bounded, and removed afterward. They still cannot intentionally collect restricted data. Do not globally expand collection merely to investigate one issue.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Representative secret tests",
-    "anchor": "representative-secret-tests",
-    "text": "Representative secret tests\nImportant redaction behavior must have automated tests using obvious synthetic secrets. Assert both that safe correlation remains and that prohibited values appear nowhere in emitted logs, spans, breadcrumbs, or errors. Exercise headers, nested metadata, query strings, bodies, exception objects, and serialization failure where relevant. Inspect final export payloads for important flows; helper-level tests alone may miss SDK enrichment.\nTreat redaction regressions as security defects. Extend tests when instrumentation, schemas, SDKs, or destinations change. Static rules, runtime guards, schema validation, and secret scanning are complementary; consult [validation](../validation.md) before claiming any check exists.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Destinations, access, and leakage",
-    "anchor": "destinations-access-and-leakage",
-    "text": "Destinations, access, and leakage\nExport only to approved destinations. Each additional provider/copy creates independent access, retention, residency, and deletion responsibilities; significant changes may need an ADR and security/privacy review. Do not duplicate telemetry across vendors without concrete value. [Retention](data-retention.md) and [production access](production-access.md) govern storage and readers, including AI agents.\nProvide AI/support tooling with structured, sanitized, task-relevant evidence, never raw environment dumps, credential-bearing logs, or full customer/request objects by default. A future diagnostic bundle must exclude restricted data by construction and be introduced only for real need.\nFor leakage, follow [incident response](incident-response.md): stop further collection, identify data/classification/destinations/exposure, restrict access, remove data where possible, revoke/rotate exposed credentials, review usage, fix instrumentation, and add regression protection. Historical logs, traces, errors, exports, provider retention, and backups may still contain leaked values. Deleting an entry does not restore credential secrecy.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New telemetry checklist",
-    "anchor": "new-telemetry-checklist",
-    "text": "New telemetry checklist\nBefore adding telemetry, identify the question answered, required fields and classifications, safer representations, untrusted/credential-bearing inputs, size/cardinality bounds, approved destination, retention/access, and redaction tests. Do not ship unexplained collection. Derive structural redaction references from canonical sources where practical; provider deployment, retention durations, session replay, and a cross-application metadata engine remain separate decisions, not implied capabilities.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Development Setup",
-    "anchor": "development-setup",
-    "text": "Development Setup\n[Repository README](../README.md) · [Validation](validation.md) · [API runtime](../apps/api/README.md) · [Web workflow](../apps/web/README.md)\nThis is the canonical local setup and execution path. Tests use disposable PostgreSQL and synthetic identities; no production database, identity provider, telemetry vendor, or deployment account is needed. Commands address workspace packages by path (`pnpm -C apps/api …`), so they work unchanged whatever a project names its packages.\nGoal\nPrerequisites after installing pinned Node.js/pnpm\nStart here\nBrowse the documentation portal\nFrozen dependency install; no container, API, or test browser needed\n[Portal](#living-documentation-portal)\nRun the API and web application locally\nFrozen dependency install, generated Prisma client, and local configuration\n[Configuration](#load-local-configuration)\nUse a local PostgreSQL or access-token issuer\nA database or issuer you control for development\n[Local database and authentication](#local-database-and-authentication)\nRun the complete validation gate\nAll clean-checkout prerequisites, including containers and test browsers\n[Prepare a clean checkout](#prepare-a-clean-checkout), then [validate](#validate-regenerate-and-build)\nStart a new project from Orion or upgrade a project's Orion baseline\nA fresh full clone and frozen dependency install\n[Project derivation](project-derivation.md)\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Prepare a clean checkout",
-    "anchor": "prepare-a-clean-checkout",
-    "text": "Prepare a clean checkout\nUse Node.js 24.13.0 and pnpm 11.25.0, as pinned by `.node-version` and `package.json`. For full validation, start Docker or another Testcontainers-compatible container runtime and verify that its daemon is reachable with `docker info`. From a fresh checkout, run:\npnpm install --frozen-lockfile\npnpm db:generate\npnpm -C apps/web exec playwright install chromium\n\nOn Linux, use `pnpm -C apps/web exec playwright install --with-deps chromium` if the browser's system libraries are absent. Windows browser component tests use the installed Edge channel; Playwright end-to-end tests use Chromium. Media tests and the media module also need FFmpeg and ffprobe 6.1 or later on `PATH` (for example `sudo apt-get install ffmpeg` on Ubuntu 24.04, or `winget install Gyan.FFmpeg` on Windows); see [ADR-0028](adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md). Do not put credentials in tracked files.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Load local configuration",
-    "anchor": "load-local-configuration",
-    "text": "Load local configuration\nFor a new local configuration, copy the safe, schema-checked [example](../.env.example) into an ignored root `.env.local` file; preserve an existing file's settings. The example activates only `ORION_ENV=development`; uncomment and fill an optional setting only when needed. The API `dev` script uses Node's `--env-file-if-exists` to load this file before `src/main.ts` parses and validates configuration. Existing shell environment variables take precedence over file values. The following works in PowerShell and POSIX shells:\ncp .env.example .env.local\npnpm -C apps/api dev\n\nPowerShell also accepts `Copy-Item .env.example .env.local`. The default listener is `127.0.0.1:3000`; `GET http://127.0.0.1:3000/health/ready` returns `{\"status\":\"ok\"}`. Without database or token settings, the API serves its health routes; [modules](../apps/api/README.md#modules) that require the database or bearer authentication stay unmounted until those settings are configured. `.env.local` and other real environment files are ignored by Git; do not place secrets in `.env.example`.\nStart the web development server in another terminal:\npnpm -C apps/web dev\n\nOpen the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. Teluni's entry page sends visitors to sign-in and shows signed-in people their [home page](../apps/web/README.md#entry-and-home-page).\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Local database and authentication",
-    "anchor": "local-database-and-authentication",
-    "text": "Local database and authentication\n[API configuration](generated/configuration/api.md) names the runtime settings. `ORION_DATABASE_URL` enables PostgreSQL for modules that require it and adds the database to readiness. The three token settings enable bearer authentication together; a trusted issuer must provide the claims described by the [authentication policy](security/authentication.md).\nFor a separate **local** PostgreSQL, create distinct migration and restricted runtime credentials. Supply `ORION_MIGRATION_DATABASE_URL` in the shell only for `pnpm -C apps/api db:migrate:deploy`; the Prisma CLI reads it from that process. Keep `ORION_DATABASE_URL` in the root ignored `.env.local` for the API runtime, alongside the trusted token issuer, audience and JWKS URL. Human sessions use the selected Keycloak realm and the additional identity settings in the [configuration reference](generated/configuration/api.md); [the disposable identity stack](#try-sign-in-locally) is the available local qualification path. No persistent environment is provisioned by this guide. Do not copy Testcontainers' synthetic credentials into a persistent environment, and clear the migration credential from the shell after deployment.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Living Documentation Portal",
-    "anchor": "living-documentation-portal",
-    "text": "Living Documentation Portal\nThe portal needs no API, database, identity provider, or `.env.local`. After the clean-checkout install above, run `pnpm -C apps/web dev` and open `http://127.0.0.1:5173/docs` (or the Vite-printed port plus `/docs`). Use its section navigation and breadcrumbs for API operations, tables, component examples, architecture, guides, policies, and ADRs. Repository documentation opens locally with headings and search, rather than requiring GitHub. Relevant sections also expose AI-readable OpenAPI, database, error, and component references.\nTo try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.\nAfter editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. A normal `pnpm -C apps/web build` excludes the internal portal and all of its generated assets. For an explicitly authorized internal artifact or local production-preview check, use PowerShell process environment variables:\n$env:ORION_WEB_DOCUMENTATION = 'internal'\n$env:ORION_WEB_INTERNAL_DOCS_ACCESS = 'external'\ntry { pnpm -C apps/web build } finally {\n  Remove-Item Env:ORION_WEB_DOCUMENTATION\n  Remove-Item Env:ORION_WEB_INTERNAL_DOCS_ACCESS\n}\npnpm -C apps/web exec vite preview --host 127.0.0.1\n\nOpen `/docs` on the printed loopback port. The access setting acknowledges external enforcement; it does not install or verify it. Before any internal deployment, follow [the full-artifact access policy](architecture/living-documentation.md#build-and-deployment-boundary). Preview always serves the already-built artifact. Rebuild without those variables before product distribution. Internal static serving needs the SPA fallback for nested routes plus protection for every asset; no deployment provider is selected here.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Persistent local environment",
-    "anchor": "persistent-local-environment",
-    "text": "Persistent local environment\nFor day-to-day development with data that survives restarts, start the local services once and run the API and web application in watch mode. With Docker running, from the repository root:\npnpm db:generate\npnpm -C apps/api dev:services up\npnpm -C apps/api dev\npnpm -C apps/web dev\n\n`dev:services up` creates or starts named containers (PostgreSQL on `127.0.0.1:55433`, Keycloak on `localhost:8180` with its management port on `9180`, Mailpit with SMTP on `127.0.0.1:1025` and its inbox on `http://127.0.0.1:8025`) with named volumes, applies the committed migrations and runtime grants, provisions the `teluni` realm with the Teluni sign-in theme, creates the synthetic developer account `dev@teluni.test`, creates the ignored `.dev-media/` media volume, and writes the root `.env.local` the API loads (the media module also needs FFmpeg on `PATH`). Machine-local credentials (database, Keycloak bootstrap administrator, client secrets, key rings and the developer password) are generated once and kept in the ignored `.env.dev-services`; a previous `.env.local` is copied to `.env.local.before-dev-services`. Open `http://127.0.0.1:5173`; invitation and verification emails arrive in the Mailpit inbox. Rerun `up` after pulling new migrations or realm changes. `pnpm -C apps/api dev:services down` stops the containers and keeps their data; `reset` removes containers, volumes, network and `.dev-media/` so the next `up` starts empty. Keycloak's back-channel logout cannot reach an API listening on loopback, so in this environment provider-side sign-outs end panel sessions through the 30-second revalidation instead. These are development services only; never point the script or its credentials at shared or production systems.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Two-step verification",
-    "anchor": "two-step-verification",
-    "text": "Two-step verification\nTwo-step verification is optional for each person. Sign in with the password alone, or enable an authenticator app from the **Sessões** page (Google Authenticator, Microsoft Authenticator or any TOTP app); from then on Keycloak asks for its code at every sign-in. Disabling it asks for the password and the current code. A new account is offered it right after its first sign-in. The former `TELUNI_DEV_MFA_MODE` setting no longer exists; remove it from `.env.local` if present (it is ignored). See the [identity design](project/identity-session-design.md#assurance-reauthentication-and-two-step-verification).\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Try sign-in locally",
-    "anchor": "try-sign-in-locally",
-    "text": "Try sign-in locally\nThe identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:\npnpm db:generate\npnpm -C apps/api build\nnode apps/web/test/e2e/identity/manual.ts\n\nIt starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It also configures the API's mail relay to Mailpit. It prints the panel URL, the Mailpit inbox URL and the email and password of a synthetic user and of a synthetic invitee; invitations sent from a company's Invitations view arrive in Mailpit, and you can also create an account on the Keycloak sign-in page and read its verification email there. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).\n"
   }
 ]

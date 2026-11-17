@@ -582,6 +582,42 @@ Usage: Use within MediaDialog, with source identities/scopes and the action. Loa
 ```
 
 
+## CompanyLogoField
+
+Admits a local raster image and previews the company's draft logo.
+
+Category: Forms. Scope: feature-specific. Owner: Organizations.
+
+Source: [apps/web/src/organizations/company-logo.tsx](../../../apps/web/src/organizations/company-logo.tsx) (export `CompanyLogoField`). Metadata: [apps/web/src/organizations/components.docs.json](../../../apps/web/src/organizations/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | Unique file control identifier and prefix for help and error descriptions. | See type | — |
+| `value` | `string \| null` | Current draft PNG data URL, or null when no logo is set. | See type | — |
+| `disabled` | `boolean` | Disables the file control and draft actions during blocked form states. | See type | — |
+| `onChange` | `(value: string \| null) => void` | Receives a prepared PNG or an explicit removal. | See type | — |
+
+### States
+
+- No logo: Shows a placeholder and offers image selection.
+- Existing logo: Shows the selected image with replacement and removal actions.
+- Processing or rejected: Keeps the previous logo and blocks submission until the selection is resolved or discarded.
+
+Accessibility: The native file control keeps its label and format description. Processing and rejection are announced. Discarding a file selection clears validation without removing the current logo.
+
+Usage: Use with the owning company form, which saves the result through the Organizations API. Image selection and removal change the draft only. The API validates the resulting PNG before persistence.
+
+### Examples
+
+- **Company settings draft** (`company-logo-draft`): Pass the draft selection and keep submission in the surrounding form.
+
+```tsx
+<CompanyLogoField id="company-logo" value={draftLogo} disabled={saving} onChange={setDraftLogo} />
+```
+
+
 ## ProgrammingGuide
 
 Explains the existing content-to-screen workflow.

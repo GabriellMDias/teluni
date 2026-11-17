@@ -3046,6 +3046,20 @@
       "file": "pages/components/Checkbox.json"
     },
     {
+      "id": "components/CompanyLogoField",
+      "kind": "component",
+      "title": "CompanyLogoField",
+      "group": "Forms",
+      "category": "Forms",
+      "scope": "feature-specific",
+      "owner": "Organizations",
+      "metadataSource": "apps/web/src/organizations/components.docs.json",
+      "source": "apps/web/src/organizations/company-logo.tsx",
+      "summary": "Admits a local raster image and previews the company's draft logo.",
+      "headings": [],
+      "file": "pages/components/CompanyLogoField.json"
+    },
+    {
       "id": "components/DataGrid",
       "kind": "component",
       "title": "DataGrid",
@@ -4787,30 +4801,30 @@
       { "file": "search/0034.json", "count": 27, "kinds": ["database"] },
       {
         "file": "search/0035.json",
-        "count": 43,
+        "count": 42,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0036.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 111, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 118, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 169, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 169, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 119, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 124, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 60, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 38, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0051.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0052.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0053.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 57, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 122, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 159, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 171, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 126, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 126, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 79, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 119, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 61, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 60, "kinds": ["repository"] },
+      { "file": "search/0049.json", "count": 35, "kinds": ["repository"] },
+      { "file": "search/0050.json", "count": 59, "kinds": ["repository"] },
+      { "file": "search/0051.json", "count": 61, "kinds": ["repository"] },
+      { "file": "search/0052.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0053.json", "count": 75, "kinds": ["repository"] },
       { "file": "search/0054.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0055.json", "count": 23, "kinds": ["repository"] }
+      { "file": "search/0055.json", "count": 46, "kinds": ["repository"] }
     ],
-    "count": 2226
+    "count": 2233
   }
 }
