@@ -362,7 +362,14 @@ test("creates a company and manages branches, settings, members, responsibility 
     await expect(
       userRow.getByRole("button", { name: /^Revogar papel: Operador/ }),
     ).toHaveCount(0);
-    await expect(userRow).toContainText("Ativo · Administrador");
+    await expect(userRow.getByText("Ativo", { exact: true })).toBeVisible();
+    const remainingGrants = userRow.getByRole("list", {
+      name: /^Papéis de /,
+    });
+    await expect(remainingGrants.getByRole("listitem")).toHaveCount(1);
+    await expect(
+      remainingGrants.getByText("Administrador", { exact: true }),
+    ).toBeVisible();
 
     await userRow
       .getByRole("button", { name: /^Transferir responsabilidade:/ })
