@@ -25,7 +25,6 @@ import {
   getCompany,
   listBranches,
   listCompanies,
-  listAuditEvents,
   renameBranch,
   updateCompany,
   type Branch,
@@ -37,6 +36,7 @@ import { BranchLocationField, locationLabel } from "./branch-location.js";
 import { organizationMessages } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
 import { CompanyInvitations } from "./invitations.js";
+import { CompanyHistory, type HistorySearch } from "./history.js";
 import { CompanyProfiles } from "./profiles.js";
 import { ResponsibilityTransferNotice } from "./responsibility.js";
 
@@ -1361,120 +1361,6 @@ function CompanySettings({
   );
 }
 
-function CompanyHistory({
-  companyId,
-  principalId,
-  administrator,
-  accessScope,
-  cursor,
-}: {
-  companyId: string;
-  principalId: string;
-  /** Administrators read every event; branch managers only their branches'. */
-  administrator: boolean;
-  /** Identifies the viewer's current access, so pages never cross scopes. */
-  accessScope: string;
-  cursor?: string;
-}) {
-  const { locale, t } = useOrganizationMessages();
-  // Pages are cached per access scope and dropped once the view closes, so a
-  // narrowed access never renders events read under a wider one.
-  const events = useQuery({
-    queryKey: [...auditKey(companyId), accessScope, cursor ?? null],
-    queryFn: () => listAuditEvents(companyId, cursor),
-    gcTime: 0,
-  });
-  return (
-    <section aria-labelledby="company-history-title">
-      <h2 id="company-history-title">{t.historyTitle}</h2>
-      <p>{administrator ? t.historyLead : t.historyLeadBranches}</p>
-      {events.isPending ? (
-        <p>{t.loading}</p>
-      ) : events.isError ? (
-        <Failure
-          error={events.error}
-          operation="read"
-          onReload={() => void events.refetch()}
-        />
-      ) : events.data.items.length === 0 ? (
-        <p className="empty-state">{t.historyEmpty}</p>
-      ) : (
-        <ol className="audit-list">
-          {events.data.items.map((event) => {
-            const fields = Array.isArray(event.details.fields)
-              ? event.details.fields
-                  .filter((field): field is string => typeof field === "string")
-                  .map(
-                    (field) =>
-                      t.historyFields[
-                        event.targetType === "access_profile" &&
-                        field === "name"
-                          ? "profileName"
-                          : field
-                      ],
-                  )
-                  .filter((field): field is string => typeof field === "string")
-              : [];
-            const action = t.historyActions[event.action];
-            return (
-              <li key={event.id}>
-                <strong>
-                  {typeof action === "string" ? action : t.historyUnknown}
-                </strong>
-                {typeof event.details.role === "string" &&
-                  Object.hasOwn(t.roles, event.details.role) && (
-                    <span>
-                      {t.historyRole}:{" "}
-                      {t.roles[event.details.role as keyof typeof t.roles]}
-                    </span>
-                  )}
-                {typeof event.details.profileName === "string" && (
-                  <span>
-                    {t.historyProfile}: {event.details.profileName}
-                  </span>
-                )}
-                {event.targetType === "branch" &&
-                  typeof event.details.branchName === "string" && (
-                    <span>
-                      {t.fieldBranchName}: {event.details.branchName}
-                    </span>
-                  )}
-                <span className="hint">
-                  <time dateTime={event.occurredAt}>
-                    {formatInstant(locale, event.occurredAt)}
-                  </time>
-                  {` · ${event.actorPrincipalId === principalId ? t.historyYou : t.historyMember}`}
-                </span>
-                {fields.length > 0 && <span>{fields.join(", ")}</span>}
-              </li>
-            );
-          })}
-        </ol>
-      )}
-      <nav className="pagination" aria-label={t.historyTitle}>
-        {cursor && (
-          <Link
-            to="/companies/$companyId"
-            params={{ companyId }}
-            search={{ view: "history" }}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {events.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId"
-            params={{ companyId }}
-            search={{ view: "history", cursor: events.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
-    </section>
-  );
-}
-
 export function CompanyPage({
   companyId,
   cursor,
@@ -1488,8 +1374,10 @@ export function CompanyPage({
   invitationId,
   invitationQuery,
   invitationStatus,
+  historySearch,
 }: {
   companyId: string;
+  historySearch?: HistorySearch;
   cursor?: string;
   view?: "settings" | "history" | "members" | "invitations" | "profiles";
   /** The branches dataset's mode and record, on the company's default view. */
@@ -1513,6 +1401,7 @@ export function CompanyPage({
   });
   const search = new URLSearchParams({
     ...(view ? { view } : {}),
+    ...(view === "history" ? historySearch : {}),
     ...(cursor ? { cursor } : {}),
     ...(!view && mode ? { mode } : {}),
     ...(!view && record ? { record } : {}),
@@ -1563,7 +1452,7 @@ export function CompanyPage({
   const datasetView = !view && canView;
   return (
     <section
-      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}${view === "profiles" ? " company-profiles-panel" : ""}${view === "invitations" ? " company-invitations-panel" : ""}`}
+      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}${view === "settings" ? " company-settings-panel" : ""}${view === "members" ? " company-members-panel" : ""}${view === "profiles" ? " company-profiles-panel" : ""}${view === "invitations" ? " company-invitations-panel" : ""}${view === "history" ? " company-history-panel" : ""}`}
       aria-labelledby="company-title"
       lang={locale}
     >
@@ -1660,11 +1549,15 @@ export function CompanyPage({
           <CompanyHistory
             companyId={companyId}
             principalId={session.data.principalId}
+            search={historySearch ?? {}}
+            locale={locale}
+            t={t}
             administrator={access.capabilities.includes("members.manage")}
             accessScope={JSON.stringify([
               access.roles,
               access.profiles,
               access.capabilities,
+              company.dataUpdatedAt,
             ])}
             cursor={cursor}
           />

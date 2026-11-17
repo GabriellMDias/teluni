@@ -65,6 +65,9 @@ The company Access Profiles workspace also uses DataSet, with accent-insensitive
 
 The company Invitations workspace uses DataSet with email search and status filtering on the current API page. The URL owns selection, cursor and current-page filters (`invitation`, `invitationQuery`, `invitationStatus`), preserving them across reloads and detail navigation; new invitations open an explicit form reusing GrantRequestFields. Detail cards distinguish email delivery, seven-day invitation-link expiry, and the eventual access scope/expiry. A queued email refreshes while delivery is pending. Resend and revoke require confirmation; a successful resend opens its newly created replacement invitation on the first page. Unknown create/resend outcomes require successful list reconciliation before another submission. Branch managers still invite operators only to managed branches, and administration remains responsible-only with server-enforced recent authentication. The public acceptance and credential-handling flow is unchanged.
 
+The company Change History workspace groups the current authorized audit page by date, with a compact DataSet alternative and URL-owned search, category, author, presentation and event selection. Filters apply to the current API page and survive pagination, reloads and detail navigation. Details present allowlisted changed fields, permission additions/removals, membership status and access/invitation expiry; references remain in a native disclosure. Actor display names come from last-verified identity presentation on the server, only after authorized page selection; event details and historical branch/profile names remain unchanged. Every successful company-access refresh renews the history query scope, including same-role branch changes, and read failures hide cached records. History remains read-only and offers no exports.
+
+
 
 
 

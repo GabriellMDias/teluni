@@ -7127,6 +7127,7 @@ export interface operations {
                             /** Format: date-time */
                             occurredAt: string;
                             actorPrincipalId: string;
+                            actorDisplayName: string | null;
                             action: string;
                             targetType: string;
                             targetId: string;
